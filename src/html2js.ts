@@ -112,9 +112,8 @@ export async function convertPackage() {
   const converter = new AnalysisConverter(analysis, {
     excludes: [
       'lib/utils/boot.html',
-      'lib/elements/dom-module.html',
     ],
-    referenceExcludes: ['Polymer.DomModule'],
+    referenceExcludes: [],
   });
 
   try {
