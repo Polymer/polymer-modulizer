@@ -397,7 +397,7 @@ class DocumentConverter {
       this.currentStatementIndex++;
     }
 
-    this.rewriteLocalThisReferences(namespaceName);
+    this.rewriteNamespaceThisReferences(namespaceName);
     this.rewriteLocalNamespacedReferences(localNamespaceName);
     this.rewriteLocalNamespacedReferences(namespaceName);
 
@@ -540,26 +540,29 @@ class DocumentConverter {
   }
 
   /**
-   * Rewrite appropriate `this` references across all exported functions
-   * to the explicit namespace identifier. This simplifies the rest of our
+   * Rewrite `this` references that refer to the namespace object. Replace with
+   * an explicit reference to the namespace. This simplifies the rest of our
    * transform pipeline by letting it assume that all namespace references
    * are explicit.
+   *
+   * NOTE(fks): References to the namespace object still need to be corrected
+   * after this step, so timing is important: Only run after exports have
+   * been created, but before all namespace references are corrected.
    */
-  rewriteLocalThisReferences(namespaceName?: string) {
+  rewriteNamespaceThisReferences(namespaceName?: string) {
     if (namespaceName === undefined) {
       return;
     }
-    const self = this;
     astTypes.visit(this.program, {
-      visitExportNamedDeclaration(path: any) {
-        if(path.node.declaration && path.node.declaration.type === 'FunctionDeclaration') {
-          self.rewriteSingleScopeThisReferences(path.node.declaration.body, namespaceName);
+      visitExportNamedDeclaration: (path: any) => {
+        if (path.node.declaration && path.node.declaration.type === 'FunctionDeclaration') {
+          this.rewriteSingleScopeThisReferences(path.node.declaration.body, namespaceName);
         }
         return false;
       },
-      visitExportDefaultDeclaration(path: any) {
-        if(path.node.declaration && path.node.declaration.type === 'FunctionDeclaration') {
-          self.rewriteSingleScopeThisReferences(path.node.declaration.body, namespaceName);
+      visitExportDefaultDeclaration: (path: any) => {
+        if (path.node.declaration && path.node.declaration.type === 'FunctionDeclaration') {
+          this.rewriteSingleScopeThisReferences(path.node.declaration.body, namespaceName);
         }
         return false;
       },
@@ -567,8 +570,8 @@ class DocumentConverter {
   }
 
   /**
-   * Rewrite appropriate `this` references within a single BlockStatement to
-   * the explicit namespaceReference identifier. Don't traverse into new scopes.
+   * Rewrite `this` references to the explicit namespaceReference identifier
+   * within a single BlockStatement. Don't traverse deeper into new scopes.
    */
   rewriteSingleScopeThisReferences(blockStatement: BlockStatement, namespaceReference: string) {
     astTypes.visit(blockStatement, {
