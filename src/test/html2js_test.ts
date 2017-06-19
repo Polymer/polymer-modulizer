@@ -175,6 +175,7 @@ export { independentFn };
                 fn: function() {
                   this.foobar();
                 },
+                // NOTE: this is not a valid reference to Namespace.foobar
                 isArrowFn: () => {
                   this.foobar();
                 },
