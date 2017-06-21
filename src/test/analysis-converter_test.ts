@@ -111,6 +111,57 @@ console.log($bar);
 `);
     });
 
+    test('imports namespace itself if called directly', async () => {
+      setSources({
+        'test.html': `
+          <link rel="import" href="./foo.html">
+          <script>
+            console.log(window.Polymer());
+            console.log(Polymer());
+            console.log(Polymer.foo);
+            console.log(Polymer['bar']);
+          </script>
+        `,
+        'foo.html': `
+          <script>
+            window.Polymer = function() {};
+            Polymer.foo = 42;
+            Polymer.bar = 43;
+          </script>
+        `,
+      });
+      assert.equal(await getJs(), `import { Polymer as $Polymer, foo as $foo } from \'./foo.js\';
+console.log($Polymer());
+console.log($Polymer());
+console.log($foo);
+console.log($Polymer[\'bar\']);
+`);
+    });
+
+    test('imports namespace itself if called indirectly', async () => {
+      setSources({
+        'test.html': `
+          <link rel="import" href="./foo.html">
+          <script>
+            var P = Polymer;
+            var Po = window.Polymer;
+            P();
+            Po();
+          </script>
+        `,
+        'foo.html': `
+          <script>
+            window.Polymer = function() {};
+          </script>
+        `,
+      });
+      assert.equal(await getJs(), `import { Polymer as $Polymer } from \'./foo.js\';
+var P = $Polymer;
+var Po = $Polymer;
+P();
+Po();
+`);
+    });
 
     test('unwraps top-level IIFE', async () => {
       setSources({
