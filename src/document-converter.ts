@@ -31,7 +31,7 @@ const astTypes = require('ast-types');
  * import entire namespace) to a set of ImportDeclaration objects.
  */
 function getImportDeclarations(specifierUrl: string, namedExports?: Set<string>) {
-  const jsImportDeclarations = new Set<ImportDeclaration>();
+  const jsImportDeclarations: ImportDeclaration[] = [];
   const namedExportsArray = namedExports ? Array.from(namedExports) : [];
   const hasNamespaceReference = namedExportsArray.some((s) => s === '*');
   const namedSpecifiers = namedExportsArray
@@ -39,7 +39,7 @@ function getImportDeclarations(specifierUrl: string, namedExports?: Set<string>)
       .map((s) => jsc.importSpecifier(jsc.identifier(s), jsc.identifier(getImportAlias(s))));
   // If a module namespace was referenced, create a new namespace import
   if (hasNamespaceReference) {
-    jsImportDeclarations.add(jsc.importDeclaration(
+    jsImportDeclarations.push(jsc.importDeclaration(
       [jsc.importNamespaceSpecifier(jsc.identifier(getModuleId(specifierUrl)))],
       jsc.literal(specifierUrl)));
   }
@@ -47,7 +47,7 @@ function getImportDeclarations(specifierUrl: string, namedExports?: Set<string>)
   // members. If `namedSpecifiers` is empty but a namespace wasn't imported
   // either, then still add an empty importDeclaration to trigger the load.
   if (namedSpecifiers.length > 0 || !hasNamespaceReference) {
-    jsImportDeclarations.add(jsc.importDeclaration(
+    jsImportDeclarations.push(jsc.importDeclaration(
       namedSpecifiers,
       jsc.literal(specifierUrl)));
   }
