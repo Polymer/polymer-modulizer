@@ -13,6 +13,7 @@
  */
 
 import * as dom5 from 'dom5';
+import * as estree from 'estree';
 import * as parse5 from 'parse5';
 import * as path from 'path';
 import * as recast from 'recast';
@@ -264,44 +265,7 @@ export class DocumentConverter {
         continue;
       }
 
-      const templateLiteral = (() => {
-        let text = parse5.serialize((template as any).content);
-
-        text = (() => {
-          const lines = text.split("\n");
-          // Remove whitespace-only leading lines.
-          while (/^\s*$/.test(lines[0])) {
-            lines.shift();
-          }
-          // Remove whitespace-only trailing lines.
-          while (/^\s*$/.test(lines[lines.length - 1])) {
-            lines.pop();
-          }
-          return lines.join("\n");
-        })();
-
-        // escape: \ -> \\
-        // This replacement must happen first so that the backslashes introduced
-        // by escape replacements below are not escaped.
-        text = text.replace("\\", "\\\\");
-        // escape: ` -> \`
-        text = text.replace("`", "\\`");
-        // escape: $ -> \$
-        text = text.replace("$", "\\$");
-
-        // Add two empty lines: one leading and one trailing.
-        text = "\n" + text + "\n";
-
-        const quasistring = {cooked: text, raw: text};
-        // `<any>` is used here to work around a bug with this type, where the
-        // type is *exactly* the string `"[object Object]"` when it should be
-        // `{cooked: String, raw: String}`.
-        const literal = jsc.templateLiteral(
-          [jsc.templateElement(<any>quasistring, true)], []);
-
-        return literal;
-      })();
-
+      const templateLiteral = convertNodeToTemplateLiteral((template as any).content);
       const node = this.getNode(element.astNode)!;
 
       if (node.type === 'ClassDeclaration' || node.type === 'ClassExpression') {
@@ -754,4 +718,33 @@ function sourceLocationsEqual(a: Node, b: Node): boolean {
       && aLoc.start.line === bLoc.start.line
       && aLoc.end.column === bLoc.end.column
       && aLoc.end.line === bLoc.end.line;
+}
+
+function convertNodeToTemplateLiteral(node: parse5.ASTNode): estree.TemplateLiteral {
+  const lines = parse5.serialize(node).split("\n");
+
+  // Remove whitespace-only leading lines.
+  while (/^\s*$/.test(lines[0])) {
+    lines.shift();
+  }
+  // Remove whitespace-only trailing lines.
+  while (/^\s*$/.test(lines[lines.length - 1])) {
+    lines.pop();
+  }
+
+  let text = lines.join("\n");
+
+  // escape: \ -> \\
+  // This replacement must happen first so that the backslashes introduced
+  // by escape replacements below are not escaped.
+  text = text.replace("\\", "\\\\");
+  // escape: ` -> \`
+  text = text.replace("`", "\\`");
+  // escape: $ -> \$
+  text = text.replace("$", "\\$");
+
+  // Add two empty lines: one leading and one trailing.
+  text = "\n" + text + "\n";
+
+  return jsc.templateLiteral([jsc.templateElement({cooked: text, raw: text}, true)], []);
 }
