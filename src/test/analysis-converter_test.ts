@@ -733,7 +733,6 @@ export const setRootPath = function(path) {
 `,
       });
       const js = await getJs();
-      debugger;
       assert.equal(js, `/**
  * @customElement
  * @polymer
