@@ -732,19 +732,19 @@ function convertNodeToTemplateLiteral(node: parse5.ASTNode): estree.TemplateLite
     lines.pop();
   }
 
-  let text = lines.join("\n");
+  let cookedText = lines.join("\n");
 
   // escape: \ -> \\
   // This replacement must happen first so that the backslashes introduced
   // by escape replacements below are not replaced.
-  text = text.replace("\\", "\\\\");
+  let rawText = cookedText.replace("\\", "\\\\");
   // escape: ` -> \`
-  text = text.replace("`", "\\`");
+  rawText = rawText.replace("`", "\\`");
   // escape: $ -> \$
-  text = text.replace("$", "\\$");
+  rawText = rawText.replace("$", "\\$");
 
   // Add two empty lines: one leading and one trailing.
-  text = "\n" + text + "\n";
+  rawText = "\n" + rawText + "\n";
 
-  return jsc.templateLiteral([jsc.templateElement({cooked: text, raw: text}, true)], []);
+  return jsc.templateLiteral([jsc.templateElement({cooked: cookedText, raw: rawText}, true)], []);
 }
