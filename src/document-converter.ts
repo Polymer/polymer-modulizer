@@ -723,11 +723,11 @@ function sourceLocationsEqual(a: Node, b: Node): boolean {
 function convertNodeToTemplateLiteral(node: parse5.ASTNode): estree.TemplateLiteral {
   const lines = parse5.serialize(node).split("\n");
 
-  // Remove whitespace-only leading lines.
+  // Remove empty / whitespace-only leading lines.
   while (/^\s*$/.test(lines[0])) {
     lines.shift();
   }
-  // Remove whitespace-only trailing lines.
+  // Remove empty / whitespace-only trailing lines.
   while (/^\s*$/.test(lines[lines.length - 1])) {
     lines.pop();
   }
@@ -736,7 +736,7 @@ function convertNodeToTemplateLiteral(node: parse5.ASTNode): estree.TemplateLite
 
   // escape: \ -> \\
   // This replacement must happen first so that the backslashes introduced
-  // by escape replacements below are not escaped.
+  // by escape replacements below are not replaced.
   text = text.replace("\\", "\\\\");
   // escape: ` -> \`
   text = text.replace("`", "\\`");
