@@ -263,7 +263,45 @@ export class DocumentConverter {
       if (template === null) {
         continue;
       }
-      const templateText = parse5.serialize((template as any).content).trim();
+
+      const templateLiteral = (() => {
+        let text = parse5.serialize((template as any).content);
+
+        text = (() => {
+          const lines = text.split("\n");
+          // Remove whitespace-only leading lines.
+          while (/^\s*$/.test(lines[0])) {
+            lines.shift();
+          }
+          // Remove whitespace-only trailing lines.
+          while (/^\s*$/.test(lines[lines.length - 1])) {
+            lines.pop();
+          }
+          return lines.join("\n");
+        })();
+
+        // escape: \ -> \\
+        // This replacement must happen first so that the backslashes introduced
+        // by escape replacements below are not escaped.
+        text = text.replace("\\", "\\\\");
+        // escape: ` -> \`
+        text = text.replace("`", "\\`");
+        // escape: $ -> \$
+        text = text.replace("$", "\\$");
+
+        // Add two empty lines: one leading and one trailing.
+        text = "\n" + text + "\n";
+
+        const quasistring = {cooked: text, raw: text};
+        // `<any>` is used here to work around a bug with this type, where the
+        // type is *exactly* the string `"[object Object]"` when it should be
+        // `{cooked: String, raw: String}`.
+        const literal = jsc.templateLiteral(
+          [jsc.templateElement(<any>quasistring, true)], []);
+
+        return literal;
+      })();
+
       const node = this.getNode(element.astNode)!;
 
       if (node.type === 'ClassDeclaration' || node.type === 'ClassExpression') {
@@ -274,14 +312,14 @@ export class DocumentConverter {
           jsc.functionExpression(
             null,
             [],
-            jsc.blockStatement([jsc.returnStatement(jsc.literal(templateText))]))
+            jsc.blockStatement([jsc.returnStatement(templateLiteral)]))
         ));
       } else if (node.type === 'CallExpression') {
         // A Polymer hybrid/legacy factory function element
         (node.arguments[0] as ObjectExpression).properties.splice(0, 0, jsc.property(
           'init',
           jsc.identifier('_template'),
-          jsc.literal(templateText)));
+          templateLiteral));
       }
     }
   }
