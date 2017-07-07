@@ -265,7 +265,7 @@ export class DocumentConverter {
         continue;
       }
 
-      const templateLiteral = convertNodeToTemplateLiteral((template as any).content);
+      const templateLiteral = nodeToTemplateLiteral((template as any).content);
       const node = this.getNode(element.astNode)!;
 
       if (node.type === 'ClassDeclaration' || node.type === 'ClassExpression') {
@@ -720,8 +720,8 @@ function sourceLocationsEqual(a: Node, b: Node): boolean {
       && aLoc.end.line === bLoc.end.line;
 }
 
-function convertNodeToTemplateLiteral(node: parse5.ASTNode): estree.TemplateLiteral {
-  const lines = parse5.serialize(node).split("\n");
+function nodeToTemplateLiteral(node: parse5.ASTNode): estree.TemplateLiteral {
+  const lines = parse5.serialize(node).split('\n');
 
   // Remove empty / whitespace-only leading lines.
   while (/^\s*$/.test(lines[0])) {
@@ -732,19 +732,14 @@ function convertNodeToTemplateLiteral(node: parse5.ASTNode): estree.TemplateLite
     lines.pop();
   }
 
-  let cookedText = lines.join("\n");
+  const cooked = '\n' + lines.join('\n') + '\n';
 
-  // escape: \ -> \\
-  // This replacement must happen first so that the backslashes introduced
-  // by escape replacements below are not replaced.
-  let rawText = cookedText.replace("\\", "\\\\");
-  // escape: ` -> \`
-  rawText = rawText.replace("`", "\\`");
-  // escape: $ -> \$
-  rawText = rawText.replace("$", "\\$");
+  // The `\` -> `\\` replacement must occur first so that the backslashes
+  // introduced by later replacements are not replaced.
+  const raw = cooked
+    .replace('\\', '\\\\')
+    .replace('`', '\\`')
+    .replace('$', '\\$');
 
-  // Add two empty lines: one leading and one trailing.
-  rawText = "\n" + rawText + "\n";
-
-  return jsc.templateLiteral([jsc.templateElement({cooked: cookedText, raw: rawText}, true)], []);
+  return jsc.templateLiteral([jsc.templateElement({cooked, raw}, true)], []);
 }
