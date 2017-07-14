@@ -5,9 +5,9 @@
   },
   "scripts": {
     "build": "tsc",
-    "test": "npm run build && mocha lib/test/unit",
-    "test:integration": "npm run build && mocha lib/test/integration",
-    "update:fixtures": "html2js --in fixtures/polymer --out fixtures/polymer_expected --clear"
+    "test": "npm run build && mocha lib/test",
+    "polymer:test": "npm run build && node scripts/polymer-integration-test",
+    "polymer:checkpoint": "html2js --in fixtures/polymer --out fixtures/polymer_expected --clear"
   },
   "engines": {
     "node": ">=7.6.0"
@@ -36,7 +36,8 @@
     "source-map-support": "^0.4.15"
   },
   "devDependencies": {
-    "gulp": "^3.9.1",
+    "chalk": "^2.0.1",
+    "diff": "^3.3.0",
     "typescript": "^2.3.4"
   }
 }
