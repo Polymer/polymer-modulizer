@@ -17,37 +17,47 @@ import { convertPackage } from './convert-package.js';
 import commandLineArgs = require('command-line-args')
 
 const optionDefinitions: commandLineArgs.OptionDefinition[] = [
-  { 
+  {
     name: 'help',
     type: Boolean,
     description: 'Show this help message.',
   },
-  { 
+  {
     name: 'out',
     type: String,
     defaultValue: 'html2js_out',
     description: 'The directory to write converted files to.'
   },
-  { 
+  {
+    name: 'in',
+    type: String,
+    description: 'The directory to convert.'
+  },
+  {
     name: 'root-module',
     type: String,
     description: 'Root namespace name to use to detect exports.'
   },
-  { 
+  {
     name: 'exclude',
     type: String,
     multiple: true,
     description: 'Exclude a file from conversion.'
   },
-  { 
+  {
     name: 'package-name',
     type: String,
     description: 'npm package name to use for package.json'
   },
-  { 
+  {
     name: 'npm-version',
     type: String,
     description: 'Version string to use for package.json'
+  },
+  {
+    name: 'clear',
+    type: Boolean,
+    description: 'Clear the out directory (if one exists) before running.',
   },
 ];
 
@@ -72,11 +82,13 @@ export async function run() {
   }
 
   await convertPackage({
+    inDir: options['in'],
     outDir: options['out'],
     excludes: options['exclude'],
     rootModuleName: options['root-module'],
     packageName: options['package-name'],
     npmVersion: options['npm-version'],
+    clearOutDir: options['clear'],
   });
 
   console.log('Done');
