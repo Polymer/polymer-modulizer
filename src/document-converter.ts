@@ -774,7 +774,7 @@ function getModuleId(url: string) {
 }
 
 function dashToCamelCase(s: string) {
-  return s.replace(/-[a-z]/g, (m) => m[1].toUpperCase())
+  return s.replace(/-[a-z]/g, (m) => m[1].toUpperCase());
 }
 
 function sourceLocationsEqual(a: Node, b: Node): boolean {

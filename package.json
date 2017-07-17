@@ -4,7 +4,7 @@
     "html2js": "bin/html2js.js"
   },
   "scripts": {
-    "test": "npm run build && mocha",
+    "test": "npm run build && mocha && tslint -p ./",
     "build": "tsc",
     "format": "find src test | grep '\\.js$\\|\\.ts$' | xargs clang-format --style=file -i"
   },
@@ -35,6 +35,7 @@
   "devDependencies": {
     "clang-format": "^1.0.53",
     "gulp": "^3.9.1",
+    "tslint": "^5.5.0",
     "typescript": "^2.4.1"
   }
 }

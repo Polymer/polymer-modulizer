@@ -50,7 +50,7 @@ suite('AnalysisConverter', () => {
     async function getJs(partialOptions?: Partial<AnalysisConverterOptions>) {
       const converter = await getConverter(partialOptions);
       const module = converter.modules.get('./test.js');
-      return module && '\n' + module.source
+      return module && '\n' + module.source;
     }
 
     function setSources(sources: {[filename: string]: string}) {

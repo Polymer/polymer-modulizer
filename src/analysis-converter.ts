@@ -146,7 +146,7 @@ export class AnalysisConverter {
                   isNotTest(d) && d.url;
             });
 
-    const results = new Map<string, string>()
+    const results = new Map<string, string>();
 
         for (const document of htmlDocuments) {
       try {

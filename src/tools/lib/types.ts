@@ -115,11 +115,11 @@ class TypeApi {
       this.types.set(name, def);
     }
     return def;
-  };
+  }
 
   or(..._defs: TypeDef[]) {
     return new Or(_defs);
-  };
-};
+  }
+}
 
 export const Type = new TypeApi();
