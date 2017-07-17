@@ -35,8 +35,9 @@ export class FSUrlOverrideLoader extends FSUrlLoader {
   }
 
   load(url: string): Promise<string> {
-    if (this.overrideMap.has(url)) {
-      return Promise.resolve(this.overrideMap.get(url));
+    const overriddenValue = this.overrideMap.get(url);
+    if (overriddenValue) {
+      return Promise.resolve(overriddenValue);
     } else {
       return super.load(url);
     }
