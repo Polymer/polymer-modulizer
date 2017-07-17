@@ -14,9 +14,9 @@
 
 import * as fs from 'mz/fs';
 import * as path from 'path';
-import { Analyzer, PackageUrlResolver } from "polymer-analyzer/lib";
-import {FSUrlOverrideLoader} from './fs-url-loader-overrides';
-import { AnalysisConverterOptions, AnalysisConverter } from "./analysis-converter";
+import {Analyzer, FSUrlLoader, InMemoryOverlayUrlLoader, PackageUrlResolver} from 'polymer-analyzer';
+
+import {AnalysisConverter, AnalysisConverterOptions} from './analysis-converter';
 
 const mkdirp = require('mkdirp');
 
@@ -68,19 +68,20 @@ export async function convertPackage(options: ConvertPackageOptions = {}) {
     }
   }
 
-  // TODO(fks) 07-06-2015: Convert this to a configurable option
-  const overrideMap = new Map();
+  const urlLoader = new InMemoryOverlayUrlLoader(new FSUrlLoader(process.cwd()));
 
+
+  // TODO(fks) 07-06-2015: Convert this to a configurable option
   // 'lib/utils/boot.html' - This is a special file that overwrites exports
   // and does other things that make less sense in an ESM world.
   const bootOverrideHtml = `<script>
   window.JSCompiler_renameProperty = function(prop, obj) { return prop; }
 </script>`;
-  overrideMap.set('lib/utils/boot.html', bootOverrideHtml);
-  overrideMap.set('bower_components/polymer/lib/utils/boot.html', bootOverrideHtml);
+  urlLoader.urlContentsMap.set('lib/utils/boot.html', bootOverrideHtml);
+  urlLoader.urlContentsMap.set('bower_components/polymer/lib/utils/boot.html', bootOverrideHtml);
 
   const analyzer = new Analyzer({
-    urlLoader: new FSUrlOverrideLoader(overrideMap, process.cwd()),
+    urlLoader,
     urlResolver: new PackageUrlResolver(),
   });
   const analysis = await analyzer.analyzePackage();
