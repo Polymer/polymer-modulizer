@@ -42,14 +42,14 @@ type ConvertPackageOptions = AnalysisConverterOptions & {
   /**
    * The directory to write converted JavaScript files to.
    */
-  outDir?: string;
+  readonly outDir?: string;
 
   /**
    * The npm package name to use in package.json
    */
-  packageName?: string;
+  readonly packageName?: string;
 
-  npmVersion?: string;
+  readonly npmVersion?: string;
 };
 
 /**

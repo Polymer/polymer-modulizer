@@ -19,7 +19,7 @@ import { FSUrlLoader } from "polymer-analyzer/lib";
  * values to check first before falling back to the file system.
  */
 export class FSUrlOverrideLoader extends FSUrlLoader {
-  overrideMap: Map<string, string>;
+  private readonly overrideMap: ReadonlyMap<string, string>;
 
   constructor(overrideMap: Map<string, string>, root?: string) {
     super(root);

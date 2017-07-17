@@ -71,14 +71,19 @@ function getImportDeclarations(specifierUrl: string, namedExports?: Set<string>)
  */
 export class DocumentConverter {
 
-  jsUrl: string;
-  module: JsModule;
-  analysisConverter: AnalysisConverter;
-  document: Document;
-  scriptDocument: Document;
-  program: Program;
-  currentStatementIndex = 0;
-  _mutableExports: {[namespaceName: string]: string[]};
+  readonly jsUrl: string;
+  readonly module: JsModule;
+  readonly analysisConverter: AnalysisConverter;
+  readonly document: Document;
+  readonly scriptDocument: Document;
+  readonly program: Program;
+  /**
+   * The next statement to convert.
+   *
+   * An index into the toplevel statements array of the program.
+   */
+  private currentStatementIndex = 0;
+  private readonly _mutableExports: {[namespaceName: string]: string[]};
 
   constructor(analysisConverter: AnalysisConverter, document: Document) {
     this.analysisConverter = analysisConverter;
