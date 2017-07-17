@@ -13,18 +13,19 @@
  */
 
 
-import {Document, Analysis} from 'polymer-analyzer';
 import {Expression} from 'estree';
+import {Analysis, Document} from 'polymer-analyzer';
 
-import { DocumentConverter } from "./document-converter";
-import { htmlUrlToJs } from "./url-converter";
+import {DocumentConverter} from './document-converter';
+import {htmlUrlToJs} from './url-converter';
 
 const _isInTestRegex = /(\b|\/|\\)(test)(\/|\\)/;
 const isNotTest = (d: Document) => !_isInTestRegex.test(d.url);
 
 const _isInBowerRegex = /(\b|\/|\\)(bower_components)(\/|\\)/;
 const _isInNpmRegex = /(\b|\/|\\)(node_modules)(\/|\\)/;
-const isNotExternal = (d: Document) => !_isInBowerRegex.test(d.url) && !_isInNpmRegex.test(d.url);
+const isNotExternal = (d: Document) =>
+    !_isInBowerRegex.test(d.url) && !_isInNpmRegex.test(d.url);
 
 export interface JsExport {
   /**
@@ -83,7 +84,6 @@ export interface ModuleIndex {
 
 
 export interface AnalysisConverterOptions {
-
   /**
    * The root namespace name that is used to detect exports.
    */
@@ -119,7 +119,6 @@ export interface AnalysisConverterOptions {
  * Converts an entire Analysis object.
  */
 export class AnalysisConverter {
-
   private readonly _analysis: Analysis;
   readonly rootModuleName: string|undefined;
   // These three properties are 'protected' in that they're accessable from
@@ -140,15 +139,16 @@ export class AnalysisConverter {
   }
 
   async convert(): Promise<Map<string, string>> {
-
-    const htmlDocuments = Array.from(this._analysis.getFeatures({kind: 'html-document'}))
-      .filter((d) => {
-        return !this._excludes.has(d.url) && isNotExternal(d) && isNotTest(d) && d.url;
-      });
+    const htmlDocuments =
+        Array.from(this._analysis.getFeatures({kind: 'html-document'}))
+            .filter((d) => {
+              return !this._excludes.has(d.url) && isNotExternal(d) &&
+                  isNotTest(d) && d.url;
+            });
 
     const results = new Map<string, string>()
 
-    for (const document of htmlDocuments) {
+        for (const document of htmlDocuments) {
       try {
         this.convertDocument(document);
         const jsUrl = htmlUrlToJs(document.url);
@@ -180,7 +180,7 @@ export class AnalysisConverter {
  * Returns an array of identifiers if an expression is a chain of property
  * access, as used in namespace-style exports.
  */
-export function getMemberPath(expression: Expression): string[] | undefined {
+export function getMemberPath(expression: Expression): string[]|undefined {
   if (expression.type !== 'MemberExpression' ||
       expression.property.type !== 'Identifier') {
     return;

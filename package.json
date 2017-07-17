@@ -5,7 +5,8 @@
   },
   "scripts": {
     "test": "npm run build && mocha",
-    "build": "tsc"
+    "build": "tsc",
+    "format": "find src test | grep '\\.js$\\|\\.ts$' | xargs clang-format --style=file -i"
   },
   "engines": {
     "node": ">=7.6.0"
@@ -32,6 +33,7 @@
     "source-map-support": "^0.4.15"
   },
   "devDependencies": {
+    "clang-format": "^1.0.53",
     "gulp": "^3.9.1",
     "typescript": "^2.4.1"
   }

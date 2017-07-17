@@ -12,13 +12,13 @@
  * http://polymer.github.io/PATENTS.txt
  */
 
+import {assert} from 'chai';
 import * as esprima from 'esprima';
 import * as estree from 'estree';
 import * as path from 'path';
+import {Analyzer, Document, FSUrlLoader, InMemoryOverlayUrlLoader, PackageUrlResolver, UrlLoader, UrlResolver} from 'polymer-analyzer';
 
-import {Analyzer, FSUrlLoader, InMemoryOverlayUrlLoader, Document, UrlLoader, UrlResolver, PackageUrlResolver} from 'polymer-analyzer';
 import {AnalysisConverter, AnalysisConverterOptions, getMemberPath} from '../analysis-converter';
-import {assert} from 'chai';
 
 suite('AnalysisConverter', () => {
 
@@ -29,15 +29,16 @@ suite('AnalysisConverter', () => {
 
     setup(() => {
       urlLoader = new InMemoryOverlayUrlLoader();
-      analyzer = new Analyzer({
-        urlLoader: urlLoader
-      });
+      analyzer = new Analyzer({urlLoader: urlLoader});
     });
 
-    async function getConverter(partialOptions?: Partial<AnalysisConverterOptions>) {
-      const options: AnalysisConverterOptions = Object.assign({
-        rootModuleName: 'Polymer',
-      }, partialOptions);
+    async function getConverter(
+        partialOptions?: Partial<AnalysisConverterOptions>) {
+      const options: AnalysisConverterOptions = Object.assign(
+          {
+            rootModuleName: 'Polymer',
+          },
+          partialOptions);
       const analysis = await analyzer.analyze(['test.html']);
       const testDoc = analysis.getDocument('test.html') as Document;
       const converter = new AnalysisConverter(analysis, options);
@@ -198,17 +199,19 @@ Po();
         `,
       });
       const converter = await getConverter();
-      assert.deepEqual(converter.modules.get('./test.js')!.source,
-`import './polymer.js';
+      assert.deepEqual(
+          converter.modules.get('./test.js')!.source, `import './polymer.js';
 import { Polymer as $Polymer } from './lib/legacy/polymer-fn.js';
 console.log($Polymer());
 console.log($Polymer());
 `);
-      assert.deepEqual(converter.modules.get('./polymer.js')!.source,
-`import './lib/legacy/polymer-fn.js';
+      assert.deepEqual(
+          converter.modules.get('./polymer.js')!.source,
+          `import './lib/legacy/polymer-fn.js';
 `);
-      assert.deepEqual(converter.modules.get('./lib/legacy/polymer-fn.js')!.source,
-`export const Polymer = function(info) {
+      assert.deepEqual(
+          converter.modules.get('./lib/legacy/polymer-fn.js')!.source,
+          `export const Polymer = function(info) {
   console.log("hey there, i\'m the polymer function!");
 };
 `);
@@ -248,8 +251,7 @@ export const Foo = 'Bar';
             })();
           </script>`
       });
-      assert.deepEqual(await getJs(),
-`
+      assert.deepEqual(await getJs(), `
 export { ArraySelectorMixin };
 `);
     });
@@ -306,7 +308,7 @@ export const LegacyElementMixin = Polymer.dedupingMixin();
             })();
           </script>`,
       });
-      assert.deepEqual(await getJs(),`
+      assert.deepEqual(await getJs(), `
 /**
  * @memberof Polymer.Namespace
  */
@@ -403,9 +405,11 @@ export function arrowFn() {
     });
 
 
-    test('exports a namespace object and fixes local references to its properties', async () => {
-      setSources({
-        'test.html': `
+    test(
+        'exports a namespace object and fixes local references to its properties',
+        async () => {
+          setSources({
+            'test.html': `
           <script>
             (function() {
               'use strict';
@@ -423,8 +427,8 @@ export function arrowFn() {
               };
             })();
           </script>`,
-      });
-      assert.deepEqual(await getJs(), `
+          });
+          assert.deepEqual(await getJs(), `
 export function meth() {}
 
 export function polymerReferenceFn() {
@@ -435,7 +439,7 @@ export function thisReferenceFn() {
   return meth();
 }
 `);
-    });
+        });
 
     test('exports a mutable reference if set via mutableExports', async () => {
       setSources({
@@ -456,9 +460,10 @@ export function thisReferenceFn() {
             })();
           </script>`,
       });
-      assert.deepEqual(await getJs({
-        mutableExports: {'Polymer.Namespace': ['mutableLiteral']}
-      }), `
+      assert.deepEqual(
+          await getJs(
+              {mutableExports: {'Polymer.Namespace': ['mutableLiteral']}}),
+          `
 export const immutableLiteral = 42;
 export let mutableLiteral = 0;
 
@@ -502,9 +507,11 @@ export const subFn = function() {
 `);
     });
 
-    test.skip('exports a namespace function and fixes references to its properties', async () => {
-      setSources({
-        'test.html': `
+    test.skip(
+        'exports a namespace function and fixes references to its properties',
+        async () => {
+          setSources({
+            'test.html': `
           <script>
             (function() {
               'use strict';
@@ -529,8 +536,8 @@ export const subFn = function() {
               };
             })();
           </script>`,
-      });
-      assert.deepEqual(await getJs(), `
+          });
+          assert.deepEqual(await getJs(), `
 export const dom = function () {
     return 'Polymer.dom result';
 };
@@ -541,7 +548,7 @@ export const subFnDelegate = function () {
     return 'Polymer.dom.subFnDelegate delegates: ' + dom() + subFn();
 };
 `);
-    });
+        });
 
     test('exports a referenced namespace', async () => {
       setSources({

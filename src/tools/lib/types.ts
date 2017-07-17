@@ -40,7 +40,6 @@ export class Def {
     this._build = fields;
     return this;
   }
-
 }
 
 export class Or {
@@ -57,8 +56,8 @@ export interface Field {
   default?: any;
 }
 
-type TypeDefSingle = Def | Or | string | StringConstructor | NumberConstructor
-    | BooleanConstructor | RegExpConstructor | null;
+type TypeDefSingle = Def|Or|string|StringConstructor|NumberConstructor|
+    BooleanConstructor|RegExpConstructor|null;
 export type TypeDef = TypeDefSingle | TypeDefSingle[];
 
 export function typeString(type: TypeDef) {
@@ -105,7 +104,6 @@ export function nullable(type: TypeDef): boolean {
 }
 
 class TypeApi {
-
   types = new Map<string, Def>();
 
   // Arrow function to support tear-offs
