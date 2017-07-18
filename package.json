@@ -4,8 +4,9 @@
     "html2js": "bin/html2js.js"
   },
   "scripts": {
-    "test": "npm run build && mocha && tslint -p ./",
+    "test": "npm run build && mocha && npm run lint",
     "build": "tsc",
+    "lint": "tslint -p ./",
     "format": "find src test | grep '\\.js$\\|\\.ts$' | xargs clang-format --style=file -i"
   },
   "engines": {
