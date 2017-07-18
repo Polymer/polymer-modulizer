@@ -834,7 +834,8 @@ class MyElement extends $Element {}
       });
       const converted = await converter.convert();
       const js = converted.get('./test.js');
-      assert.deepEqual(js, `let rootPath;
+      assert.deepEqual('\n' + js, `
+let rootPath;
 export { rootPath };
 export const setRootPath = function(path) {
   rootPath = path;
@@ -937,9 +938,9 @@ Polymer({
         rootModuleName: 'Polymer',
       });
       const converted = await converter.convert();
-      const caseMapSource = converted.get('./case-map/case-map.js');
-      assert.include(caseMapSource!, 'export function dashToCamelCase');
-      assert.include(caseMapSource!, 'export function camelToDashCase');
+      const caseMapSource = converted.get('./case-map/case-map.js')!;
+      assert.include(caseMapSource, 'export function dashToCamelCase');
+      assert.include(caseMapSource, 'export function camelToDashCase');
     });
 
     test('polymer-element', async () => {
