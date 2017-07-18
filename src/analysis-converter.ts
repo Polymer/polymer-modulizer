@@ -148,7 +148,7 @@ export class AnalysisConverter {
 
     const results = new Map<string, string>();
 
-        for (const document of htmlDocuments) {
+    for (const document of htmlDocuments) {
       try {
         this.convertDocument(document);
         const jsUrl = htmlUrlToJs(document.url);
