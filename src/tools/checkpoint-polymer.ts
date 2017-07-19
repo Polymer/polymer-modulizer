@@ -49,9 +49,9 @@ const convertedDir = path.join(fixturesDirPath, 'expected');
   await convertPackage({
     inDir: sourceDir,
     outDir: convertedDir,
-    clearOutDir: true,
-    packageName: '@polymer/polymer',
-    packageVersion: '3.0.0',
+      clearOutDir: true,
+      packageName: '@polymer/polymer',
+      packageVersion: '3.0.0',
   });
   console.log(`Done.`);
 
