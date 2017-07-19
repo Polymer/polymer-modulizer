@@ -420,7 +420,7 @@ export class DocumentConverter {
   private convertDependencies() {
     const htmlImports = this.getHtmlImports();
     for (const htmlImport of htmlImports) {
-      const jsUrl = htmlUrlToJs(htmlImport.url, this.document.url);
+      const jsUrl = htmlUrlToJs(htmlImport.url);
       if (this.analysisConverter.modules.has(jsUrl)) {
         continue;
       }
@@ -443,7 +443,11 @@ export class DocumentConverter {
      * Add the given JsExport to the current module's `importedReferences` map.
      */
     const addToImportedReferences = (moduleExport: JsExport) => {
-      const moduleJsUrl = htmlUrlToJs(moduleExport.url, this.document.url);
+      const baseJsUrl = htmlUrlToJs(this.document.url);
+      let moduleJsUrl = path.posix.relative(path.posix.dirname(baseJsUrl), moduleExport.url);
+      if (!moduleJsUrl.startsWith('.') && !moduleJsUrl.startsWith('/')) {
+        moduleJsUrl = './' + moduleJsUrl;
+      }
       let moduleImportedNames = importedReferences.get(moduleJsUrl);
       if (moduleImportedNames === undefined) {
         moduleImportedNames = new Set<string>();

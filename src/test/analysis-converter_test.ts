@@ -89,6 +89,27 @@ import '../dep.js';
       });
     });
 
+    test('converts bower_components/ imports to known npm package names', async () => {
+      setSources({
+        'test.html': `
+          <link rel="import" href="../app-route/app-route.html">
+          <link rel="import" href="./bower_components/app-storage/app-storage.html">
+          <link rel="import" href="/bower_components/app-layout/app-layout.html">
+          <script></script>
+        `,
+        'bower_components/app-route/app-route.html': `<h1>Hi</h1>`,
+        'bower_components/app-storage/app-storage.html': `<h1>Hi</h1>`,
+        'bower_components/app-layout/app-layout.html': `<h1>Hi</h1>`,
+      });
+      assertSources(await convert(), {
+        './test.js': `
+import '../@polymer/app-route/app-route.js';
+import '../@polymer/app-storage/app-storage.js';
+import '../@polymer/app-layout/app-layout.js';
+`
+      });
+    });
+
     test('converts imports to .js without scripts', async () => {
       setSources({
         'test.html': `

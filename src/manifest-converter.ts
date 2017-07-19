@@ -11,7 +11,7 @@ interface DependencyMap {
   [bower: string]: DependencyMapEntry;
 }
 
-const dependencyMap: DependencyMap = readJson(__dirname, '../dependency-map.json');
+export const dependencyMap: DependencyMap = readJson(__dirname, '../dependency-map.json');
 
 /**
  * helper function to read and parse JSON.
