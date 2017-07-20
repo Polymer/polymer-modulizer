@@ -40,7 +40,7 @@ suite('AnalysisConverter', () => {
         partialOptions?: Partial<AnalysisConverterOptions>) {
       const options: AnalysisConverterOptions = Object.assign(
           {
-            rootModuleName: 'Polymer',
+            rootModuleNames: ['Polymer'],
           },
           partialOptions);
       const analysis = await analyzer.analyze(['test.html']);
@@ -66,7 +66,7 @@ suite('AnalysisConverter', () => {
     async function getConverted(): Promise<Map<string, string>> {
       const analysis = await analyzer.analyze(['test.html']);
       const converter = new AnalysisConverter(analysis, {
-        rootModuleName: 'Polymer',
+        rootModuleNames: ['Polymer'],
       });
       return converter.convert();
     }
@@ -764,7 +764,7 @@ export const isDeep = isPath;
       });
       const analysis = await analyzer.analyze(['test.html']);
       const converter = new AnalysisConverter(analysis, {
-        rootModuleName: 'Polymer',
+        rootModuleNames: ['Polymer'],
         excludes: ['exclude.html'],
       });
       const converted = await converter.convert();
@@ -785,7 +785,7 @@ class MyElement extends $Element {}
       });
       const analysis = await analyzer.analyze(['test.html']);
       const converter = new AnalysisConverter(analysis, {
-        rootModuleName: 'Polymer',
+        rootModuleNames: ['Polymer'],
         referenceExcludes: ['Polymer.DomModule'],
       });
       const converted = await converter.convert();
@@ -803,7 +803,7 @@ class MyElement extends $Element {}
       });
       const analysis = await analyzer.analyze(['test.html']);
       const converter = new AnalysisConverter(analysis, {
-        rootModuleName: 'Polymer',
+        rootModuleNames: ['Polymer'],
         referenceExcludes: ['Polymer.Settings'],
       });
       const converted = await converter.convert();
@@ -833,7 +833,7 @@ class MyElement extends $Element {}
       });
       const analysis = await analyzer.analyze(['test.html']);
       const converter = new AnalysisConverter(analysis, {
-        rootModuleName: 'Polymer',
+        rootModuleNames: ['Polymer'],
         referenceExcludes: ['Polymer.rootPath'],
       });
       const converted = await converter.convert();
