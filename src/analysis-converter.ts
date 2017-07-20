@@ -132,7 +132,13 @@ export class AnalysisConverter {
 
   constructor(analysis: Analysis, options: AnalysisConverterOptions = {}) {
     this._analysis = analysis;
-    this.rootNamespaces = new Set(options.rootNamespaces || []);
+    const declaredNamespaces = [
+      ...analysis.getFeatures(
+          {kind: 'namespace', externalPackages: true, imported: true})
+    ].map((n) => n.name);
+    this.rootNamespaces =
+        new Set([...declaredNamespaces, ...(options.rootNamespaces || [])].map(
+            getRootNamespace));
     this._excludes = new Set(options.excludes);
     this._referenceExcludes = new Set(options.referenceExcludes);
     this._mutableExports = options.mutableExports;
@@ -202,4 +208,8 @@ export function getMemberPath(expression: Expression): string[]|undefined {
     }
   }
   return undefined;
+}
+
+function getRootNamespace(namespaceName: string): string {
+  return namespaceName.split('.')[0];
 }

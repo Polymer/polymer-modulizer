@@ -948,6 +948,36 @@ export const bar = 10;
 export { $qux as zug };
 `);
     });
+
+    test('converts declared namespaces', async () => {
+      setSources({
+        'test.html': `
+          <link rel="import" href="./polymer.html">
+          <script>
+            class Element extends Polymer.Element {};
+          </script>
+        `,
+        'polymer.html': `
+          <script>
+            /** @namespace */
+            const Polymer = {};
+            Polymer.Element = class Element {}
+          </script>
+        `
+      });
+      assert.deepEqual(
+          await getJs({rootNamespaces: [/* No explicit namespaces! */]}), `
+import { Element as $Element } from './polymer.js';
+class Element extends $Element {}
+`);
+      const converter = await getConverter();
+      const polymerModule = converter.modules.get('./polymer.js');
+      assert.deepEqual(polymerModule && '\n' + polymerModule.source, `
+/** @namespace */
+const Polymer = {};
+export const Element = class Element {};
+`);
+    });
   });
 
   suite('fixtures', () => {
