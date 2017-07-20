@@ -39,7 +39,7 @@ suite('AnalysisConverter', () => {
     async function getConverter(
         partialOptions?: Partial<AnalysisConverterOptions>) {
       const options =
-          Object.assign({rootModuleNames: ['Polymer']}, partialOptions);
+          Object.assign({rootNamespaces: ['Polymer']}, partialOptions);
       const analysis = await analyzer.analyze(['test.html']);
       const testDoc = analysis.getDocument('test.html') as Document;
       const converter = new AnalysisConverter(analysis, options);
@@ -63,7 +63,7 @@ suite('AnalysisConverter', () => {
     async function getConverted(): Promise<Map<string, string>> {
       const analysis = await analyzer.analyze(['test.html']);
       const converter = new AnalysisConverter(analysis, {
-        rootModuleNames: ['Polymer'],
+        rootNamespaces: ['Polymer'],
       });
       return converter.convert();
     }
@@ -761,7 +761,7 @@ export const isDeep = isPath;
       });
       const analysis = await analyzer.analyze(['test.html']);
       const converter = new AnalysisConverter(analysis, {
-        rootModuleNames: ['Polymer'],
+        rootNamespaces: ['Polymer'],
         excludes: ['exclude.html'],
       });
       const converted = await converter.convert();
@@ -782,7 +782,7 @@ class MyElement extends $Element {}
       });
       const analysis = await analyzer.analyze(['test.html']);
       const converter = new AnalysisConverter(analysis, {
-        rootModuleNames: ['Polymer'],
+        rootNamespaces: ['Polymer'],
         referenceExcludes: ['Polymer.DomModule'],
       });
       const converted = await converter.convert();
@@ -800,7 +800,7 @@ class MyElement extends $Element {}
       });
       const analysis = await analyzer.analyze(['test.html']);
       const converter = new AnalysisConverter(analysis, {
-        rootModuleNames: ['Polymer'],
+        rootNamespaces: ['Polymer'],
         referenceExcludes: ['Polymer.Settings'],
       });
       const converted = await converter.convert();
@@ -830,7 +830,7 @@ class MyElement extends $Element {}
       });
       const analysis = await analyzer.analyze(['test.html']);
       const converter = new AnalysisConverter(analysis, {
-        rootModuleNames: ['Polymer'],
+        rootNamespaces: ['Polymer'],
         referenceExcludes: ['Polymer.rootPath'],
       });
       const converted = await converter.convert();
@@ -942,7 +942,7 @@ document.appendChild($_documentContainer);
         `,
         'qux.html': `<script>Foo.qux = 'lol';</script>`
       });
-      assert.deepEqual(await getJs({rootModuleNames: ['Foo', 'Baz']}), `
+      assert.deepEqual(await getJs({rootNamespaces: ['Foo', 'Baz']}), `
 import { qux as $qux } from './qux.js';
 export const bar = 10;
 export { $qux as zug };

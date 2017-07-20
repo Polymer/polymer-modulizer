@@ -244,7 +244,7 @@ export class DocumentConverter {
       const statement =
           this.program.body[this.currentStatementIndex] as Statement;
       const exported =
-          getExport(statement, this.analysisConverter.rootModuleNames);
+          getExport(statement, this.analysisConverter.rootNamespaces);
 
       if (exported !== undefined) {
         const {namespace, value} = exported;
@@ -425,7 +425,7 @@ export class DocumentConverter {
    */
   rewriteNamespacedReferences() {
     const analysisConverter = this.analysisConverter;
-    const rootModuleNames = analysisConverter.rootModuleNames;
+    const rootNamespaces = analysisConverter.rootNamespaces;
     const module = analysisConverter.modules.get(this.jsUrl)!;
     const importedReferences = module.importedReferences;
     const baseUrl = this.document.url;
@@ -446,7 +446,7 @@ export class DocumentConverter {
     astTypes.visit(this.program, {
       visitIdentifier(path: AstPath<Identifier>) {
         const memberName = path.node.name;
-        const isRootModuleIdentifier = rootModuleNames.has(memberName);
+        const isRootModuleIdentifier = rootNamespaces.has(memberName);
         if (!isRootModuleIdentifier ||
             (path.parent && getMemberPath(path.parent.node))) {
           return false;
@@ -776,7 +776,7 @@ function isDeclaration(node: Node) {
  */
 function getExport(
     statement: Statement|ModuleDeclaration,
-    rootModuleNames: ReadonlySet<string>):
+    rootNamespaces: ReadonlySet<string>):
     {namespace: string[], value: Expression}|undefined {
   if (!(statement.type === 'ExpressionStatement' &&
         statement.expression.type === 'AssignmentExpression')) {
@@ -789,7 +789,7 @@ function getExport(
 
   const namespace = getMemberPath(assignment.left);
 
-  if (namespace !== undefined && rootModuleNames.has(namespace[0])) {
+  if (namespace !== undefined && rootNamespaces.has(namespace[0])) {
     return {
       namespace,
       value: assignment.right,

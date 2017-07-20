@@ -32,16 +32,16 @@ const optionDefinitions: commandLineArgs.OptionDefinition[] = [
   },
   {name: 'in', type: String, description: 'The directory to convert.'},
   {
-    name: 'root-module',
+    name: 'root-namespace',
     type: String,
-    description: 'Root namespace name to use to detect exports.',
+    description: 'Root namespace name(s) to use to detect exports.',
     multiple: true
   },
   {
     name: 'exclude',
     type: String,
     multiple: true,
-    description: 'Exclude a file from conversion.'
+    description: 'Exclude file(s) from conversion.'
   },
   {
     name: 'npm-name',
@@ -64,7 +64,7 @@ interface Options {
   help?: boolean;
   out: string;
   in ?: string;
-  'root-module'?: string[];
+  'root-namespace'?: string[];
   exclude: string[];
   'npm-name': string;
   'npm-version': string;
@@ -143,7 +143,7 @@ export async function run() {
     inDir: options.in,
     outDir: options.out,
     excludes: options.exclude,
-    rootModuleNames: options['root-module'],
+    rootNamespaces: options['root-namespace'],
     packageName: npmPackageName,
     packageVersion: npmPackageVersion,
     clearOutDir: options.clear,
