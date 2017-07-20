@@ -38,11 +38,8 @@ suite('AnalysisConverter', () => {
 
     async function getConverter(
         partialOptions?: Partial<AnalysisConverterOptions>) {
-      const options: AnalysisConverterOptions = Object.assign(
-          {
-            rootModuleNames: ['Polymer'],
-          },
-          partialOptions);
+      const options =
+          Object.assign({rootModuleNames: ['Polymer']}, partialOptions);
       const analysis = await analyzer.analyze(['test.html']);
       const testDoc = analysis.getDocument('test.html') as Document;
       const converter = new AnalysisConverter(analysis, options);
@@ -934,6 +931,23 @@ document.appendChild($_documentContainer);
 `);
     });
 
+    test('converts multiple namespaces', async () => {
+      setSources({
+        'test.html': `
+          <link rel="import" href="./qux.html">
+          <script>
+            Foo.bar = 10;
+            Baz.zug = Foo.qux;
+          </script>
+        `,
+        'qux.html': `<script>Foo.qux = 'lol';</script>`
+      });
+      assert.deepEqual(await getJs({rootModuleNames: ['Foo', 'Baz']}), `
+import { qux as $qux } from './qux.js';
+export const bar = 10;
+export { $qux as zug };
+`);
+    });
   });
 
   suite('fixtures', () => {
