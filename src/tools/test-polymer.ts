@@ -67,15 +67,15 @@ function rework(line: string) {
   const analyzer = configureAnalyzer(options);
   const analysis = await analyzer.analyzePackage();
   const converter = configureConverter(analysis, options);
-  const resultsUnsorted = await converter.convert();
-  const resultPaths = resultsUnsorted.keys();
+  const results = await converter.convert();
+  const resultPaths = results.keys();
   const expectedPaths = [
     ...walkDir(expectedDir)
   ].map((f) => `./${f}`).filter((f) => f !== './package.json');
-  const unsortedFilenames = new Set([...resultPaths, ...expectedPaths]);
-  const filenames = [...unsortedFilenames].sort((a, b) => a.localeCompare(b));
-  for (const jsPath of filenames) {
-    const jsContents = resultsUnsorted.get(jsPath);
+  const allPathsUnsorted = new Set([...resultPaths, ...expectedPaths]);
+  const allPaths = [...allPathsUnsorted].sort((a, b) => a.localeCompare(b));
+  for (const jsPath of allPaths) {
+    const jsContents = results.get(jsPath);
     if (jsContents === undefined) {
       exitCode = 1;
       console.log(chalk.bold.red(`✕ ${jsPath} (missing file)`));

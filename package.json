@@ -17,7 +17,7 @@
     "lint": "tslint -p ./",
     "format": "find src test | grep '\\.js$\\|\\.ts$' | xargs clang-format --style=file -i",
     "polymer:test": "node lib/tools/test-polymer",
-    "polymer:checkpoint": "mkdir -p fixtures/generated/polymer && node lib/tools/checkpoint-polymer",
+    "polymer:checkpoint": "node lib/tools/checkpoint-polymer",
     "clean": "rm -rf ./lib/ && rm -rf ./fixtures/generated/*",
     "quicktest": "npm run build && mocha",
     "test:watch": "watchy -w src/ -- npm run quicktest --loglevel=silent",
