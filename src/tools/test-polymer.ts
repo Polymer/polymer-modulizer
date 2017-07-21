@@ -68,17 +68,31 @@ function rework(line: string) {
   const analysis = await analyzer.analyzePackage();
   const converter = configureConverter(analysis, options);
   const resultsUnsorted = await converter.convert();
-  const results = [...resultsUnsorted.entries()].sort((a, b) => {
-    const aPath = a[0];
-    const bPath = b[0];
-    return aPath.localeCompare(bPath);
-  });
-  for (const [jsPath, jsContents] of results) {
+  const resultPaths = resultsUnsorted.keys();
+  const expectedPaths = [
+    ...walkDir(expectedDir)
+  ].map((f) => `./${f}`).filter((f) => f !== './package.json');
+  const unsortedFilenames = new Set([...resultPaths, ...expectedPaths]);
+  const filenames = [...unsortedFilenames].sort((a, b) => a.localeCompare(b));
+  for (const jsPath of filenames) {
+    const jsContents = resultsUnsorted.get(jsPath);
+    if (jsContents === undefined) {
+      exitCode = 1;
+      console.log(chalk.bold.red(`✕ ${jsPath} (missing file)`));
+      continue;
+    }
     const expectedJsPath = path.resolve(expectedDir, jsPath);
-    const expectedJsContents = fs.readFileSync(expectedJsPath, 'utf8');
+    let expectedJsContents;
+    try {
+      expectedJsContents = fs.readFileSync(expectedJsPath, 'utf8');
+    } catch (e) {
+      exitCode = 1;
+      console.log(chalk.bold.red(`✕ ${jsPath} (unexpected file)`));
+      continue;
+    }
 
     const patch = diff.createPatch(
-        'string', jsContents, expectedJsContents, 'converted', 'expected');
+        'string', expectedJsContents, jsContents, 'expected', 'converted');
     const lines = patch.split('\n').slice(4).map(rework).filter(Boolean);
     if (lines.length === 0) {
       console.log(chalk.dim('✓ ' + jsPath));
@@ -94,3 +108,14 @@ function rework(line: string) {
 
   process.exit(exitCode);
 })();
+
+function* walkDir(dir: string, base = dir): Iterable<string> {
+  for (const fn of fs.readdirSync(dir)) {
+    const fullPath = path.join(dir, fn);
+    if (fs.statSync(fullPath).isDirectory()) {
+      yield* walkDir(fullPath, base);
+    } else {
+      yield path.relative(base, fullPath);
+    }
+  }
+}
