@@ -179,7 +179,7 @@ export class AnalysisConverter {
           results.set(jsUrl, newSource);
         }
       } catch (e) {
-        console.error(`Error in ${document.url}`, e && e.stack || e);
+        console.error(`Error in ${document.url}`, e);
       }
     }
 
@@ -187,7 +187,7 @@ export class AnalysisConverter {
       try {
         results.set('./' + document.url, this.convertJustHtmlImports(document));
       } catch (e) {
-        console.error(`Error in ${document.url}`, e && e.stack || e);
+        console.error(`Error in ${document.url}`, e);
       }
     }
 
