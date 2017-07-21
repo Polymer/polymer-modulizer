@@ -73,7 +73,7 @@ export function configureAnalyzer(options: ConvertPackageOptions) {
 export function configureConverter(
     analysis: Analysis, options: ConvertPackageOptions) {
   return new AnalysisConverter(analysis, {
-    rootNamespaces: options.rootNamespaces || ['Polymer'],
+    rootNamespaces: options.rootNamespaces,
     excludes: options.excludes ||
         [
           'lib/elements/dom-module.html',
