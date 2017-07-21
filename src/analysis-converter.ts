@@ -147,11 +147,11 @@ export class AnalysisConverter {
     this._mutableExports = options.mutableExports;
     const importedFiles = [...this._analysis.getFeatures(
                                {kind: 'import', externalPackages: false})]
-                              .map((i) => i.url)
+                              .map((imp) => imp.url)
                               .filter(
-                                  (i) =>
-                                      !(i.startsWith('bower_components') ||
-                                        i.startsWith('node_modules')));
+                                  (url) =>
+                                      !(url.startsWith('bower_components') ||
+                                        url.startsWith('node_modules')));
     this._includes = new Set([...importedFiles, ...options.mainFiles || []]);
   }
 
