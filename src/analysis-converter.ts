@@ -12,17 +12,15 @@
  * http://polymer.github.io/PATENTS.txt
  */
 
-import * as dom5 from 'dom5';
-import {Expression} from 'estree';
-import * as parse5 from 'parse5';
+import * as estree from 'estree';
 import {Analysis, Document} from 'polymer-analyzer';
 
 import {DocumentConverter} from './document-converter';
 import {JsExport, JsModule} from './js-module';
 import {htmlUrlToJs} from './url-converter';
 
-const _isInTestRegex = /(\b|\/|\\)(test)(\/|\\)/;
-const isNotTest = (d: Document) => !_isInTestRegex.test(d.url);
+
+import jsc = require('jscodeshift');
 
 const _isInBowerRegex = /(\b|\/|\\)(bower_components)(\/|\\)/;
 const _isInNpmRegex = /(\b|\/|\\)(node_modules)(\/|\\)/;
@@ -82,6 +80,10 @@ export class AnalysisConverter {
   readonly modules = new Map<string, JsModule>();
   readonly namespacedExports = new Map<string, JsExport>();
 
+  readonly _referenceRewrites: ReadonlyMap<string, estree.Node>;
+
+  readonly dangerousReferences: ReadonlyMap<string, string>;
+
   constructor(analysis: Analysis, options: AnalysisConverterOptions = {}) {
     this._analysis = analysis;
     const declaredNamespaces = [
@@ -90,6 +92,20 @@ export class AnalysisConverter {
     ].map((n) => n.name);
     this.namespaces =
         new Set([...declaredNamespaces, ...(options.namespaces || [])]);
+
+    const referenceRewrites = new Map<string, estree.Node>();
+    const windowDotDocument = jsc.memberExpression(
+        jsc.identifier('window'), jsc.identifier('document'));
+    referenceRewrites.set(
+        'document.currentScript.ownerDocument', windowDotDocument);
+    this._referenceRewrites = referenceRewrites;
+
+    const dangerousReferences = new Map<string, string>();
+    dangerousReferences.set(
+        'document.currentScript',
+        `document.currentScript is always \`null\` in an ES6 module.`);
+    this.dangerousReferences = dangerousReferences;
+
     this._excludes = new Set(options.excludes!);
     this._referenceExcludes = new Set(options.referenceExcludes!);
     this._mutableExports = options.mutableExports;
@@ -108,31 +124,22 @@ export class AnalysisConverter {
         [...this._analysis.getFeatures({kind: 'html-document'})]
             // Excludes
             .filter((d) => {
-              return !this._excludes.has(d.url) && isNotExternal(d) &&
-                  isNotTest(d) && d.url;
+              return !this._excludes.has(d.url) && isNotExternal(d) && d.url;
             });
-    const [toConvertToModules, toKeepAsHtml] =
-        partition(htmlDocuments, (d) => this._includes.has(d.url));
 
     const results = new Map<string, string>();
 
-    for (const document of toConvertToModules) {
+    for (const document of htmlDocuments) {
       try {
-        this.convertDocument(document);
-        const jsUrl = htmlUrlToJs(document.url);
-        const module = this.modules.get(jsUrl);
-        const newSource = module && module.source;
-        if (newSource) {
-          results.set(jsUrl, newSource);
+        let convertedModule;
+        if (this._includes.has(document.url)) {
+          convertedModule = this.convertDocument(document);
+        } else {
+          convertedModule = this.convertHtmlToHtml(document);
         }
-      } catch (e) {
-        console.error(`Error in ${document.url}`, e);
-      }
-    }
-
-    for (const document of toKeepAsHtml) {
-      try {
-        results.set('./' + document.url, this.convertJustHtmlImports(document));
+        if (convertedModule) {
+          results.set(convertedModule.url, convertedModule.source);
+        }
       } catch (e) {
         console.error(`Error in ${document.url}`, e);
       }
@@ -144,88 +151,35 @@ export class AnalysisConverter {
   /**
    * Converts a Polymer Analyzer HTML document to a JS module
    */
-  convertDocument(document: Document): void {
+  convertDocument(document: Document): JsModule|undefined {
     const jsUrl = htmlUrlToJs(document.url);
-    if (this.modules.has(jsUrl)) {
-      return;
+    if (!this.modules.has(jsUrl)) {
+      this.handleNewJsModules(
+          new DocumentConverter(this, document).convertToJsModule());
     }
-    const jsModules = new DocumentConverter(this, document).convert();
+    return this.modules.get(jsUrl);
+  }
+
+  /**
+   * Converts HTML Imports and inline scripts to module scripts as necessary.
+   */
+  convertHtmlToHtml(document: Document): JsModule|undefined {
+    const htmlUrl = `./${document.url}`;
+    if (!this.modules.has(htmlUrl)) {
+      this.handleNewJsModules(new DocumentConverter(this, document)
+                                  .convertAsToplevelHtmlDocument());
+    }
+    return this.modules.get(htmlUrl);
+  }
+
+  private handleNewJsModules(jsModules: Iterable<JsModule>): void {
     for (const jsModule of jsModules) {
       this.modules.set(jsModule.url, jsModule);
       for (const expr of jsModule.exportedNamespaceMembers) {
         this.namespacedExports.set(
             expr.oldNamespacedName,
-            {name: expr.es6ExportName, url: jsModule.url});
+            new JsExport(jsModule.url, expr.es6ExportName));
       }
     }
   }
-
-  /**
-   * Converts only the HTML Imports in a document to module script tags.
-   */
-  convertJustHtmlImports(document: Document): string {
-    let source = document.parsedDocument.contents;
-    const imports = [...document.getFeatures({kind: 'html-import'})];
-    // Go bottom up, so our changes to the source don't clash
-    imports.reverse();
-    for (const imp of imports) {
-      // Only replace imports that are actually in the document.
-      if (!imp.sourceRange) {
-        continue;
-      }
-      const scriptTag =
-          parse5.treeAdapters.default.createElement('script', '', []);
-      dom5.setAttribute(scriptTag, 'type', 'module');
-      dom5.setAttribute(scriptTag, 'src', htmlUrlToJs(imp.url));
-      const container = parse5.treeAdapters.default.createDocumentFragment();
-      dom5.append(container, scriptTag);
-      const replacementText = parse5.serialize(container);
-      const [start, end] =
-          document.parsedDocument.sourceRangeToOffsets(imp.sourceRange);
-      source = source.slice(0, start) + replacementText + source.slice(end);
-    }
-    return source;
-  }
-}
-
-/**
- * Returns an array of identifiers if an expression is a chain of property
- * access, as used in namespace-style exports.
- */
-export function getMemberPath(expression: Expression): string[]|undefined {
-  if (expression.type !== 'MemberExpression' ||
-      expression.property.type !== 'Identifier') {
-    return;
-  }
-  const property = expression.property.name;
-
-  if (expression.object.type === 'ThisExpression') {
-    return ['this', property];
-  } else if (expression.object.type === 'Identifier') {
-    if (expression.object.name === 'window') {
-      return [property];
-    } else {
-      return [expression.object.name, property];
-    }
-  } else if (expression.object.type === 'MemberExpression') {
-    const prefixPath = getMemberPath(expression.object);
-    if (prefixPath !== undefined) {
-      return [...prefixPath, property];
-    }
-  }
-  return undefined;
-}
-
-function partition<V>(
-    iter: Iterable<V>, predicate: (v: V) => boolean): [V[], V[]] {
-  const yes = [];
-  const no = [];
-  for (const val of iter) {
-    if (predicate(val)) {
-      yes.push(val);
-    } else {
-      no.push(val);
-    }
-  }
-  return [yes, no];
 }
