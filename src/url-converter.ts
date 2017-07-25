@@ -13,16 +13,37 @@
  */
 
 import {posix as path} from 'path';
+import * as url from 'url';
 import {dependencyMap} from './manifest-converter';
+
+/**
+ * Update a bower package name in a url (at path index) to its matching npm
+ * package name.
+ */
+function updatePackageNameInUrl(someUrl: string, index: number): string {
+  const jsUrlPieces = someUrl.split('/');
+  const bowerPackageName = jsUrlPieces[index];
+  const mappingInfo = dependencyMap[bowerPackageName];
+  if (mappingInfo) {
+    jsUrlPieces[index] = mappingInfo.npm;
+  } else {
+    console.warn(
+        `WARN: bower->npm mapping for "${bowerPackageName}" not found`);
+  }
+  // TODO: if current package / from has a scoped package name, url needs to
+  // move an additional level up to get out of the current scoped dir.
+  // jsUrlPieces.unshift('..');
+  return jsUrlPieces.join('/');
+}
 
 /**
  * Converts an HTML Import path to a JS module path.
  */
-export function htmlUrlToJs(url: string, from?: string): string {
+export function htmlUrlToJs(htmlUrl: string, from?: string): string {
   const htmlExtension = '.html';
-  let jsUrl = url;
-  if (url.endsWith(htmlExtension)) {
-    jsUrl = url.substring(0, url.length - htmlExtension.length) + '.js';
+  let jsUrl = htmlUrl;
+  if (htmlUrl.endsWith(htmlExtension)) {
+    jsUrl = htmlUrl.substring(0, htmlUrl.length - htmlExtension.length) + '.js';
   }
 
   // We've lost the actual URL string and thus the leading ./
@@ -30,33 +51,25 @@ export function htmlUrlToJs(url: string, from?: string): string {
   if (!jsUrl.startsWith('.') && !jsUrl.startsWith('/')) {
     jsUrl = './' + jsUrl;
   }
-  // Fix any references to /bower_components/* to point to siblings instead
+
+  // Fix any references to /bower_components/* to point to node_modules instead
   if (jsUrl.startsWith('/bower_components/')) {
-    jsUrl = '../' + jsUrl.slice('/bower_components/'.length);
+    jsUrl = '/node_modules/' + jsUrl.slice('/bower_components/'.length);
+    jsUrl = updatePackageNameInUrl(jsUrl, 2);
   }
-  // Fix any references to ./bower_components/* to point to siblings instead
+  // Fix any references to ./bower_components/* to point to node_modules instead
   if (jsUrl.startsWith('./bower_components/')) {
-    jsUrl = '../' + jsUrl.slice('./bower_components/'.length);
+    jsUrl = './node_modules/' + jsUrl.slice('./bower_components/'.length);
+    jsUrl = updatePackageNameInUrl(jsUrl, 2);
   }
   // Convert bower import urls to npm import urls (package name change)
   if (jsUrl.startsWith('../')) {
-    const jsUrlPieces = jsUrl.split('/');
-    const mappingInfo = dependencyMap[jsUrlPieces[1]];
-    if (mappingInfo) {
-      jsUrlPieces[1] = mappingInfo.npm;
-    } else {
-      console.warn(
-          `WARN: bower->npm mapping for "${jsUrlPieces[1]}" not found`);
-    }
-    // TODO: if current package / from has a scoped package name, url needs to
-    // move an additional level up to get out of the current scoped dir.
-    // jsUrlPieces.unshift('..');
-    jsUrl = jsUrlPieces.join('/');
+    jsUrl = updatePackageNameInUrl(jsUrl, 1);
   }
 
   if (from !== undefined) {
     const fromJsUrl = htmlUrlToJs(from);
-    jsUrl = path.relative(path.dirname(fromJsUrl), jsUrl);
+    jsUrl = url.resolve(path.dirname(fromJsUrl), jsUrl);
     if (!jsUrl.startsWith('.') && !jsUrl.startsWith('/')) {
       jsUrl = './' + jsUrl;
     }
@@ -74,4 +87,16 @@ export function htmlUrlToJs(url: string, from?: string): string {
   }
 
   return jsUrl;
+}
+
+/**
+ * Gets a relative URL from one JS module URL to another. Handles expected
+ * formatting and scoping.
+ */
+export function jsUrlRelative(fromUrl: string, toUrl: string): string {
+  let moduleJsUrl = url.resolve(path.dirname(fromUrl), toUrl);
+  if (!moduleJsUrl.startsWith('.') && !moduleJsUrl.startsWith('/')) {
+    moduleJsUrl = './' + moduleJsUrl;
+  }
+  return moduleJsUrl;
 }

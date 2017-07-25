@@ -22,7 +22,7 @@ import * as recast from 'recast';
 
 import jsc = require('jscodeshift');
 import {AnalysisConverter} from './analysis-converter';
-import {htmlUrlToJs} from './url-converter';
+import {htmlUrlToJs, jsUrlRelative} from './url-converter';
 import {JsModule, JsExport, NamespaceMemberToExport} from './js-module';
 
 const astTypes = require('ast-types');
@@ -443,12 +443,8 @@ export class DocumentConverter {
      * Add the given JsExport to the current module's `importedReferences` map.
      */
     const addToImportedReferences = (moduleExport: JsExport) => {
-      const baseJsUrl = htmlUrlToJs(this.document.url);
-      let moduleJsUrl =
-          path.posix.relative(path.posix.dirname(baseJsUrl), moduleExport.url);
-      if (!moduleJsUrl.startsWith('.') && !moduleJsUrl.startsWith('/')) {
-        moduleJsUrl = './' + moduleJsUrl;
-      }
+      const fromJsUrl = htmlUrlToJs(this.document.url);
+      const moduleJsUrl = jsUrlRelative(fromJsUrl, moduleExport.url);
       let moduleImportedNames = importedReferences.get(moduleJsUrl);
       if (moduleImportedNames === undefined) {
         moduleImportedNames = new Set<string>();

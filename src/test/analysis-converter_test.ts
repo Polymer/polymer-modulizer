@@ -106,8 +106,8 @@ import '../dep.js';
           assertSources(await convert(), {
             './test.js': `
 import '../@polymer/app-route/app-route.js';
-import '../@polymer/app-storage/app-storage.js';
-import '../@polymer/app-layout/app-layout.js';
+import './node_modules/@polymer/app-storage/app-storage.js';
+import '/node_modules/@polymer/app-layout/app-layout.js';
 `
           });
         });
