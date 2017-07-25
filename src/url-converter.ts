@@ -12,9 +12,8 @@
  * http://polymer.github.io/PATENTS.txt
  */
 
-import { posix as path } from 'path';
-import { dependencyMap } from './manifest-converter';
-const bowerDependencies = Object.keys(dependencyMap);
+import {posix as path} from 'path';
+import {dependencyMap} from './manifest-converter';
 
 /**
  * Converts an HTML Import path to a JS module path.
@@ -42,10 +41,12 @@ export function htmlUrlToJs(url: string, from?: string): string {
   // Convert bower import urls to npm import urls (package name change)
   if (jsUrl.startsWith('../')) {
     const jsUrlPieces = jsUrl.split('/');
-    if (bowerDependencies.includes(jsUrlPieces[1])) {
-      jsUrlPieces[1] = dependencyMap[jsUrlPieces[1]].npm;
+    const mappingInfo = dependencyMap[jsUrlPieces[1]];
+    if (mappingInfo) {
+      jsUrlPieces[1] = mappingInfo.npm;
     } else {
-      console.warn(`WARN: bower->npm mapping for "${jsUrlPieces[1]}" not found`);
+      console.warn(
+          `WARN: bower->npm mapping for "${jsUrlPieces[1]}" not found`);
     }
     // TODO: if current package / from has a scoped package name, url needs to
     // move an additional level up to get out of the current scoped dir.
@@ -63,9 +64,8 @@ export function htmlUrlToJs(url: string, from?: string): string {
 
   // Temporary workaround for urls that run outside of the current packages
   if (jsUrl.endsWith('shadycss/apply-shim.js')) {
-    jsUrl = jsUrl.replace(
-        'shadycss/apply-shim.js',
-        'shadycss/apply-shim.min.js');
+    jsUrl =
+        jsUrl.replace('shadycss/apply-shim.js', 'shadycss/apply-shim.min.js');
   }
   if (jsUrl.endsWith('shadycss/custom-style-interface.js')) {
     jsUrl = jsUrl.replace(

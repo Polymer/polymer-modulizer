@@ -444,7 +444,8 @@ export class DocumentConverter {
      */
     const addToImportedReferences = (moduleExport: JsExport) => {
       const baseJsUrl = htmlUrlToJs(this.document.url);
-      let moduleJsUrl = path.posix.relative(path.posix.dirname(baseJsUrl), moduleExport.url);
+      let moduleJsUrl =
+          path.posix.relative(path.posix.dirname(baseJsUrl), moduleExport.url);
       if (!moduleJsUrl.startsWith('.') && !moduleJsUrl.startsWith('/')) {
         moduleJsUrl = './' + moduleJsUrl;
       }
