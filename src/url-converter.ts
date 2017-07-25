@@ -13,7 +13,6 @@
  */
 
 import {posix as path} from 'path';
-import * as url from 'url';
 import {dependencyMap} from './manifest-converter';
 
 /**
@@ -52,14 +51,11 @@ export function htmlUrlToJs(htmlUrl: string, from?: string): string {
     jsUrl = './' + jsUrl;
   }
 
-  // Fix any references to /bower_components/* to point to node_modules instead
-  if (jsUrl.startsWith('/bower_components/')) {
-    jsUrl = '/node_modules/' + jsUrl.slice('/bower_components/'.length);
-    jsUrl = updatePackageNameInUrl(jsUrl, 2);
-  }
-  // Fix any references to ./bower_components/* to point to node_modules instead
-  if (jsUrl.startsWith('./bower_components/')) {
-    jsUrl = './node_modules/' + jsUrl.slice('./bower_components/'.length);
+  // Fix any references to /bower_components/* & ./bower_components/*
+  // to point to node_modules instead.
+  if (jsUrl.startsWith('/bower_components/') ||
+      jsUrl.startsWith('./bower_components/')) {
+    jsUrl = jsUrl.replace('/bower_components/', '/node_modules/');
     jsUrl = updatePackageNameInUrl(jsUrl, 2);
   }
   // Convert bower import urls to npm import urls (package name change)
@@ -69,11 +65,9 @@ export function htmlUrlToJs(htmlUrl: string, from?: string): string {
 
   if (from !== undefined) {
     const fromJsUrl = htmlUrlToJs(from);
-    jsUrl = url.resolve(path.dirname(fromJsUrl), jsUrl);
-    if (!jsUrl.startsWith('.') && !jsUrl.startsWith('/')) {
-      jsUrl = './' + jsUrl;
-    }
+    jsUrl = jsUrlRelative(fromJsUrl, jsUrl);
   }
+
 
   // Temporary workaround for urls that run outside of the current packages
   if (jsUrl.endsWith('shadycss/apply-shim.js')) {
@@ -94,7 +88,10 @@ export function htmlUrlToJs(htmlUrl: string, from?: string): string {
  * formatting and scoping.
  */
 export function jsUrlRelative(fromUrl: string, toUrl: string): string {
-  let moduleJsUrl = url.resolve(path.dirname(fromUrl), toUrl);
+  if (toUrl.startsWith('/')) {
+    return toUrl;
+  }
+  let moduleJsUrl = path.relative(path.dirname(fromUrl), toUrl);
   if (!moduleJsUrl.startsWith('.') && !moduleJsUrl.startsWith('/')) {
     moduleJsUrl = './' + moduleJsUrl;
   }
