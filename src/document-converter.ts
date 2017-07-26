@@ -22,7 +22,7 @@ import * as recast from 'recast';
 
 import {AnalysisConverter} from './analysis-converter';
 import {JsExport, JsModule, NamespaceMemberToExport} from './js-module';
-import {htmlUrlToJs} from './url-converter';
+import {htmlUrlToJs, jsUrlRelative} from './url-converter';
 import {getImportAlias, getModuleId, nodeToTemplateLiteral, serializeNode, sourceLocationsEqual} from './util';
 
 
@@ -580,7 +580,7 @@ export class DocumentConverter {
    */
   private convertDependencies() {
     for (const htmlImport of this.getHtmlImports()) {
-      const jsUrl = htmlUrlToJs(htmlImport.url, this.document.url);
+      const jsUrl = htmlUrlToJs(htmlImport.url);
       if (this.analysisConverter.modules.has(jsUrl)) {
         continue;
       }
@@ -603,7 +603,8 @@ export class DocumentConverter {
      * Add the given JsExport to this.module's `importedReferences` map.
      */
     const addToImportedReferences = (moduleExport: JsExport) => {
-      const moduleJsUrl = htmlUrlToJs(moduleExport.url, this.document.url);
+      const fromJsUrl = htmlUrlToJs(this.document.url);
+      const moduleJsUrl = jsUrlRelative(fromJsUrl, moduleExport.url);
       let moduleImportedNames = importedReferences.get(moduleJsUrl);
       if (moduleImportedNames === undefined) {
         moduleImportedNames = new Set<string>();
