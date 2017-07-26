@@ -96,11 +96,11 @@ suite('src/url-converter', () => {
 
     test('handles special whitelisted url conversions', () => {
       assert.equal(
-          htmlUrlToJs('./bower_components/shadycss/apply-shim.js'),
-          './node_modules/@webcomponents/shadycss/apply-shim.min.js');
+          htmlUrlToJs('./bower_components/shadycss/apply-shim.html'),
+          './node_modules/@webcomponents/shadycss/entrypoints/apply-shim.js');
       assert.equal(
-          htmlUrlToJs('./bower_components/shadycss/custom-style-interface.js'),
-          './node_modules/@webcomponents/shadycss/custom-style-interface.min.js');
+          htmlUrlToJs('./bower_components/shadycss/custom-style-interface.html'),
+          './node_modules/@webcomponents/shadycss/entrypoints/custom-style-interface.js');
     });
 
   });

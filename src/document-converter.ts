@@ -165,6 +165,11 @@ export class DocumentConverter {
       const file = recast.parse(script.parsedDocument.contents);
       this.program = file.program;
 
+      if (this.containsWriteToGlobalSettingsObject()) {
+        continue;
+      }
+
+      this.unwrapIIFEPeusdoModule();
       const importedReferences = this.rewriteNamespacedReferences();
       const wereImportsAdded = this.addJsImports(importedReferences);
       // Don't convert the HTML.
@@ -230,6 +235,36 @@ export class DocumentConverter {
     }];
   }
 
+  private containsWriteToGlobalSettingsObject() {
+    let containsWriteToGlobalSettingsObject = false;
+    // Note that we look for writes to these objects exactly, not to writes to
+    // members of these objects.
+    const globalSettingsObjects =
+        new Set<string>(['Polymer', 'Polymer.Settings', 'ShadyDOM']);
+
+    function getNamespacedName(node: Node) {
+      if (node.type === 'Identifier') {
+        return node.name;
+      }
+      const memberPath = getMemberPath(node);
+      if (memberPath) {
+        return memberPath.join('.');
+      }
+      return undefined;
+    }
+    astTypes.visit(this.program, {
+      visitAssignmentExpression(path: AstPath<estree.AssignmentExpression>) {
+        const name = getNamespacedName(path.node.left);
+        if (globalSettingsObjects.has(name!)) {
+          containsWriteToGlobalSettingsObject = true;
+        }
+        return false;
+      },
+    });
+
+    return containsWriteToGlobalSettingsObject;
+  }
+
   /**
    * Recreate the HTML contents from the original HTML document by adding
    * code to the top of this.program that constructs equivalent DOM and insert
@@ -282,7 +317,9 @@ export class DocumentConverter {
           templateValue)),
       jsc.expressionStatement(jsc.callExpression(
           jsc.memberExpression(
-              jsc.identifier('document'), jsc.identifier('appendChild')),
+              jsc.memberExpression(
+                  jsc.identifier('document'), jsc.identifier('head')),
+              jsc.identifier('appendChild')),
           [jsc.identifier(varName)]))
     ];
     let insertionPoint = 0;
@@ -532,8 +569,7 @@ export class DocumentConverter {
    * Mutates this.analysisConverter to register their exports.
    */
   private convertDependencies() {
-    const htmlImports = this.getHtmlImports();
-    for (const htmlImport of htmlImports) {
+    for (const htmlImport of this.getHtmlImports()) {
       const jsUrl = htmlUrlToJs(htmlImport.url);
       if (this.analysisConverter.modules.has(jsUrl)) {
         continue;

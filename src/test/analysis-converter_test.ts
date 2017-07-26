@@ -998,7 +998,7 @@ Polymer({
 const $_documentContainer = document.createElement('div');
 $_documentContainer.setAttribute('style', 'display: none;');
 $_documentContainer.innerHTML = \`<custom-style><style>foo{}</style></custom-style>\`;
-document.appendChild($_documentContainer);
+document.head.appendChild($_documentContainer);
 `
       });
     });
@@ -1163,7 +1163,7 @@ import { Element as $Element } from './polymer.js';
 const $_documentContainer = document.createElement('div');
 $_documentContainer.setAttribute('style', 'display: none;');
 $_documentContainer.innerHTML = \`<div>Top</div><div>Middle</div><div>Bottom</div>\`;
-document.appendChild($_documentContainer);
+document.head.appendChild($_documentContainer);
 class FooElem extends $Element {}
 class BarElem extends $Element {}
 `
@@ -1204,7 +1204,7 @@ import { Element as $Element } from './polymer.js';
 const $_documentContainer = document.createElement('div');
 $_documentContainer.setAttribute('style', 'display: none;');
 $_documentContainer.innerHTML = \`<div>Random footer</div>\`;
-document.appendChild($_documentContainer);
+document.head.appendChild($_documentContainer);
 customElements.define('foo-elem', class FooElem extends $Element {
   get template() {
     return \`
@@ -1346,6 +1346,92 @@ console.log(
     'div'));
 console.log(foo.document.currentScript.ownerDocument);
 `
+      });
+    });
+
+    let testName = `it handles imports that are modules but write to globals`;
+    test(testName, async () => {
+      setSources({
+        'test.html': `
+          <link rel="import" href="../shadycss/custom-style-interface.html">
+          <link rel="import" href="../shadycss/apply-shim.html">
+          <script>
+            console.log(ShadyCSS.flush());
+          </script>
+        `,
+        'index.html': `
+          <link rel="import" href="../shadycss/custom-style-interface.html">
+          <link rel="import" href="../shadycss/apply-shim.html">
+          <script>
+            console.log(ShadyCSS.flush());
+          </script>
+        `,
+        'bower_components/shadycss/custom-style-interface.html': ``,
+        'bower_components/shadycss/apply-shim.html': ``,
+      });
+
+      assertSources(await convert(), {
+        './test.js': `
+import '../@webcomponents/shadycss/entrypoints/custom-style-interface.js';
+import '../@webcomponents/shadycss/entrypoints/apply-shim.js';
+console.log(ShadyCSS.flush());
+`,
+
+        './index.html': `
+
+          <script type="module" src="../@webcomponents/shadycss/entrypoints/custom-style-interface.js"></script>
+          <script type="module" src="../@webcomponents/shadycss/entrypoints/apply-shim.js"></script>
+          <script type="module">
+import '../@webcomponents/shadycss/entrypoints/custom-style-interface.js';
+import '../@webcomponents/shadycss/entrypoints/apply-shim.js';
+console.log(ShadyCSS.flush());
+</script>
+        `
+      });
+    });
+
+    testName = `it handles inline scripts that write to global configuration ` +
+        `properties`;
+    test(testName, async () => {
+      setSources({
+        'index.html': `
+          <script>
+            window.ShadyDOM = {force: true};
+          </script>
+          <script>
+            Polymer = {
+              rootPath: 'earlyRootPath/'
+            }
+          </script>
+          <link rel="import" href="../shadycss/custom-style-interface.html">
+          <link rel="import" href="../shadycss/apply-shim.html">
+          <script>
+            console.log(ShadyDOM.flush());
+          </script>
+        `,
+        'bower_components/shadycss/custom-style-interface.html': ``,
+        'bower_components/shadycss/apply-shim.html': ``,
+      });
+
+      assertSources(await convert(), {
+        './index.html': `
+
+          <script>
+            window.ShadyDOM = {force: true};
+          </script>
+          <script>
+            Polymer = {
+              rootPath: 'earlyRootPath/'
+            }
+          </script>
+          <script type="module" src="../@webcomponents/shadycss/entrypoints/custom-style-interface.js"></script>
+          <script type="module" src="../@webcomponents/shadycss/entrypoints/apply-shim.js"></script>
+          <script type="module">
+import '../@webcomponents/shadycss/entrypoints/custom-style-interface.js';
+import '../@webcomponents/shadycss/entrypoints/apply-shim.js';
+console.log(ShadyDOM.flush());
+</script>
+        `
       });
     });
   });
