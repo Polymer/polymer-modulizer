@@ -36,6 +36,31 @@ function updatePackageNameInUrl(someUrl: string, index: number): string {
 }
 
 /**
+ * Gets a relative URL from one JS module URL to another. Handles expected
+ * formatting and relative/absolute urls.
+ */
+export function jsUrlRelative(fromUrl: string, toUrl: string): string {
+  // Error: A from url should always be relative to root.
+  if (fromUrl.startsWith('../')) {
+    throw new Error(
+        `paths relative to root expected (actual: from="${fromUrl}")`);
+  }
+  // do nothing to absolute urls.
+  if (toUrl.startsWith('/')) {
+    return toUrl;
+  }
+  // handle this mismatch here so that path.relative() works as expected.
+  if (toUrl.startsWith('../') && fromUrl.startsWith('./node_modules/')) {
+    toUrl = './node_modules/' + toUrl.slice('../'.length);
+  }
+  let moduleJsUrl = path.relative(path.dirname(fromUrl), toUrl);
+  if (!moduleJsUrl.startsWith('.') && !moduleJsUrl.startsWith('/')) {
+    moduleJsUrl = './' + moduleJsUrl;
+  }
+  return moduleJsUrl;
+}
+
+/**
  * Converts an HTML Import path to a JS module path.
  */
 export function htmlUrlToJs(htmlUrl: string, from?: string): string {
@@ -68,7 +93,6 @@ export function htmlUrlToJs(htmlUrl: string, from?: string): string {
     jsUrl = jsUrlRelative(fromJsUrl, jsUrl);
   }
 
-
   // Temporary workaround for urls that run outside of the current packages
   if (jsUrl.endsWith('shadycss/apply-shim.js')) {
     jsUrl =
@@ -81,19 +105,4 @@ export function htmlUrlToJs(htmlUrl: string, from?: string): string {
   }
 
   return jsUrl;
-}
-
-/**
- * Gets a relative URL from one JS module URL to another. Handles expected
- * formatting and scoping.
- */
-export function jsUrlRelative(fromUrl: string, toUrl: string): string {
-  if (toUrl.startsWith('/')) {
-    return toUrl;
-  }
-  let moduleJsUrl = path.relative(path.dirname(fromUrl), toUrl);
-  if (!moduleJsUrl.startsWith('.') && !moduleJsUrl.startsWith('/')) {
-    moduleJsUrl = './' + moduleJsUrl;
-  }
-  return moduleJsUrl;
 }
