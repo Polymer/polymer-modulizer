@@ -29,9 +29,6 @@ function updatePackageNameInUrl(someUrl: string, index: number): string {
     console.warn(
         `WARN: bower->npm mapping for "${bowerPackageName}" not found`);
   }
-  // TODO: if current package / from has a scoped package name, url needs to
-  // move an additional level up to get out of the current scoped dir.
-  // jsUrlPieces.unshift('..');
   return jsUrlPieces.join('/');
 }
 
