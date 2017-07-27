@@ -144,7 +144,7 @@ import '../../../@polymer/app-route/app-route.js';
               });
         });
 
-    test('converts dependency imports for a npm application', async () => {
+    test('converts dependency imports for an npm application', async () => {
       setSources({
         'test.html': `
           <link rel="import" href="./nested/test.html">
@@ -174,7 +174,7 @@ import '/node_modules/@polymer/app-route/app-route.js';
     });
 
     test(
-        'converts dependency imports for a npm application with a scoped package name',
+        'converts dependency imports for an npm application with a scoped package name',
         async () => {
           setSources({
             'test.html': `
