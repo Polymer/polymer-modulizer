@@ -17,20 +17,30 @@ import {dependencyMap} from './manifest-converter';
 
 const htmlExtension = '.html';
 
+/** A package-rooted URL path to a document; format returned by the analyzer */
+export type OriginalDocumentUrl = string & {_: never};
+/** A package-rooted URL path to a converted document/module; './'-prefixed */
+export type ConvertedDocumentUrl = string & {_: never};
+
 /**
  * Given an HTML url relative to the project root, return true if that url
  * points to a bower dependency file.
  */
-function isBowerDependencyUrl(htmlUrl: string) {
+function isBowerDependencyUrl(htmlUrl: OriginalDocumentUrl): boolean {
   return htmlUrl.startsWith('bower_components/') ||
       htmlUrl.startsWith('./bower_components/');
+}
+
+function fixHtmlExtension(htmlUrl: string): string {
+  return htmlUrl.substring(0, htmlUrl.length - htmlExtension.length) + '.js';
 }
 
 /**
  * Update a bower package name in a url (at path index) to its matching npm
  * package name.
  */
-function convertBowerRootUrlToNpm(dependencyUrl: string): string {
+function convertBowerDependencyUrl(dependencyUrl: OriginalDocumentUrl):
+    ConvertedDocumentUrl {
   // Convert component folder name
   let jsUrl = dependencyUrl.replace('bower_components/', 'node_modules/');
   // Convert package name
@@ -56,31 +66,32 @@ function convertBowerRootUrlToNpm(dependencyUrl: string): string {
         'shadycss/entrypoints/custom-style-interface.js');
   }
 
-  return jsUrl;
+  return jsUrl as ConvertedDocumentUrl;
 }
 
 /**
  * Converts an HTML Import path to a JS module path.
  */
-export function convertRootUrl(htmlUrl: string): string {
+export function convertRootUrl(htmlUrl: OriginalDocumentUrl):
+    ConvertedDocumentUrl {
   if (htmlUrl.startsWith('.') || htmlUrl.startsWith('/')) {
     throw new Error(
         `convertRootUrl() expects an unformatted document url from the analyzer, but got "${
                                                                                             htmlUrl
                                                                                           }"`);
   }
-  let jsUrl = htmlUrl;
+  let jsUrl = htmlUrl as ConvertedDocumentUrl;
   // If url points to a bower_components dependency, update it to point to
   // its equivilent node_modules npm dependency.
   if (isBowerDependencyUrl(htmlUrl)) {
-    jsUrl = convertBowerRootUrlToNpm(htmlUrl);
+    jsUrl = convertBowerDependencyUrl(htmlUrl);
   }
   // Convert all HTML URLs to point to JS equivilent
   if (jsUrl.endsWith(htmlExtension)) {
-    jsUrl = jsUrl.substring(0, jsUrl.length - htmlExtension.length) + '.js';
+    jsUrl = fixHtmlExtension(jsUrl) as ConvertedDocumentUrl;
   }
   // TODO(fks): Revisit this format? The analyzer returns URLs without this
-  return './' + jsUrl;
+  return ('./' + jsUrl) as ConvertedDocumentUrl;
 }
 
 
@@ -88,8 +99,9 @@ export function convertRootUrl(htmlUrl: string): string {
  * Gets a relative URL from one JS module URL to another. Handles expected
  * formatting and relative/absolute urls.
  */
-export function convertRelativeUrl(fromUrl: string, toUrl: string): string {
-  // Error: Expects root URLs, relative to the project root
+export function convertRelativeUrl(
+    fromUrl: ConvertedDocumentUrl, toUrl: ConvertedDocumentUrl): string {
+  // Error: Expects package-root-relative URLs
   if (!fromUrl.startsWith('./') || !toUrl.startsWith('./')) {
     throw new Error(
         `paths relative to root expected (actual: from="${fromUrl}", to="${
@@ -98,7 +110,6 @@ export function convertRelativeUrl(fromUrl: string, toUrl: string): string {
   }
   let moduleJsUrl = path.relative(path.dirname(fromUrl), toUrl);
   // Correct URL format to add './' preface if none exists
-  // TODO(fks): Revisit this format?
   if (!moduleJsUrl.startsWith('.') && !moduleJsUrl.startsWith('/')) {
     moduleJsUrl = './' + moduleJsUrl;
   }

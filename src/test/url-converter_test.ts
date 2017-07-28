@@ -13,42 +13,51 @@
  */
 
 import {assert} from 'chai';
-
-// import * as path from 'path';
-import {convertRelativeUrl, convertRootUrl} from '../url-converter';
+import {convertRelativeUrl, convertRootUrl, OriginalDocumentUrl} from '../url-converter';
 
 suite('src/url-converter', () => {
 
   suite('convertRootUrl()', () => {
 
     test('converts a local html url to expected js url', () => {
-      assert.equal(convertRootUrl('foo.html'), './foo.js');
-      assert.equal(convertRootUrl('foo/foo.html'), './foo/foo.js');
+      assert.equal(
+          convertRootUrl('foo.html' as OriginalDocumentUrl), './foo.js');
+      assert.equal(
+          convertRootUrl('foo/foo.html' as OriginalDocumentUrl),
+          './foo/foo.js');
     });
 
     test(
         'converts a bower_components/ (external) html url to expected js url',
         () => {
           assert.equal(
-              convertRootUrl('bower_components/polymer/polymer.html'),
+              convertRootUrl(
+                  'bower_components/polymer/polymer.html' as
+                  OriginalDocumentUrl),
               './node_modules/@polymer/polymer/polymer.js');
           assert.equal(
-              convertRootUrl('bower_components/paper-item/src/paper-item.html'),
+              convertRootUrl(
+                  'bower_components/paper-item/src/paper-item.html' as
+                  OriginalDocumentUrl),
               './node_modules/@polymer/paper-item/src/paper-item.js');
           assert.equal(
               convertRootUrl(
-                  'bower_components/promise-polyfill/promise-polyfill.html'),
+                  'bower_components/promise-polyfill/promise-polyfill.html' as
+                  OriginalDocumentUrl),
               './node_modules/@polymer/promise-polyfill/promise-polyfill.js');
         });
 
 
     test('handles special whitelisted url conversions', () => {
       assert.equal(
-          convertRootUrl('bower_components/shadycss/apply-shim.html'),
+          convertRootUrl(
+              'bower_components/shadycss/apply-shim.html' as
+              OriginalDocumentUrl),
           './node_modules/@webcomponents/shadycss/entrypoints/apply-shim.js');
       assert.equal(
           convertRootUrl(
-              'bower_components/shadycss/custom-style-interface.html'),
+              'bower_components/shadycss/custom-style-interface.html' as
+              OriginalDocumentUrl),
           './node_modules/@webcomponents/shadycss/entrypoints/custom-style-interface.js');
     });
 
@@ -57,15 +66,28 @@ suite('src/url-converter', () => {
   suite('convertRelativeUrl()', () => {
 
     test('handles two root urls relative to the same directory', () => {
-      assert.equal(convertRelativeUrl('./foo.js', './bar.js'), './bar.js');
-      assert.equal(convertRelativeUrl('./foo/foo.js', './bar.js'), '../bar.js');
       assert.equal(
-          convertRelativeUrl('./foo/foo.js', './bar/bar.js'), '../bar/bar.js');
+          convertRelativeUrl(
+              './foo.js' as OriginalDocumentUrl,
+              './bar.js' as OriginalDocumentUrl),
+          './bar.js');
+      assert.equal(
+          convertRelativeUrl(
+              './foo/foo.js' as OriginalDocumentUrl,
+              './bar.js' as OriginalDocumentUrl),
+          '../bar.js');
+      assert.equal(
+          convertRelativeUrl(
+              './foo/foo.js' as OriginalDocumentUrl,
+              './bar/bar.js' as OriginalDocumentUrl),
+          '../bar/bar.js');
     });
 
     test('explicitly does not handle sibling/parent urls', () => {
       assert.throws(() => {
-        convertRelativeUrl('../foo.js', './bar.js');
+        convertRelativeUrl(
+            '../foo.js' as OriginalDocumentUrl,
+            './bar.js' as OriginalDocumentUrl);
       }, 'paths relative to root expected (actual: from="../foo.js", to="./bar.js")');
     });
 
