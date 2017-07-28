@@ -18,9 +18,9 @@ import {dependencyMap} from './manifest-converter';
 const htmlExtension = '.html';
 
 /** A package-rooted URL path to a document; format returned by the analyzer */
-export type OriginalDocumentUrl = string & {_: never};
+export type OriginalDocumentUrl = string & {_OriginalDocumentUrl: never};
 /** A package-rooted URL path to a converted document/module; './'-prefixed */
-export type ConvertedDocumentUrl = string & {_: never};
+export type ConvertedDocumentUrl = string & {_ConvertedDocumentUrl: never};
 
 /**
  * Given an HTML url relative to the project root, return true if that url
@@ -72,15 +72,16 @@ function convertBowerDependencyUrl(dependencyUrl: OriginalDocumentUrl):
 /**
  * Converts an HTML Import path to a JS module path.
  */
-export function convertRootUrl(htmlUrl: OriginalDocumentUrl):
+export function convertDocumentUrl(htmlUrl: OriginalDocumentUrl):
     ConvertedDocumentUrl {
+  // TODO(fks): This can be removed later if type-checking htmlUrl is enough
   if (htmlUrl.startsWith('.') || htmlUrl.startsWith('/')) {
     throw new Error(
-        `convertRootUrl() expects an unformatted document url from the analyzer, but got "${
-                                                                                            htmlUrl
-                                                                                          }"`);
+        `convertDocumentUrl() expects an OriginalDocumentUrl string` +
+        `from the analyzer, but got "${htmlUrl}"`);
   }
-  let jsUrl = htmlUrl as ConvertedDocumentUrl;
+  // Start the creation of your converted URL, based on on the original URL
+  let jsUrl = (<ConvertedDocumentUrl>(<string>htmlUrl));
   // If url points to a bower_components dependency, update it to point to
   // its equivilent node_modules npm dependency.
   if (isBowerDependencyUrl(htmlUrl)) {
@@ -99,14 +100,13 @@ export function convertRootUrl(htmlUrl: OriginalDocumentUrl):
  * Gets a relative URL from one JS module URL to another. Handles expected
  * formatting and relative/absolute urls.
  */
-export function convertRelativeUrl(
+export function getRelativeUrl(
     fromUrl: ConvertedDocumentUrl, toUrl: ConvertedDocumentUrl): string {
-  // Error: Expects package-root-relative URLs
+  // Error: Expects two package-root-relative URLs to compute a relative path
   if (!fromUrl.startsWith('./') || !toUrl.startsWith('./')) {
     throw new Error(
-        `paths relative to root expected (actual: from="${fromUrl}", to="${
-                                                                           toUrl
-                                                                         }")`);
+        `paths relative to package root expected (actual: ` +
+        `from="${fromUrl}", to="${toUrl}")`);
   }
   let moduleJsUrl = path.relative(path.dirname(fromUrl), toUrl);
   // Correct URL format to add './' preface if none exists
