@@ -13,6 +13,8 @@
  */
 
 import {posix as path} from 'path';
+import {Document} from 'polymer-analyzer';
+
 import {dependencyMap} from './manifest-converter';
 
 const htmlExtension = '.html';
@@ -31,6 +33,9 @@ function isBowerDependencyUrl(htmlUrl: OriginalDocumentUrl): boolean {
       htmlUrl.startsWith('./bower_components/');
 }
 
+/**
+ * Rewrite a url to replace a `.js` file extension with `.html`.
+ */
 function fixHtmlExtension(htmlUrl: string): string {
   return htmlUrl.substring(0, htmlUrl.length - htmlExtension.length) + '.js';
 }
@@ -67,6 +72,13 @@ function convertBowerDependencyUrl(dependencyUrl: OriginalDocumentUrl):
   }
 
   return jsUrl as ConvertedDocumentUrl;
+}
+
+/**
+ * Return a document url property as a OriginalDocumentUrl type.
+ */
+export function getDocumentUrl(document: Document): OriginalDocumentUrl {
+  return document.url as OriginalDocumentUrl;
 }
 
 /**

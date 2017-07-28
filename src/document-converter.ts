@@ -23,7 +23,7 @@ import * as recast from 'recast';
 import {AnalysisConverter} from './analysis-converter';
 import {JsExport, JsModule, NamespaceMemberToExport} from './js-module';
 import {removeWrappingIIFE} from './passes/remove-wrapping-iife';
-import {convertDocumentUrl, ConvertedDocumentUrl, getRelativeUrl, OriginalDocumentUrl} from './url-converter';
+import {convertDocumentUrl, ConvertedDocumentUrl, getDocumentUrl, getRelativeUrl, OriginalDocumentUrl} from './url-converter';
 import {getImportAlias, getModuleId, nodeToTemplateLiteral, serializeNode, sourceLocationsEqual} from './util';
 
 import jsc = require('jscodeshift');
@@ -93,7 +93,7 @@ export class DocumentConverter {
     this._mutableExports =
         Object.assign({}, this.analysisConverter._mutableExports!);
     this.document = document;
-    this.originalUrl = document.url as OriginalDocumentUrl;
+    this.originalUrl = getDocumentUrl(document);
     this.convertedUrl = convertDocumentUrl(this.originalUrl);
   }
 
@@ -214,7 +214,7 @@ export class DocumentConverter {
           htmlImport.sourceRange);
 
       const importedJsDocumentUrl =
-          convertDocumentUrl(htmlImport.document.url as OriginalDocumentUrl);
+          convertDocumentUrl(getDocumentUrl(htmlImport.document));
       const importUrl =
           this.formatImportUrl(importedJsDocumentUrl, htmlImport.url);
       const scriptTag = parse5.parseFragment(`<script type="module"></script>`)
@@ -583,7 +583,7 @@ export class DocumentConverter {
   private convertDependencies() {
     for (const htmlImport of this.getHtmlImports()) {
       const importedJsDocumentUrl =
-          convertDocumentUrl(htmlImport.document.url as OriginalDocumentUrl);
+          convertDocumentUrl(getDocumentUrl(htmlImport.document));
       if (this.analysisConverter.modules.has(importedJsDocumentUrl)) {
         continue;
       }
@@ -858,7 +858,7 @@ export class DocumentConverter {
     const jsImportDeclarations = [];
     for (const htmlImport of this.getHtmlImports()) {
       const importedJsDocumentUrl =
-          convertDocumentUrl(htmlImport.document.url as OriginalDocumentUrl);
+          convertDocumentUrl(getDocumentUrl(htmlImport.document));
       const specifierNames = importedReferences.get(importedJsDocumentUrl);
       const jsFormattedImportUrl =
           this.formatImportUrl(importedJsDocumentUrl, htmlImport.url);
