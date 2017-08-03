@@ -60,6 +60,7 @@ function rework(line: string) {
   }
 
   const options = {
+    outDir: 'html2js_out',
     inDir: sourceDir,
     packageName: '@polymer/polymer',
     packageVersion: '3.0.0',

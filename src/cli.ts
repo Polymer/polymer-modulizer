@@ -163,7 +163,7 @@ export async function run() {
   }
 
   await convertPackage({
-    inDir: options.in,
+    inDir: options.in || process.cwd(),
     outDir: options.out,
     excludes: options.exclude,
     namespaces: options.namespace,

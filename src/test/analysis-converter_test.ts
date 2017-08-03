@@ -16,7 +16,7 @@ import {assert} from 'chai';
 import * as esprima from 'esprima';
 import * as estree from 'estree';
 import * as path from 'path';
-import {Analyzer, Document, FSUrlLoader, InMemoryOverlayUrlLoader, PackageUrlResolver, UrlLoader, UrlResolver} from 'polymer-analyzer';
+import {Analyzer, Document, InMemoryOverlayUrlLoader} from 'polymer-analyzer';
 
 import {AnalysisConverter, AnalysisConverterOptions} from '../analysis-converter';
 import {configureAnalyzer, configureConverter} from '../convert-package';
@@ -1768,22 +1768,7 @@ $_documentContainer.innerHTML = \`<dom-module>
 document.head.appendChild($_documentContainer);
 `,
       });
-    });
-  });
 
-  suite('fixtures', () => {
-
-    let urlResolver: UrlResolver;
-    let urlLoader: UrlLoader;
-    let analyzer: Analyzer;
-
-    setup(() => {
-      urlLoader = new FSUrlLoader(path.resolve(__dirname, '../../fixtures'));
-      urlResolver = new PackageUrlResolver();
-      analyzer = new Analyzer({
-        urlResolver,
-        urlLoader,
-      });
     });
 
   });
@@ -1817,8 +1802,26 @@ document.head.appendChild($_documentContainer);
 
   });
 
+  test(
+      'existing options.outDir directory is excluded from conversion',
+      async () => {
+        const options = {
+          outDir: 'html2js_out',
+          inDir: path.join(fixturesDirPath, 'already-converted-package'),
+          packageName: 'already-converted-package',
+          packageVersion: '1.0.0'
+        };
+        const analyzer = configureAnalyzer(options);
+        const analysis = await analyzer.analyzePackage();
+        const converter = configureConverter(analysis, options);
+        const results = await converter.convert();
+        assert.include([...results.keys()], './foobar.html');
+        assert.notInclude([...results.keys()], './html2js_out/foobar.html');
+      });
+
   test('case-map', async () => {
     const options = {
+      outDir: 'html2js_out',
       inDir: fixturesDirPath,
       packageName: 'case-map',
       packageVersion: '1.0.0',
@@ -1835,6 +1838,7 @@ document.head.appendChild($_documentContainer);
 
   test('polymer-element', async () => {
     const options = {
+      outDir: 'html2js_out',
       inDir: fixturesDirPath,
       packageName: 'polymer-element',
       packageVersion: '1.0.0'

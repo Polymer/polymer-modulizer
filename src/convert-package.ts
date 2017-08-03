@@ -27,12 +27,12 @@ type ConvertPackageOptions = AnalysisConverterOptions&{
   /**
    * The directory to read HTML files from.
    */
-  readonly inDir?: string;
+  readonly inDir: string;
 
   /**
    * The directory to write converted JavaScript files to.
    */
-  readonly outDir?: string;
+  readonly outDir: string;
 
   /**
    * The npm package name to use in package.json
@@ -50,9 +50,9 @@ type ConvertPackageOptions = AnalysisConverterOptions&{
   clearOutDir?: boolean;
 };
 
-export function configureAnalyzer(options: ConvertPackageOptions) {
-  const inDir = options.inDir || process.cwd();
 
+
+export function configureAnalyzer(options: ConvertPackageOptions) {
   // TODO(fks) 07-06-2015: Convert this to a configurable option
   // 'lib/utils/boot.html' - This is a special file that overwrites exports
   // and does other things that make less sense in an ESM world.
@@ -62,7 +62,8 @@ export function configureAnalyzer(options: ConvertPackageOptions) {
   /** @namespace */
   let Polymer;
 </script>`;
-  const urlLoader = new InMemoryOverlayUrlLoader(new FSUrlLoader(inDir));
+  const urlLoader =
+      new InMemoryOverlayUrlLoader(new FSUrlLoader(options.inDir));
   urlLoader.urlContentsMap.set('lib/utils/boot.html', bootOverrideHtml);
   urlLoader.urlContentsMap.set(
       'bower_components/polymer/lib/utils/boot.html', bootOverrideHtml);
@@ -75,11 +76,13 @@ export function configureAnalyzer(options: ConvertPackageOptions) {
 
 export function configureConverter(
     analysis: Analysis, options: ConvertPackageOptions) {
+  const excludes = options.excludes || [];
+  excludes.push(options.outDir);
   return new AnalysisConverter(analysis, {
     packageName: options.packageName,
     packageType: 'element',
     namespaces: options.namespaces,
-    excludes: options.excludes || [],
+    excludes,
     referenceExcludes: options.referenceExcludes ||
         [
           'Polymer.Settings',
@@ -98,8 +101,7 @@ export function configureConverter(
  * Converts an entire package from HTML imports to JS modules
  */
 export async function convertPackage(options: ConvertPackageOptions) {
-  const outDir = options.outDir || 'js_out';
-  const outDirResolved = path.resolve(process.cwd(), outDir);
+  const outDirResolved = path.resolve(process.cwd(), options.outDir);
   console.log(`Out directory: ${outDirResolved}`);
 
   const npmPackageName = options.packageName;
@@ -133,7 +135,7 @@ export async function convertPackage(options: ConvertPackageOptions) {
     const bowerJson = readJson(path.join(options.inDir || '.', 'bower.json'));
     const packageJson =
         generatePackageJson(bowerJson, npmPackageName, npmPackageVersion);
-    writeJson(packageJson, outDir, 'package.json');
+    writeJson(packageJson, outDirResolved, 'package.json');
   } catch (e) {
     console.log('error in bower.json -> package.json conversion');
     console.error(e);

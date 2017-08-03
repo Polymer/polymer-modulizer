@@ -42,7 +42,7 @@ export interface AnalysisConverterOptions {
    * Files to exclude from conversion (ie lib/utils/boot.html). Imports
    * to these files are also excluded.
    */
-  readonly excludes?: Iterable<string>;
+  readonly excludes?: string[];
 
   /**
    * Namespace references (ie, Polymer.DomModule) to "exclude"" be replacing
@@ -127,12 +127,14 @@ export class AnalysisConverter {
   }
 
   async convert(): Promise<Map<string, string>> {
+    const excludesArray = Array.from(this._excludes);
+    const isNotExcluded = (d: Document) => {
+      return !excludesArray.some(d.url.startsWith.bind(d.url));
+    };
     const htmlDocuments =
         [...this._analysis.getFeatures({kind: 'html-document'})]
-            // Excludes
-            .filter((d) => {
-              return !this._excludes.has(d.url) && isNotExternal(d) && d.url;
-            });
+            // Exclude Documents
+            .filter((d) => isNotExternal(d) && isNotExcluded(d));
 
     const results = new Map<string, string>();
 
