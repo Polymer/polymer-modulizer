@@ -40,14 +40,31 @@ export function getModuleId(url: string) {
 }
 
 /**
- * Finds an unused identifier name given a requested name and set of used names.
+ * Finds an unused identifier name given an array of requested identifiers, in
+ * order of preference, and a set of used identifiers.
+ *
+ * The result is either:
+ * - the first element of `requested` that is not in `used`, or
+ * - `requested[requested.length - 1] + '$' + suffix`, where `suffix` is the
+ *   lowest non-negative integer such that the result is not in `used`.
  */
-export function findAvailableIdentifier(requested: string, used: Set<string>) {
-  let suffix = 0;
-  let alias = requested;
-  while (used.has(alias)) {
-    alias = requested + '$' + (suffix++);
+export function findAvailableIdentifier(
+    requested: ReadonlyArray<string>, used: ReadonlySet<string>) {
+  if (requested.length < 1) {
+    throw new Error('At least one identifier must be requested.');
   }
+
+  let index = 0;
+  let alias = requested[index++];
+  while (used.has(alias) && index < requested.length) {
+    alias = requested[index++];
+  }
+
+  let suffix = 0;
+  while (used.has(alias)) {
+    alias = requested[requested.length - 1] + '$' + (suffix++);
+  }
+
   return alias;
 }
 
@@ -229,4 +246,26 @@ export function getNamespaces(analysis: Analysis) {
         }
         return name;
       });
+}
+
+export function joinCamelCase(arr: ReadonlyArray<string>) {
+  return arr
+      .map((str, i) => i === 0 ? str : str[0].toUpperCase() + str.slice(1))
+      .join('');
+}
+
+export function invertMultimap<K, V>(multimap: ReadonlyMap<K, Iterable<V>>):
+    Map<V, Set<K>> {
+  const inverse = new Map<V, Set<K>>();
+  for (const [key, values] of multimap) {
+    for (const value of values) {
+      const keysWithValue = inverse.get(value);
+      if (keysWithValue === undefined) {
+        inverse.set(value, new Set([key]));
+        continue;
+      }
+      keysWithValue.add(key);
+    }
+  }
+  return inverse;
 }
