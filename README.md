@@ -12,11 +12,11 @@ We are opening this tool now so we can work in the open, and to gather feedback 
 
  1. 🚿 Run the tool in a clean Git working directory, or use workspace mode. Do not run on unsaved changes.
  2. 📞 Please report any issues you find!
- 3. 👷🏽‍ Pardon the dust, some parts of the workflow, like testing the output of multi-package conversions, are still under construction.
+ 3. 👷🏽‍ Pardon the dust. Some parts of the workflow, like testing the output of multi-package conversions, are still under construction.
  4. 🔄 Be ready to update and run the tool again in the future to pick up changes in output.
  5. 📚 _If_ you want to publish the output of the tool, use a pre-release version and tag for now, until we can make stronger garuntees about the API of the output it generates. 
 
-Good luck, the future is exciting! 😎 Please join us for discussion in the `#modulizer` Slack channel.
+Good luck, the future is exciting! 😎 Please join us for discussion in the [`#modulizer` Slack channel](https://polymer.slack.com/messages/G6R11FXEC/).
 
 ## Overview
 
