@@ -6,7 +6,7 @@ polymer-modulizer is a tool to convert packages of HTML imports to JavaScript mo
 
 ## 🚧 Warning: Extremely Early Preview! 🚧
 
-polymer-modulizer, and the output it generates, are very early versions, that, while as far as we can tell *mostly* work, are still subject to bugs, unexpected behavior, breaking changes, and especially, too little documentation.
+polymer-modulizer, and the output it generates, are very early versions. As far as we can tell, they mostly work, but they're still subject to bugs, unexpected behavior, breaking changes, and especially, too little documentation.
 
 We are opening this tool now so we can work in the open, and to gather feedback on how well it works on your code. If you choose to use it:
 
