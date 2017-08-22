@@ -41,7 +41,7 @@ interface Options {
 }
 
 async function run(
-    command: string, options: cp.ExecOptions = {}): Promise<string> {
+    command: string, options: cp.ExecOptions&{cwd: string}): Promise<string> {
   const [stdoutBuf, stderrBuf] = await cp.exec(command, options);
   return stdoutBuf.toString('utf8').trim() + stderrBuf.toString('utf8').trim();
 }
@@ -55,7 +55,7 @@ async function main() {
     expectedUser = 'fake';
     process.env.npm_config_registry = 'http://35.199.169.12';
   }
-  if (await run('npm whoami') !== expectedUser) {
+  if (await run('npm whoami', {cwd: '.'}) !== expectedUser) {
     throw new Error(`Not running as the npm user '${expectedUser}'`);
   }
   const expectedVersion = options['expected-version'];
@@ -65,9 +65,10 @@ async function main() {
   const workspacePath = './modulizer_workspace';
   const dirs = await fs.readdir(workspacePath);
   for (const dir of dirs) {
-    const fullPath = path.join(workspacePath, dir);
+    const fullPath = path.resolve(path.join(workspacePath, dir));
     const packagePath = path.join(fullPath, 'package.json');
-    if (!(await fs.exists(packagePath))) {
+    if (!(await fs.exists(packagePath)) ||
+        !(await fs.exists(path.join(fullPath, '.git')))) {
       continue;
     }
     const pckage = JSON.parse(await fs.readFile(packagePath, 'utf8'));
@@ -77,14 +78,27 @@ async function main() {
     if (pckage.version !== expectedVersion) {
       continue;
     }
-    const foundVersion: string =
-        await run(`npm show ${pckage.name}@${expectedVersion} version`);
+    let branchName =
+        await run('git rev-parse --abbrev-ref HEAD', {cwd: fullPath});
+    if (branchName === 'master') {
+      const sha = await run('git rev-parse HEAD', {cwd: fullPath});
+      await run('git checkout -b 3.0-preview', {cwd: fullPath});
+      branchName = '3.0-preview';
+      await run('git add ./', {cwd: fullPath});
+      await run(
+          `git commit -m "Automatic polymer-modulizer conversion of ${sha}"`,
+          {cwd: fullPath});
+    }
+    const foundVersion: string = await run(
+        `npm show ${pckage.name}@${expectedVersion} version`, {cwd: '.'});
     if (foundVersion === expectedVersion) {
       console.log(`~ ${pckage.name} already published as ${expectedVersion}`);
       continue;
     } else {
-      console.log(
-          await run('npm publish --tag next', {cwd: path.resolve(fullPath)}));
+      console.log(await run('npm publish --tag next', {cwd: fullPath}));
+    }
+    if (options.production && branchName === '3.0-preview') {
+      await run(`git push origin 3.0-preview`, {cwd: fullPath});
     }
   }
 }
