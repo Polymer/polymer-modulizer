@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 /**
  * @license
  * Copyright (c) 2017 The Polymer Project Authors. All rights reserved.
@@ -14,10 +12,10 @@
  * http://polymer.github.io/PATENTS.txt
  */
 
-import * as path from 'path';
+import * as commandLineArgs from 'command-line-args';
 import * as cp from 'mz/child_process';
 import * as fs from 'mz/fs';
-import * as commandLineArgs from 'command-line-args';
+import * as path from 'path';
 
 const optionDefinitions: commandLineArgs.OptionDefinition[] = [
   {
