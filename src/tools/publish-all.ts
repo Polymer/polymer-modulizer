@@ -103,7 +103,7 @@ async function main() {
           // await run(`git push origin 3.0-preview`, {cwd: fullPath});
           console.log(`+ ${dir} pushed`);
         } else {
-          console.log(`- ${dir} was not pushed`);
+          console.log(`- ${dir} was not pushed because this is a dry run`);
         }
       } else {
         console.log(`x ${dir} wasn't at master, it was on ${branchName}`);
