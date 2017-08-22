@@ -9,7 +9,8 @@
   },
   "license": "BSD-3-Clause",
   "bin": {
-    "modulizer": "bin/modulizer.js"
+    "modulizer": "bin/modulizer.js",
+    "publish-all": "lib/tools/publish-all.js"
   },
   "scripts": {
     "build": "tsc",
