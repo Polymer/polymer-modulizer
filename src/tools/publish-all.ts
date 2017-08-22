@@ -21,7 +21,7 @@ import * as commandLineArgs from 'command-line-args';
 
 const optionDefinitions: commandLineArgs.OptionDefinition[] = [
   {
-    name: 'expectedVersion',
+    name: 'expected-version',
     type: String,
     description: `The version that we intend to publish. ` +
         `We'll only publish packages with this version in their package.json`,
@@ -36,7 +36,7 @@ const optionDefinitions: commandLineArgs.OptionDefinition[] = [
 ];
 
 interface Options {
-  readonly expectedVersion: string|undefined;
+  readonly 'expected-version': string|undefined;
   readonly production: boolean;
 }
 
@@ -58,7 +58,7 @@ async function main() {
   if (await run('npm whoami') !== expectedUser) {
     throw new Error(`Not running as the npm user '${expectedUser}'`);
   }
-  const expectedVersion = options.expectedVersion;
+  const expectedVersion = options['expected-version'];
   if (!expectedVersion) {
     throw new Error(`No expected version given.`);
   }
