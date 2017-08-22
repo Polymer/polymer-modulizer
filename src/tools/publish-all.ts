@@ -32,12 +32,19 @@ const optionDefinitions: commandLineArgs.OptionDefinition[] = [
     defaultValue: false,
     description:
         `If given, publish to the real 'npm' instance, not our local one.`
+  },
+  {
+    name: 'command',
+    description:
+        `Either 'push' or 'publish'. If 'push', we commit the changes and push them up to git. If 'publish', we publish up to npm.`
   }
+
 ];
 
 interface Options {
   readonly 'expected-version': string|undefined;
   readonly production: boolean;
+  readonly command: 'push'|'publish';
 }
 
 async function run(
@@ -65,6 +72,11 @@ async function main() {
   const workspacePath = './modulizer_workspace';
   const dirs = await fs.readdir(workspacePath);
   for (const dir of dirs) {
+    if (dir === 'polymer') {
+      // Temporary skip because we hand-edit polymer core's readme, and
+      // fixup its shadycss import paths.
+      continue;
+    }
     const fullPath = path.resolve(path.join(workspacePath, dir));
     const packagePath = path.join(fullPath, 'package.json');
     if (!(await fs.exists(packagePath)) ||
@@ -78,27 +90,38 @@ async function main() {
     if (pckage.version !== expectedVersion) {
       continue;
     }
-    let branchName =
-        await run('git rev-parse --abbrev-ref HEAD', {cwd: fullPath});
-    if (branchName === 'master') {
-      const sha = await run('git rev-parse HEAD', {cwd: fullPath});
-      await run('git checkout -b 3.0-preview', {cwd: fullPath});
-      branchName = '3.0-preview';
-      await run('git add ./', {cwd: fullPath});
-      await run(
-          `git commit -m "Automatic polymer-modulizer conversion of ${sha}"`,
-          {cwd: fullPath});
-    }
-    const foundVersion: string = await run(
-        `npm show ${pckage.name}@${expectedVersion} version`, {cwd: '.'});
-    if (foundVersion === expectedVersion) {
-      console.log(`~ ${pckage.name} already published as ${expectedVersion}`);
-      continue;
+
+    if (options.command === 'push') {
+      const branchName =
+          await run('git rev-parse --abbrev-ref HEAD', {cwd: fullPath});
+      if (branchName === 'master') {
+        const sha = await run('git rev-parse HEAD', {cwd: fullPath});
+        await run('git checkout -b 3.0-preview', {cwd: fullPath});
+        await run('git add ./', {cwd: fullPath});
+        await run(
+            `git commit -m "Automatic polymer-modulizer conversion of ${sha}"`,
+            {cwd: fullPath});
+        if (options.production) {
+          // await run(`git push origin 3.0-preview`, {cwd: fullPath});
+          console.log(`+ ${dir} pushed`);
+        } else {
+          console.log(`- ${dir} was not pushed`);
+        }
+      } else {
+        console.log(`x ${dir} wasn't at master, it was on ${branchName}`);
+      }
+    } else if (options.command === 'publish') {
+      const foundVersion: string = await run(
+          `npm show ${pckage.name}@${expectedVersion} version`, {cwd: '.'});
+      if (foundVersion === expectedVersion) {
+        console.log(`~ ${pckage.name} already published as ${expectedVersion}`);
+        continue;
+      } else {
+        console.log(await run('npm publish --tag next', {cwd: fullPath}));
+      }
     } else {
-      console.log(await run('npm publish --tag next', {cwd: fullPath}));
-    }
-    if (options.production && branchName === '3.0-preview') {
-      await run(`git push origin 3.0-preview`, {cwd: fullPath});
+      const never: never = options.command;
+      throw new Error(`Invalid --command given: ${never}`);
     }
   }
 }
