@@ -17,6 +17,28 @@
 import * as path from 'path';
 import * as cp from 'mz/child_process';
 import * as fs from 'mz/fs';
+import * as commandLineArgs from 'command-line-args';
+
+const optionDefinitions: commandLineArgs.OptionDefinition[] = [
+  {
+    name: 'expectedVersion',
+    type: String,
+    description: `The version that we intend to publish. ` +
+        `We'll only publish packages with this version in their package.json`,
+  },
+  {
+    name: 'production',
+    type: Boolean,
+    defaultValue: false,
+    description:
+        `If given, publish to the real 'npm' instance, not our local one.`
+  }
+];
+
+interface Options {
+  readonly expectedVersion: string|undefined;
+  readonly production: boolean;
+}
 
 async function run(
     command: string, options: cp.ExecOptions = {}): Promise<string> {
@@ -24,12 +46,21 @@ async function run(
   return stdoutBuf.toString('utf8').trim() + stderrBuf.toString('utf8').trim();
 }
 
-const expectedVersion = '3.0.0-pre.2';
-
 async function main() {
-  process.env.npm_config_registry = 'http://35.199.169.12';
-  if (await run('npm whoami') !== 'fake') {
-    throw new Error('Not running as the npm user `fake`!!');
+  const options: Options = commandLineArgs(optionDefinitions) as any;
+  let expectedUser;
+  if (options.production) {
+    expectedUser = 'polymer';
+  } else {
+    expectedUser = 'fake';
+    process.env.npm_config_registry = 'http://35.199.169.12';
+  }
+  if (await run('npm whoami') !== expectedUser) {
+    throw new Error(`Not running as the npm user '${expectedUser}'`);
+  }
+  const expectedVersion = options.expectedVersion;
+  if (!expectedVersion) {
+    throw new Error(`No expected version given.`);
   }
   const workspacePath = './modulizer_workspace';
   const dirs = await fs.readdir(workspacePath);
@@ -46,17 +77,15 @@ async function main() {
     if (pckage.version !== expectedVersion) {
       continue;
     }
-    try {
-      const foundVersion =
-          await run(`npm show ${pckage.name}@${expectedVersion} version`);
-      if (foundVersion === expectedVersion) {
-        console.log(`~ ${pckage.name} already published as ${expectedVersion}`);
-        continue;
-      }
-    } catch (_) { /* package not present, all good */
+    const foundVersion: string =
+        await run(`npm show ${pckage.name}@${expectedVersion} version`);
+    if (foundVersion === expectedVersion) {
+      console.log(`~ ${pckage.name} already published as ${expectedVersion}`);
+      continue;
+    } else {
+      console.log(
+          await run('npm publish --tag next', {cwd: path.resolve(fullPath)}));
     }
-    console.log(
-        await run('npm publish --tag next', {cwd: path.resolve(fullPath)}));
   }
 }
 
