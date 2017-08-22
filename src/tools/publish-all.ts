@@ -75,6 +75,9 @@ async function main() {
       // fixup its shadycss import paths.
       continue;
     }
+    if (dir.endsWith('-collection') || dir.endsWith('-elements')) {
+      continue;
+    }
     const fullPath = path.resolve(path.join(workspacePath, dir));
     const packagePath = path.join(fullPath, 'package.json');
     if (!(await fs.exists(packagePath)) ||
@@ -90,23 +93,37 @@ async function main() {
     }
 
     if (options.command === 'push') {
-      const branchName =
+      let branchName =
           await run('git rev-parse --abbrev-ref HEAD', {cwd: fullPath});
       if (branchName === 'master') {
         const sha = await run('git rev-parse HEAD', {cwd: fullPath});
         await run('git checkout -b 3.0-preview', {cwd: fullPath});
+        branchName = '3.0-preview';
         await run('git add ./', {cwd: fullPath});
         await run(
             `git commit -m "Automatic polymer-modulizer conversion of ${sha}"`,
             {cwd: fullPath});
-        if (options.production) {
-          // await run(`git push origin 3.0-preview`, {cwd: fullPath});
+      }
+      if (options.production) {
+        if (branchName === '3.0-preview') {
+          const currentUrl =
+              await run('git remote get-url origin', {cwd: fullPath});
+          const badPrefix = 'https://github.com/';
+          if (currentUrl.startsWith(badPrefix)) {
+            const replacementUrl =
+                `git@github.com:${currentUrl.slice(badPrefix.length)}`;
+            await run('git remote rm origin', {cwd: fullPath});
+            await run(
+                `git remote add origin ${replacementUrl}`, {cwd: fullPath});
+          }
+          await run(`git push origin 3.0-preview`, {cwd: fullPath});
           console.log(`+ ${dir} pushed`);
         } else {
-          console.log(`- ${dir} was not pushed because this is a dry run`);
+          console.log(
+              `x ${dir} not pushed, found a weird branchname: ${branchName}`);
         }
       } else {
-        console.log(`x ${dir} wasn't at master, it was on ${branchName}`);
+        console.log(`- ${dir} was not pushed because this is a dry run`);
       }
     } else if (options.command === 'publish') {
       const foundVersion: string = await run(
