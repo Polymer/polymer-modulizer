@@ -73,7 +73,8 @@ export function generatePackageJson(
       console.warn(`"${bowerDep}" npm mapping not found`);
       continue;
     }
-    packageJson.dependencies[depMapping.npm] = depMapping.semver;
+    packageJson.dependencies[depMapping.npm] =
+      depMapping.semver || bowerJson.dependencies[bowerDep];
   }
 
   // TODO(fks) 07-18-2017: handle devDependencies. Right now wct creates a too
