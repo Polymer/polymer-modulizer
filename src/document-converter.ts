@@ -30,6 +30,7 @@ import {removeNamespaceInitializers} from './passes/remove-namespace-initializer
 import {removeUnnecessaryEventListeners} from './passes/remove-unnecessary-waits';
 import {removeWrappingIIFEs} from './passes/remove-wrapping-iife';
 import {rewriteNamespacesAsExports} from './passes/rewrite-namespace-exports';
+import {removeToplevelStrict} from './passes/remove-toplevel-strict';
 import {rewriteToplevelThis} from './passes/rewrite-toplevel-this';
 import {ConvertedDocumentUrl, convertHtmlDocumentUrl, convertJsDocumentUrl, getDocumentUrl, getRelativeUrl, OriginalDocumentUrl} from './url-converter';
 import {findAvailableIdentifier, getMemberName, getMemberPath, getModuleId, getNodeGivenAnalyzerAstNode, nodeToTemplateLiteral, serializeNode} from './util';
@@ -192,6 +193,7 @@ export class DocumentConverter {
     for (const script of this.document.getFeatures({kind: 'js-document'})) {
       const scriptProgram =
           recast.parse(script.parsedDocument.contents).program;
+      removeToplevelStrict(scriptProgram);
       rewriteToplevelThis(scriptProgram);
       // We need to inline templates on a per-script basis, otherwise we run
       // into trouble matching up analyzer AST nodes with our own.
