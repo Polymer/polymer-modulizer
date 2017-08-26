@@ -265,3 +265,13 @@ export async function openRepo(cloneDir: string): Promise<nodegit.Repository> {
 function isRedirect(response: any): boolean {
   return !!(response.meta && response.meta.status.match(/^301\b/));
 }
+
+/**
+ * @return true if the repository is in a dirty state
+ */
+export async function isDirty(nodegitRepo: nodegit.Repository): Promise<boolean> {
+  const statuses = await nodegitRepo.getStatus();
+  return statuses.some(status => {
+    return status.inWorkingTree();
+  });
+}

@@ -20,6 +20,7 @@ import * as semver from 'semver';
 import {convertPackage} from './convert-package';
 import {convertWorkspace} from './convert-workspace';
 import {readJson} from './manifest-converter';
+import {openRepo, isDirty} from './workspace/git';
 import {Runner} from './workspace/sync-workspace';
 
 const githubTokenMessage = `
@@ -207,14 +208,15 @@ installation.
   }
 
   // Ok, we're updating a package in a directory not under our control.
-  // We need to be sure it's safe. In a future PR let's check with git, but
-  // for now, we'll ask the user to pass in a --force flag.
-  if (!options.force) {
-    console.error(
-        `When running modulizer on an existing directory, ` +
-        `be sure that all changes are checked into source control. ` +
-        `Run with --force once you've verified.`);
-    process.exit(1);
+  // We need to be sure it's safe.
+  if (await openRepo('.').then(isDirty).catch((_err) => _err)) {
+    if (!options.force) {
+      console.error(
+          `When running modulizer on an existing directory, ` +
+          `be sure that all changes are checked into source control. ` +
+          `Run again once you've verified.`);
+      process.exit(1);
+    }
   }
 
   // TODO: each file is not always needed, refactor to optimize loading

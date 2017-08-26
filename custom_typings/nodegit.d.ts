@@ -40,6 +40,7 @@ declare module 'nodegit' {
     setHead(refname: string): Promise<Number>;
     getBranch(refname: string): Promise<Reference>;
     getBranchCommit(branch: string): Promise<Commit>;
+    getStatus(options?: StatusOptions): Promise<StatusFile[]>;
     checkoutBranch(branch: string|Reference): Promise<void>;
     getRemote(remote: string): Promise<Remote>;
     fetch(remote: string, fetchOpts: FetchOptions): Promise<void>;
@@ -66,6 +67,27 @@ declare module 'nodegit' {
   export class Tree {}
   export class Commit { id(): string; }
   export class Reference { static list(repo: Repository): Promise<any>; }
+  export class StatusOptions {
+    flags?: number;
+    pathspec?: string[];
+    show?: number;
+    version?: number;
+  }
+  export class StatusFile {
+    inIndex(): boolean;
+    inWorkingTree(): boolean;
+    isConflicted(): boolean;
+    isDeleted(): boolean;
+    isIgnored(): boolean;
+    isModified(): boolean;
+    isNew(): boolean;
+    isNew(): boolean;
+    isRenamed(): boolean;
+    isTypechange(): boolean;
+    path: string;
+    status: number;
+    statusBit: number;
+  }
 
   export class Tag {
     static list(repo: Repository): Promise<string[]>;
