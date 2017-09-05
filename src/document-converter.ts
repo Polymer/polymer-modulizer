@@ -1352,9 +1352,7 @@ function generateAliasRequests(
       aliasRequests.set(target, aliasRequestsForImport);
     }
 
-    for (const name of requestedIdentifiers) {
-      aliasRequestsForImport.push(name);
-    }
+    aliasRequestsForImport.push(...requestedIdentifiers);
   }
 
   for (const [name, imports] of invertMultimap(aliasRequests)) {
