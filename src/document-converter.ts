@@ -1343,33 +1343,36 @@ function domModuleCanBeInlined(domModule: parse5.ASTNode) {
  */
 function generateAliasRequests(
     importReferences: ReadonlySet<ImportReference>,
-    undesirableAliases: ReadonlySet<string>): Map<JsExport, string[]> {
-  const aliasRequests = new Map<JsExport, Array<string>>();
+    undesirableAliases: ReadonlySet<string>): Map<JsExport, Array<string>> {
+  const dedupedAliasRequests = new Map<JsExport, Set<string>>();
   for (const {target, requestedIdentifiers} of importReferences) {
-    let aliasRequestsForImport = aliasRequests.get(target);
+    let aliasRequestsForImport = dedupedAliasRequests.get(target);
     if (aliasRequestsForImport === undefined) {
-      aliasRequestsForImport = [];
-      aliasRequests.set(target, aliasRequestsForImport);
+      aliasRequestsForImport = new Set();
+      dedupedAliasRequests.set(target, aliasRequestsForImport);
     }
 
-    aliasRequestsForImport.push(...requestedIdentifiers);
+    for (const identifier of requestedIdentifiers) {
+      aliasRequestsForImport.add(identifier);
+    }
   }
 
-  for (const [name, imports] of invertMultimap(aliasRequests)) {
+  for (const [name, imports] of invertMultimap(dedupedAliasRequests)) {
     if (imports.size <= 1 && !undesirableAliases.has(name)) {
       continue;
     }
 
     for (const import_ of imports) {
-      const aliasRequestsForImport = aliasRequests.get(import_);
-      if (aliasRequestsForImport && aliasRequestsForImport.length > 1) {
-        let index = aliasRequestsForImport.indexOf(name);
-        while (index !== -1) {
-          aliasRequestsForImport.splice(index, 1);
-          index = aliasRequestsForImport.indexOf(name);
-        }
+      const aliasRequestsForImport = dedupedAliasRequests.get(import_);
+      if (aliasRequestsForImport && aliasRequestsForImport.size > 1) {
+        aliasRequestsForImport.delete(name);
       }
     }
+  }
+
+  const aliasRequests = new Map<JsExport, Array<string>>();
+  for (const [name, imports] of dedupedAliasRequests) {
+    aliasRequests.set(name, [...imports]);
   }
 
   return aliasRequests;
