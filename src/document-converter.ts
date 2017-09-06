@@ -828,6 +828,10 @@ export class DocumentConverter {
             this.traverse(path);
             return;
           }
+          // This identifier (`IMPORT_REFERENCE_REPLACEMENT_FAILED`) is needed
+          // to create a valid call expression even though it will always be
+          // replaced later, during import aliasing, because it is used as the
+          // `path` of the `ImportReference` created below.
           const [callPath] = assignmentPath.replace(jsc.callExpression(
               jsc.identifier('IMPORT_REFERENCE_REPLACEMENT_FAILED'),
               [assignmentPath.node.right]));
