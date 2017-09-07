@@ -767,12 +767,13 @@ export class DocumentConverter {
      * becomes:
      *    ['microTask', 'AsyncMicroTask', 'PolymerAsyncMicroTask']
      */
-    function generateMemberPathAliases(memberPath: string[]): string[] {
-      const requestedIdentifiers = [];
+    function generateMemberPathAliases(memberPath: ReadonlyArray<string>):
+        Array<string> {
+      const aliases = [];
       for (let i = memberPath.length - 1; i >= 0; i--) {
-        requestedIdentifiers.push(joinCamelCase(memberPath.slice(i)));
+        aliases.push(joinCamelCase(memberPath.slice(i)));
       }
-      return requestedIdentifiers;
+      return aliases;
     }
 
     /**
