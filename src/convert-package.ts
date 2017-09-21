@@ -16,6 +16,7 @@ import * as fs from 'mz/fs';
 import * as path from 'path';
 import {Analysis, Analyzer, FSUrlLoader, InMemoryOverlayUrlLoader, PackageUrlResolver} from 'polymer-analyzer';
 import * as rimraf from 'rimraf';
+import * as chalk from 'chalk';
 
 import {AnalysisConverter, AnalysisConverterOptions} from './analysis-converter';
 import {generatePackageJson, readJson, writeJson} from './manifest-converter';
@@ -44,7 +45,6 @@ type ConvertPackageOptions = AnalysisConverterOptions&{
    * The npm package version to use in package.json
    */
   readonly packageVersion: string;
-  readonly prereleaseVersion?: string;
   /**
    * Flag: If true, clear the out directory before writing to it.
    */
@@ -95,10 +95,9 @@ export async function convertPackage(options: ConvertPackageOptions) {
   console.log(`Out directory: ${outDirResolved}`);
 
   const npmPackageName = options.packageName;
-  const npmPackageVersion = options.prereleaseVersion ?
-      `${options.packageVersion}-${options.prereleaseVersion}` :
-      options.packageVersion;
+  const npmPackageVersion = options.packageVersion;
 
+  console.log(' 🌀  ' + chalk.magenta(`Converting Package...`));
   const analyzer = configureAnalyzer(options);
   const analysis = await analyzer.analyzePackage();
   const converter = configureConverter(analysis, options);
