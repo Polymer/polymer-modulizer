@@ -97,7 +97,7 @@ export default async function run(options: CliOptions) {
     namespaces: options.namespace,
     packageName: npmPackageName.toLowerCase(),
     packageVersion: npmPackageVersion,
-    clearOutDir: options.clear,
+    cleanOutDir: options.clean,
     mainFiles
   });
 

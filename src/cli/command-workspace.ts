@@ -82,7 +82,7 @@ export default async function run(options: CliOptions) {
         exclude: options['exclude'],
       },
       {
-        fresh: options['fresh'],
+        fresh: options['clean'],
         verbose: true,
       });
 

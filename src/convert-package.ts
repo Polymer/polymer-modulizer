@@ -48,7 +48,7 @@ type ConvertPackageOptions = AnalysisConverterOptions&{
   /**
    * Flag: If true, clear the out directory before writing to it.
    */
-  clearOutDir?: boolean;
+  cleanOutDir?: boolean;
 };
 
 export function configureAnalyzer(options: ConvertPackageOptions) {
@@ -102,7 +102,7 @@ export async function convertPackage(options: ConvertPackageOptions) {
   const analysis = await analyzer.analyzePackage();
   const converter = configureConverter(analysis, options);
   const results = await converter.convert();
-  if (options.clearOutDir) {
+  if (options.cleanOutDir) {
     rimraf.sync(outDirResolved);
   }
 

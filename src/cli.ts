@@ -97,10 +97,11 @@ const optionDefinitions: commandLineArgs.OptionDefinition[] = [
     description: 'Version string to use for package.json'
   },
   {
-    name: 'clear',
+    name: 'clean',
     type: Boolean,
     defaultValue: false,
-    description: 'Clear the out directory (if one exists) before running.',
+    description: 'If given, clear the existing build/workspace folder ' +
+    +    'before beginning.'
   },
   {
     name: 'force',
@@ -109,13 +110,6 @@ const optionDefinitions: commandLineArgs.OptionDefinition[] = [
     description:
         `If given, may overwrite or delete files when converting the given ` +
         `input directory.`,
-  },
-  {
-    name: 'fresh',
-    type: Boolean,
-    defaultValue: false,
-    description:
-        `If given, clear the existing workspace folder before beginning.`,
   },
 ];
 
@@ -130,11 +124,10 @@ export interface CliOptions {
   include: string[];
   'npm-name'?: string;
   'npm-version'?: string;
-  clear?: boolean;
+  clean: boolean;
   'workspace-dir'?: string;
   'github-token'?: string;
   force: boolean;
-  fresh: boolean;
 }
 
 export async function run() {
