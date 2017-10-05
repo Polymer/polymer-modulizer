@@ -14,6 +14,7 @@
 
 import * as inquirer from 'inquirer';
 import * as semver from 'semver';
+import * as chalk from 'chalk';
 
 import {convertPackage} from '../convert-package';
 import {readJson} from '../manifest-converter';
@@ -90,6 +91,9 @@ export default async function run(options: CliOptions) {
         }]))['npm-version'] as string;
   }
 
+  console.log(
+    chalk.dim('[1/2]') + ' 🌀  ' + chalk.magenta(`Converting Package...`));
+
   await convertPackage({
     inDir: options.in,
     outDir: options.out,
@@ -101,4 +105,6 @@ export default async function run(options: CliOptions) {
     mainFiles
   });
 
+  console.log(
+    chalk.dim('[2/2]') + ' 🎉  ' + chalk.magenta(`Conversion Complete!`));
 }

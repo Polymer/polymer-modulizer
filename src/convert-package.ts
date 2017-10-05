@@ -16,7 +16,6 @@ import * as fs from 'mz/fs';
 import * as path from 'path';
 import {Analysis, Analyzer, FSUrlLoader, InMemoryOverlayUrlLoader, PackageUrlResolver} from 'polymer-analyzer';
 import * as rimraf from 'rimraf';
-import * as chalk from 'chalk';
 
 import {AnalysisConverter, AnalysisConverterOptions} from './analysis-converter';
 import {generatePackageJson, readJson, writeJson} from './manifest-converter';
@@ -97,7 +96,6 @@ export async function convertPackage(options: ConvertPackageOptions) {
   const npmPackageName = options.packageName;
   const npmPackageVersion = options.packageVersion;
 
-  console.log(' 🌀  ' + chalk.magenta(`Converting Package...`));
   const analyzer = configureAnalyzer(options);
   const analysis = await analyzer.analyzePackage();
   const converter = configureConverter(analysis, options);

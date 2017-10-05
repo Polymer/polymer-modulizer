@@ -3101,8 +3101,8 @@ polymer-analyzer@^2.0.2:
     strip-indent "^2.0.0"
 
 polymer-workspaces@^1.0.0:
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/polymer-workspaces/-/polymer-workspaces-1.0.1.tgz#fab73857ac4309e0d2dea20de670c9ac4a4a0285"
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/polymer-workspaces/-/polymer-workspaces-1.0.2.tgz#fd5463953a88bb2ac0b1547610d3cd2882ead03a"
   dependencies:
     "@types/rimraf" "^2.0.2"
     github "^11.0.0"
