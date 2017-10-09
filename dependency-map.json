@@ -494,5 +494,38 @@
   "web-component-tester": {
     "npm": "web-component-tester",
     "semver": "^6.0.0"
+  },
+  "accessibility-developer-tools": {
+    "npm": "accessibility-developer-tools"
+  },
+  "async": {
+    "npm": "async"
+  },
+  "chai": {
+    "npm": "chai"
+  },
+  "es6-promise": {
+    "npm": "es6-promise"
+  },
+  "lodash": {
+    "npm": "lodash"
+  },
+  "marked": {
+    "npm": "marked"
+  },
+  "mocha": {
+    "npm": "mocha"
+  },
+  "prism": {
+    "npm": "prismjs"
+  },
+  "sinonjs": {
+    "npm": "sinon"
+  },
+  "sinon-chai": {
+    "npm": "sinon-chai"
+  },
+  "stacky": {
+    "npm": "stacky"
   }
 }
