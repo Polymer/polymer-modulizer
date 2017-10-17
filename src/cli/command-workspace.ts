@@ -20,6 +20,9 @@ import {Workspace} from 'polymer-workspaces';
 import {CliOptions} from '../cli';
 import {convertWorkspace} from '../convert-workspace';
 
+import workspacePublish from './workspace-publish';
+import workspacePush from './workspace-push';
+
 const githubTokenMessage = `
 You need to create a github token and place it in a file named 'github-token'.
 The token does not need any permissions.
@@ -97,4 +100,15 @@ export default async function run(options: CliOptions) {
 
   console.log(
       chalk.dim('[3/3]') + ' 🎉  ' + chalk.magenta(`Conversion Complete!`));
+
+  if (options.push) {
+    await workspacePush(workspace, reposToConvert);
+  }
+  if (options.publish) {
+    await workspacePublish(workspace, reposToConvert);
+  }
+  if (!options.push && !options.publish) {
+    console.log(
+        `When you're ready, run with --push/--publish to push changes to github and/or npm.`);
+  }
 }

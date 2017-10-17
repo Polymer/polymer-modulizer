@@ -111,6 +111,20 @@ const optionDefinitions: commandLineArgs.OptionDefinition[] = [
         `If given, may overwrite or delete files when converting the given ` +
         `input directory.`,
   },
+  {
+    name: 'push',
+    type: Boolean,
+    defaultValue: false,
+    description:
+        `If given, run prompts after conversion to push repo changes to github.`,
+  },
+  {
+    name: 'publish',
+    type: Boolean,
+    defaultValue: false,
+    description:
+        `If given, run prompts after conversion to publish package changes to npm.`,
+  },
 ];
 
 export interface CliOptions {
@@ -128,6 +142,8 @@ export interface CliOptions {
   'workspace-dir'?: string;
   'github-token'?: string;
   force: boolean;
+  push: boolean;
+  publish: boolean;
 }
 
 export async function run() {
