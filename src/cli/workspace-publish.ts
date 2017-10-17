@@ -24,14 +24,14 @@ export default async function run(
 
   const whoAmI = await reposToConvert[0].npm.whoami();
   console.log(`npm whoami: ${whoAmI}`);
-  const {publishTag} = (await inquirer.prompt([
+  const {publishTag} = await inquirer.prompt([
     {
       type: 'input',
       name: 'publishTag',
       message: 'publish to npm tag:',
       default: 'latest',
     },
-  ]));
+  ]);
 
   console.log('');
   console.log('Ready to publish:');

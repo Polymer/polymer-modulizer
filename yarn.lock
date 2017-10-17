@@ -72,6 +72,12 @@
   version "3.0.1"
   resolved "https://registry.yarnpkg.com/@types/minimatch/-/minimatch-3.0.1.tgz#b683eb60be358304ef146f5775db4c0e3696a550"
 
+"@types/mkdirp@^0.5.1":
+  version "0.5.1"
+  resolved "https://registry.yarnpkg.com/@types/mkdirp/-/mkdirp-0.5.1.tgz#ea887cd024f691c1ca67cce20b7606b053e43b0f"
+  dependencies:
+    "@types/node" "*"
+
 "@types/mocha@^2.2.41":
   version "2.2.43"
   resolved "https://registry.yarnpkg.com/@types/mocha/-/mocha-2.2.43.tgz#03c54589c43ad048cbcbfd63999b55d0424eec27"
@@ -3100,9 +3106,9 @@ polymer-analyzer@^2.0.2:
     shady-css-parser "0.0.8"
     strip-indent "^2.0.0"
 
-polymer-workspaces@^1.0.0:
-  version "1.0.2"
-  resolved "https://registry.yarnpkg.com/polymer-workspaces/-/polymer-workspaces-1.0.2.tgz#fd5463953a88bb2ac0b1547610d3cd2882ead03a"
+polymer-workspaces@^1.1.0:
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/polymer-workspaces/-/polymer-workspaces-1.1.0.tgz#e049fe07ba338dc0188591160f5615fa78e484c2"
   dependencies:
     "@types/rimraf" "^2.0.2"
     github "^11.0.0"
