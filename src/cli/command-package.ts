@@ -12,6 +12,7 @@
  * http://polymer.github.io/PATENTS.txt
  */
 import * as chalk from 'chalk';
+import {exec} from 'child_process';
 import * as inquirer from 'inquirer';
 import * as path from 'path';
 import * as semver from 'semver';
@@ -22,14 +23,27 @@ import {readJson} from '../manifest-converter';
 
 export default async function run(options: CliOptions) {
   // Ok, we're updating a package in a directory not under our control.
-  // We need to be sure it's safe. In a future PR let's check with git, but
-  // for now, we'll ask the user to pass in a --force flag.
-  if (!options.force) {
-    console.error(
-        `When running modulizer on an existing directory, ` +
-        `be sure that all changes are checked into source control. ` +
-        `Run with --force once you've verified.`);
-    process.exit(1);
+  // We need to be sure it's safe.
+  try {
+    await new Promise((resolve, reject) => {
+      exec('git status -s', {
+        cwd: options.in || process.cwd()
+      }, (error, stdout, stderr) => {
+        if (error || stderr || stdout) {
+          return reject();
+        }
+
+        resolve();
+      });
+    });
+  } catch (ex) {
+    if (!options.force) {
+      console.error(
+          `When running modulizer on an existing directory, ` +
+          `be sure that all changes are checked into source control. ` +
+          `Run again once you've verified.`);
+      process.exit(1);
+    }
   }
 
   // TODO: each file is not always needed, refactor to optimize loading
