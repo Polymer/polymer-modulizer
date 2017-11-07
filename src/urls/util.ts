@@ -18,11 +18,6 @@ import {dependencyMap} from '../manifest-converter';
 
 import {ConvertedDocumentUrl, OriginalDocumentUrl} from './types';
 
-/** The HTML file extension. */
-export const htmlExtension = '.html';
-/** The JavaScript file extension. */
-export const jsExtension = '.js';
-
 /**
  * Given an HTML url relative to the project root, return true if that url
  * points to a bower dependency file.
@@ -35,8 +30,11 @@ function isBowerDependencyUrl(htmlUrl: OriginalDocumentUrl): boolean {
 /**
  * Rewrite a url to replace a `.js` file extension with `.html`.
  */
-function fixHtmlExtension(htmlUrl: string): string {
-  return htmlUrl.substring(0, htmlUrl.length - htmlExtension.length) + '.js';
+function fixHtmlExtensionIfFound(htmlUrl: string): string {
+  if (!htmlUrl.endsWith('.html')) {
+    return htmlUrl;
+  }
+  return htmlUrl.substring(0, htmlUrl.length - '.html'.length) + '.js';
 }
 
 /**
@@ -103,9 +101,8 @@ export function convertHtmlDocumentUrl(htmlUrl: OriginalDocumentUrl):
   }
 
   // Convert all HTML URLs to point to JS equivilent
-  if (jsUrl.endsWith(htmlExtension)) {
-    jsUrl = fixHtmlExtension(jsUrl) as ConvertedDocumentUrl;
-  }
+  jsUrl = fixHtmlExtensionIfFound(jsUrl) as ConvertedDocumentUrl;
+
   // TODO(fks): Revisit this format? The analyzer returns URLs without this
   return ('./' + jsUrl) as ConvertedDocumentUrl;
 }
