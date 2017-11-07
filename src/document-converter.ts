@@ -24,7 +24,7 @@ import * as path from 'path';
 import {Document, Import, isPositionInsideRange, ParsedHtmlDocument, Severity, Warning} from 'polymer-analyzer';
 import * as recast from 'recast';
 
-import {ProjectConverterInterface} from './base-converter';
+import {ProjectConverterInterface} from './project-converter';
 import {ConversionSettings} from './conversion-settings';
 import {ConversionResult, JsExport, NamespaceMemberToExport} from './js-module';
 import {removeNamespaceInitializers} from './passes/remove-namespace-initializers';

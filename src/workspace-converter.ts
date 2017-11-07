@@ -14,14 +14,14 @@
 
 import {Document} from 'polymer-analyzer';
 
-import {BaseConverter, ProjectConverterInterface} from './base-converter';
+import {ProjectConverter, ProjectConverterInterface} from './project-converter';
 import {DocumentConverter} from './document-converter';
 import {OriginalDocumentUrl} from './urls/types';
 
 /**
  * Converts an entire workspace object.
  */
-export class WorkspaceConverter extends BaseConverter implements
+export class WorkspaceConverter extends ProjectConverter implements
     ProjectConverterInterface {
   protected getDocumentConverter(
       document: Document,

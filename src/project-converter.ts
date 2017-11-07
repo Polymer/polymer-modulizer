@@ -30,7 +30,7 @@ export interface ProjectConverterInterface {
   convertDocument(document: Document, visited: Set<OriginalDocumentUrl>): void;
 }
 
-export abstract class BaseConverter implements ProjectConverterInterface {
+export abstract class ProjectConverter implements ProjectConverterInterface {
   protected readonly _analysis: Analysis;
   protected readonly settings: ConversionSettings;
 

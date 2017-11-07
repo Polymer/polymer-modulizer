@@ -14,7 +14,7 @@
 
 import {Analysis, Document} from 'polymer-analyzer';
 
-import {BaseConverter, ProjectConverterInterface} from './base-converter';
+import {ProjectConverter, ProjectConverterInterface} from './project-converter';
 import {PartialConversionSettings} from './conversion-settings';
 import {DocumentConverter} from './document-converter';
 import {OriginalDocumentUrl} from './urls/types';
@@ -33,7 +33,7 @@ export interface AnalysisConverterOptions extends PartialConversionSettings {
 /**
  * Converts an entire Analysis object.
  */
-export class AnalysisConverter extends BaseConverter implements
+export class AnalysisConverter extends ProjectConverter implements
     ProjectConverterInterface {
   readonly packageName: string;
   readonly packageType: 'element'|'application';
