@@ -24,16 +24,40 @@ import * as path from 'path';
 import {Document, Import, isPositionInsideRange, ParsedHtmlDocument, Severity, Warning} from 'polymer-analyzer';
 import * as recast from 'recast';
 
-import {ConversionMetadata} from './conversion-metadata';
+import {ConversionSettings} from './conversion-settings';
 import {ConversionResult, JsExport, NamespaceMemberToExport} from './js-module';
 import {removeNamespaceInitializers} from './passes/remove-namespace-initializers';
 import {removeUnnecessaryEventListeners} from './passes/remove-unnecessary-waits';
 import {removeWrappingIIFEs} from './passes/remove-wrapping-iife';
 import {rewriteNamespacesAsExports} from './passes/rewrite-namespace-exports';
 import {rewriteToplevelThis} from './passes/rewrite-toplevel-this';
+import {ProjectConverter} from './project-converter';
 import {ConvertedDocumentFilePath, ConvertedDocumentUrl, OriginalDocumentUrl} from './urls/types';
-import {convertHtmlDocumentUrl, convertJsDocumentUrl, getDocumentUrl, getRelativeUrl} from './urls/util';
+import {UrlHandlerInterface} from './urls/url-handler-interface';
+import {fixHtmlExtension, getDocumentUrl, htmlExtension} from './urls/util';
 import {findAvailableIdentifier, getMemberName, getMemberPath, getModuleId, getNodeGivenAnalyzerAstNode, nodeToTemplateLiteral, serializeNode} from './util';
+
+/**
+ * Keep a map of dangerous references to check for. Output the related warning
+ * message when one is found.
+ */
+const dangerousReferences = new Map<string, string>([
+  [
+    'document.currentScript',
+    `document.currentScript is always \`null\` in an ES6 module.`
+  ],
+]);
+
+/**
+ * Keep a set of elements to ignore when Recreating HTML contents by adding
+ * code to the top of a program.
+ */
+const generatedElementBlacklist = new Set<string|undefined>([
+  'base',
+  'link',
+  'meta',
+  'script',
+]);
 
 /**
  * Pairs a subtree of an AST (`path` as a `NodePath`) to be replaced with a
@@ -128,24 +152,20 @@ function getImportDeclarations(
 }
 
 
-const elementBlacklist = new Set<string|undefined>([
-  'base',
-  'link',
-  'meta',
-  'script',
-]);
-
-
 /**
- * Converts a Document and its dependencies.
+ * Converts a Document from Bower to NPM. This supports converting HTML files
+ * to JS Modules (using JavaScript import/export statements) or the more simple
+ * HTML -> HTML conversion.
  */
 export class DocumentConverter {
   private readonly originalUrl: OriginalDocumentUrl;
   private readonly convertedUrl: ConvertedDocumentUrl;
-  private readonly conversionMetadata: ConversionMetadata;
+  private readonly projectConverter: ProjectConverter;
+  private readonly urlHandler: UrlHandlerInterface;
+  private readonly conversionSettings: ConversionSettings;
   private readonly document: Document;
   private readonly packageName: string;
-  private readonly packageType: 'element'|'application';
+  private readonly packageType: string;
 
   // Dependencies not to convert, because they already have been / are currently
   // being converted.
@@ -153,28 +173,30 @@ export class DocumentConverter {
 
   private readonly _claimedDomModules = new Set<parse5.ASTNode>();
   constructor(
-      analysisConverter: ConversionMetadata, document: Document,
-      packageName: string, packageType: 'element'|'application',
-      visited: Set<OriginalDocumentUrl>) {
-    this.conversionMetadata = analysisConverter;
+      conversionSettings: ConversionSettings,
+      projectConverter: ProjectConverter, urlHandler: UrlHandlerInterface,
+      document: Document, visited: Set<OriginalDocumentUrl>) {
+    this.projectConverter = projectConverter;
+    this.conversionSettings = conversionSettings;
+    this.urlHandler = urlHandler;
     this.document = document;
     this.originalUrl = getDocumentUrl(document);
-    this.convertedUrl = convertHtmlDocumentUrl(this.originalUrl);
-    this.packageName = packageName;
-    this.packageType = packageType;
+    this.packageName = this.urlHandler.getPackageNameForUrl(this.originalUrl);
+    this.packageType = this.urlHandler.getPackageTypeForUrl(this.originalUrl);
+    this.convertedUrl = this.convertDocumentUrl(this.originalUrl);
     this.visited = visited;
   }
 
   /**
    * Returns the HTML Imports of a document, except imports to documents
-   * specifically excluded in the AnalysisConverter.
+   * specifically excluded in the PackageConverter.
    *
    * Note: Imports that are not found are not returned by the analyzer.
    */
   private getHtmlImports() {
     return IterableX.from(this.document.getFeatures({kind: 'html-import'}))
         .filter((f: Import) => {
-          for (const exclude of this.conversionMetadata.excludes) {
+          for (const exclude of this.conversionSettings.excludes) {
             if (f.document.url.endsWith(exclude)) {
               return false;
             }
@@ -184,7 +206,7 @@ export class DocumentConverter {
   }
 
   convertToJsModule(): ConversionResult|void {
-    for (const exclude of this.conversionMetadata.excludes) {
+    for (const exclude of this.conversionSettings.excludes) {
       if (this.originalUrl.endsWith(exclude)) {
         return;
       }
@@ -200,6 +222,7 @@ export class DocumentConverter {
       combinedToplevelStatements.push(...scriptProgram.body);
     }
     const program = jsc.program(combinedToplevelStatements);
+    // Convert dependencies first, so we know what exports they have.
     this.convertDependencies();
     removeUnnecessaryEventListeners(program);
     removeWrappingIIFEs(program);
@@ -209,16 +232,16 @@ export class DocumentConverter {
     for (const scriptImports of this.document.getFeatures(
              {kind: 'html-script'})) {
       const oldScriptUrl = getDocumentUrl(scriptImports.document);
-      const newScriptUrl = convertJsDocumentUrl(oldScriptUrl);
+      const newScriptUrl = this.convertScriptUrl(oldScriptUrl);
       importedReferences.set(newScriptUrl, new Set());
     }
     this.addJsImports(program, importedReferences);
     this.insertCodeToGenerateHtmlElements(program);
 
-    removeNamespaceInitializers(program, this.conversionMetadata.namespaces);
+    removeNamespaceInitializers(program, this.conversionSettings.namespaces);
     const {localNamespaceNames, namespaceNames, exportMigrationRecords} =
         rewriteNamespacesAsExports(
-            program, this.document, this.conversionMetadata.namespaces);
+            program, this.document, this.conversionSettings.namespaces);
 
     for (const namespaceName of namespaceNames) {
       this.rewriteNamespaceThisReferences(program, namespaceName);
@@ -252,6 +275,7 @@ export class DocumentConverter {
   }
 
   convertAsToplevelHtmlDocument(): ConversionResult {
+    // Convert dependencies first, so we know what exports they have.
     this.convertDependencies();
     const htmlDocument = this.document.parsedDocument as ParsedHtmlDocument;
     const p = dom5.predicates;
@@ -346,7 +370,7 @@ export class DocumentConverter {
       const offsets = htmlDocument.sourceRangeToOffsets(htmlImport.sourceRange);
 
       const htmlDocumentUrl = getDocumentUrl(htmlImport.document);
-      const importedJsDocumentUrl = convertHtmlDocumentUrl(htmlDocumentUrl);
+      const importedJsDocumentUrl = this.convertDocumentUrl(htmlDocumentUrl);
       const importUrl =
           this.formatImportUrl(importedJsDocumentUrl, htmlImport.url);
       const scriptTag = parse5.parseFragment(`<script type="module"></script>`)
@@ -371,7 +395,7 @@ export class DocumentConverter {
           htmlDocument.sourceRangeForNode(scriptImport.astNode)!);
 
       const correctedUrl = this.formatImportUrl(
-          convertHtmlDocumentUrl(getDocumentUrl(scriptImport.document)),
+          this.convertDocumentUrl(getDocumentUrl(scriptImport.document)),
           scriptImport.url);
       dom5.setAttribute(scriptImport.astNode, 'src', correctedUrl);
 
@@ -431,7 +455,7 @@ export class DocumentConverter {
 
     const {localNamespaceNames, namespaceNames, exportMigrationRecords} =
         rewriteNamespacesAsExports(
-            program, this.document, this.conversionMetadata.namespaces);
+            program, this.document, this.conversionSettings.namespaces);
     for (const namespaceName of namespaceNames) {
       this.rewriteNamespaceThisReferences(program, namespaceName);
     }
@@ -579,8 +603,9 @@ export class DocumentConverter {
 
     const genericElements = filterClone(
         elements,
-        (e) => !(
-            elementBlacklist.has(e.tagName) || this._claimedDomModules.has(e)));
+        (e) =>
+            !(generatedElementBlacklist.has(e.tagName) ||
+              this._claimedDomModules.has(e)));
 
     if (genericElements.length === 0) {
       return;
@@ -721,15 +746,14 @@ export class DocumentConverter {
   }
 
   /**
-   * Convert dependencies first, so we know what exports they have.
-   *
-   * Mutates this.analysisConverter to register their exports.
+   * Convert document dependencies. Should be called early in the conversion
+   * process so that it can read this document's dependencies' exports.
    */
   private convertDependencies() {
     this.visited.add(this.originalUrl);
     for (const htmlImport of this.getHtmlImports()) {
       const documentUrl = getDocumentUrl(htmlImport.document);
-      if (this.conversionMetadata.results.has(documentUrl)) {
+      if (this.projectConverter.conversionResults.has(documentUrl)) {
         continue;
       }
       if (this.visited.has(documentUrl)) {
@@ -740,7 +764,7 @@ export class DocumentConverter {
             `cyclic dependencies.`);
         continue;
       }
-      this.conversionMetadata.convertDocument(
+      this.projectConverter.convertDocumentToJs(
           htmlImport.document, this.visited);
     }
   }
@@ -754,7 +778,8 @@ export class DocumentConverter {
    */
   private collectNamespacedReferences(program: Program):
       Map<ConvertedDocumentUrl, Set<ImportReference>> {
-    const analysisConverter = this.conversionMetadata;
+    const converter = this.projectConverter;
+    const conversionSettings = this.conversionSettings;
     const importedReferences =
         new Map<ConvertedDocumentUrl, Set<ImportReference>>();
 
@@ -774,14 +799,13 @@ export class DocumentConverter {
     astTypes.visit(program, {
       visitIdentifier(path: NodePath<Identifier>) {
         const memberName = path.node.name;
-        const isNamespace = analysisConverter.namespaces.has(memberName);
+        const isNamespace = conversionSettings.namespaces.has(memberName);
         const parentIsMemberExpression =
             (path.parent && getMemberPath(path.parent.node)) !== undefined;
         if (!isNamespace || parentIsMemberExpression) {
           return false;
         }
-        const exportOfMember =
-            analysisConverter.namespacedExports.get(memberName);
+        const exportOfMember = converter.namespacedExports.get(memberName);
         if (!exportOfMember) {
           return false;
         }
@@ -799,8 +823,7 @@ export class DocumentConverter {
         const assignmentPath = getPathOfAssignmentTo(path);
         if (assignmentPath) {
           const setterName = getSetterName(memberPath);
-          const exportOfMember =
-              analysisConverter.namespacedExports.get(setterName);
+          const exportOfMember = converter.namespacedExports.get(setterName);
           if (!exportOfMember) {
             // warn about writing to an exported value without a setter?
             this.traverse(path);
@@ -815,8 +838,7 @@ export class DocumentConverter {
           addToImportedReferences(exportOfMember, callPath.get('callee')!);
           return false;
         }
-        const exportOfMember =
-            analysisConverter.namespacedExports.get(memberName);
+        const exportOfMember = converter.namespacedExports.get(memberName);
         if (!exportOfMember) {
           this.traverse(path);
           return;
@@ -834,8 +856,8 @@ export class DocumentConverter {
    * don't work well in modular code.
    */
   private rewriteExcludedReferences(program: Program) {
-    const mapOfRewrites = new Map(this.conversionMetadata.referenceRewrites);
-    for (const reference of this.conversionMetadata.referenceExcludes) {
+    const mapOfRewrites = new Map(this.conversionSettings.referenceRewrites);
+    for (const reference of this.conversionSettings.referenceExcludes) {
       mapOfRewrites.set(reference, jsc.identifier('undefined'));
     }
 
@@ -871,7 +893,6 @@ export class DocumentConverter {
   }
 
   private warnOnDangerousReferences(program: Program) {
-    const dangerousReferences = this.conversionMetadata.dangerousReferences;
     const originalUrl = this.originalUrl;
     astTypes.visit(program, {
       visitMemberExpression(path: NodePath<MemberExpression>) {
@@ -1020,49 +1041,86 @@ export class DocumentConverter {
   }
 
   /**
+   * Converts an HTML Document's path from old world to new. Use new NPM naming
+   * as needed in the path, and change any .html extension to .js.
+   */
+  private convertDocumentUrl(htmlUrl: OriginalDocumentUrl):
+      ConvertedDocumentUrl {
+    // TODO(fks): This can be removed later if type-checking htmlUrl is enough
+    if (htmlUrl.startsWith('.') || htmlUrl.startsWith('/')) {
+      throw new Error(
+          `convertDocumentUrl() expects an OriginalDocumentUrl string` +
+          `from the analyzer, but got "${htmlUrl}"`);
+    }
+    // Use the layout-specific UrlHandler to convert the URL.
+    let jsUrl = this.urlHandler.convertUrl(htmlUrl);
+
+    // Temporary workaround for imports of some shadycss files that wrapped
+    // ES6 modules.
+    if (jsUrl.endsWith('shadycss/apply-shim.html')) {
+      jsUrl = jsUrl.replace(
+                  'shadycss/apply-shim.html',
+                  'shadycss/entrypoints/apply-shim.js') as ConvertedDocumentUrl;
+    }
+    if (jsUrl.endsWith('shadycss/custom-style-interface.html')) {
+      jsUrl = jsUrl.replace(
+                  'shadycss/custom-style-interface.html',
+                  'shadycss/entrypoints/custom-style-interface.js') as
+          ConvertedDocumentUrl;
+    }
+
+    // Convert all HTML URLs to point to JS equivilent
+    if (jsUrl.endsWith(htmlExtension)) {
+      jsUrl = fixHtmlExtension(jsUrl) as ConvertedDocumentUrl;
+    }
+    // TODO(fks): Revisit this format? The analyzer returns URLs without this
+    return jsUrl;
+  }
+
+  /**
+   * Converts the URL for a script that is already being loaded in a
+   * pre-conversion HTML document via the <script> tag. This is similar to
+   * convertDocumentUrl(), but can skip some of the more complex .html -> .js
+   * conversion/rewriting.
+   */
+  private convertScriptUrl(oldUrl: OriginalDocumentUrl): ConvertedDocumentUrl {
+    // TODO(fks): This can be removed later if type-checking htmlUrl is enough
+    if (oldUrl.startsWith('.') || oldUrl.startsWith('/')) {
+      throw new Error(
+          `convertDocumentUrl() expects an OriginalDocumentUrl string` +
+          `from the analyzer, but got "${oldUrl}"`);
+    }
+    // Use the layout-specific UrlHandler to convert the URL.
+    return this.urlHandler.convertUrl(oldUrl);
+  }
+
+  /**
    * Format an import from the current document to the given JS URL. If an
    * original HTML import URL is given, attempt to match the format of that
    * import URL as much as possible. For example, if the original import URL was
    * an absolute path, return an absolute path as well.
+   *
+   * TODO(fks) 10-26-2017: Make this run on Windows/Non-Unix systems.
    */
   private formatImportUrl(
-      jsRootUrl: ConvertedDocumentUrl, originalHtmlImportUrl?: string) {
-    // Return an absolute URL path if the original HTML import was absolute
+      jsRootUrl: ConvertedDocumentUrl, originalHtmlImportUrl?: string): string {
+    // Return an absolute URL path if the original HTML import was absolute.
+    // TODO(fks) 11-06-2017: Still return true absolute paths when using
+    // bare/named imports?
     if (originalHtmlImportUrl && path.posix.isAbsolute(originalHtmlImportUrl)) {
       return '/' + jsRootUrl.slice('./'.length);
     }
-    // TODO(fks): Most of these can be calculated once and saved for later
-    const isImportFromLocalFile =
-        !this.convertedUrl.startsWith('./node_modules');
-    const isImportToLocalFile = !jsRootUrl.startsWith('./node_modules');
-    const isPackageScoped = this.packageName.includes('/');
-    const isPackageElement = this.packageType === 'element';
-    let importUrl = getRelativeUrl(this.convertedUrl, jsRootUrl);
-    // If this document is an external dependency, or if this document is
-    // importing a local file, just return normal relative URL between the two
-    // files.
-    if (!isImportFromLocalFile || isImportToLocalFile) {
-      return importUrl;
+    // If the import is contained within a single package (internal), return
+    // a path-based import.
+    if (this.urlHandler.isImportInternal(this.convertedUrl, jsRootUrl)) {
+      return this.urlHandler.getPathImportUrl(this.convertedUrl, jsRootUrl);
     }
-    // If the current project is an element, rewrite imports to point to
-    // dependencies as if they were siblings.
-    if (isPackageElement) {
-      if (importUrl.startsWith('./node_modules/')) {
-        importUrl = '../' + importUrl.slice('./node_modules/'.length);
-      } else {
-        importUrl = importUrl.replace('node_modules', '..');
-      }
+    // Otheriwse, return the external import URL formatted for names or paths.
+    if (this.conversionSettings.npmImportStyle === 'names') {
+      return this.urlHandler.getNameImportUrl(jsRootUrl);
+    } else {
+      return this.urlHandler.getPathImportUrl(this.convertedUrl, jsRootUrl);
     }
-    // If the current project has a scoped package name, account for the scoping
-    // folder by referencing files up an additional level.
-    if (isPackageScoped) {
-      if (importUrl.startsWith('./')) {
-        importUrl = '../' + importUrl.slice('./'.length);
-      } else {
-        importUrl = '../' + importUrl;
-      }
-    }
-    return importUrl;
   }
 
   /**
@@ -1094,7 +1152,7 @@ export class DocumentConverter {
     const jsImportDeclarations = [];
     for (const htmlImport of this.getHtmlImports()) {
       const importedJsDocumentUrl =
-          convertHtmlDocumentUrl(getDocumentUrl(htmlImport.document));
+          this.convertDocumentUrl(getDocumentUrl(htmlImport.document));
 
       const references = importedReferences.get(importedJsDocumentUrl);
       const namedExports =
@@ -1116,8 +1174,9 @@ export class DocumentConverter {
       const references = importedReferences.get(jsImplicitImportUrl);
       const namedExports =
           new Set(IterableX.from(references || []).map((ref) => ref.target));
-
       const jsFormattedImportUrl = this.formatImportUrl(jsImplicitImportUrl);
+
+
       jsImportDeclarations.push(...getImportDeclarations(
           jsFormattedImportUrl, namedExports, references, usedIdentifiers));
     }

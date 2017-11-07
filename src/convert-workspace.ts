@@ -14,20 +14,25 @@
 
 import {fs} from 'mz';
 import * as path from 'path';
-import {Analysis, Analyzer, FSUrlLoader, InMemoryOverlayUrlLoader, PackageUrlResolver} from 'polymer-analyzer';
+import {Analyzer, FSUrlLoader, InMemoryOverlayUrlLoader, PackageUrlResolver} from 'polymer-analyzer';
 import {WorkspaceRepo} from 'polymer-workspaces';
 
-import {BaseConverterOptions} from './base-converter';
-import {dependencyMap, generatePackageJson, readJson, writeJson} from './manifest-converter';
+import {createDefaultConversionSettings, PartialConversionSettings} from './conversion-settings';
+import {generatePackageJson, readJson, writeJson} from './manifest-converter';
+import {ProjectConverter} from './project-converter';
 import {polymerFileOverrides} from './special-casing';
-import {WorkspaceConverter} from './workspace-converter';
+import {getNpmPackageName, WorkspaceUrlHandler} from './urls/workspace-url-handler';
 
 import util = require('util');
 import _mkdirp = require('mkdirp');
 const mkdirp = util.promisify(_mkdirp);
 
-
-interface ConvertWorkspaceOptions extends BaseConverterOptions {
+/**
+ * Configuration options required for workspace conversions. Contains
+ * information about which repos to convert and what new version to set
+ * each npm package at.
+ */
+interface WorkspaceConversionSettings extends PartialConversionSettings {
   packageVersion: string;
   workspaceDir: string;
   reposToConvert: WorkspaceRepo[];
@@ -37,7 +42,7 @@ interface ConvertWorkspaceOptions extends BaseConverterOptions {
  * Create a symlink from the repo into the workspace's node_modules directory.
  */
 async function writeNpmSymlink(
-    options: ConvertWorkspaceOptions, repo: WorkspaceRepo) {
+    options: WorkspaceConversionSettings, repo: WorkspaceRepo) {
   const packageJsonPath = path.join(repo.dir, 'package.json');
   if (!await fs.exists(packageJsonPath)) {
     return;
@@ -59,61 +64,56 @@ async function writeNpmSymlink(
 /**
  * For a given repo, generate a new package.json and write it to disk.
  */
-async function writePackageJson(repo: WorkspaceRepo, packageVersion: string) {
+function writePackageJson(repo: WorkspaceRepo, packageVersion: string) {
+  const bowerPackageName = path.basename(repo.dir);
   const bowerJsonPath = path.join(repo.dir, 'bower.json');
   const bowerJson = readJson(bowerJsonPath);
-  const bowerName = bowerJson.name;
-  let depMapping: {npm: string}|undefined = dependencyMap[bowerName];
-  if (!depMapping) {
-    console.warn(`"${bowerName}" npm mapping not found`);
-    depMapping = {npm: bowerName};
-  }
+  const npmPackageName = getNpmPackageName(bowerJsonPath, bowerPackageName);
   const packageJson =
-      generatePackageJson(bowerJson, depMapping.npm, packageVersion);
+      generatePackageJson(bowerJson, npmPackageName, packageVersion);
   writeJson(packageJson, repo.dir, 'package.json');
 }
 
-export function configureAnalyzer(options: ConvertWorkspaceOptions) {
+/**
+ * Configure a basic analyzer instance for the workspace.
+ */
+function configureAnalyzer(options: WorkspaceConversionSettings) {
   const workspaceDir = options.workspaceDir;
   const urlLoader = new InMemoryOverlayUrlLoader(new FSUrlLoader(workspaceDir));
   for (const [url, contents] of polymerFileOverrides) {
     urlLoader.urlContentsMap.set(`polymer/${url}`, contents);
   }
-
   return new Analyzer({
     urlLoader,
     urlResolver: new PackageUrlResolver(),
   });
 }
 
-export function configureConverter(
-    analysis: Analysis, options: ConvertWorkspaceOptions) {
-  return new WorkspaceConverter(analysis, {
-    namespaces: options.namespaces,
-    excludes:
-        [...(options.excludes || []), 'neon-animation/web-animations.html'],
-    referenceExcludes: options.referenceExcludes ||
-        [
-          'Polymer.DomModule',
-          'Polymer.Settings',
-          'Polymer.log',
-          'Polymer.rootPath',
-          'Polymer.sanitizeDOMValue',
-          'Polymer.Collection',
-        ],
-  });
-}
-
 /**
  * Convert a set of workspace repos to JavaScript modules & npm.
  */
-export default async function convert(options: ConvertWorkspaceOptions) {
+export default async function convert(options: WorkspaceConversionSettings) {
   const analyzer = configureAnalyzer(options);
   const analysis = await analyzer.analyzePackage();
-  const converter = configureConverter(analysis, options);
-  const results = await converter.convert();
+  const htmlDocuments = [...analysis.getFeatures({kind: 'html-document'})];
+  const conversionSettings = createDefaultConversionSettings(analysis, options);
+  const urlHandler = new WorkspaceUrlHandler(options.workspaceDir);
+  const converter = new ProjectConverter(urlHandler, conversionSettings);
+
+  // For each repo, convert the relevant HTML documents:
+  for (const repo of options.reposToConvert) {
+    const repoDirName = repo.dir.split('/').pop()!;
+    const repoDocuments = htmlDocuments.filter((d) => {
+      return d.url.startsWith(repoDirName) &&
+          !conversionSettings.excludes.has(d.url);
+    });
+    for (const document of repoDocuments) {
+      converter.convertDocument(document);
+    }
+  }
 
   // Process & write each conversion result:
+  const results = converter.getResults();
   for (const [outUrl, newSource] of results) {
     const outPath = path.join(options.workspaceDir, outUrl);
     if (newSource === undefined) {
