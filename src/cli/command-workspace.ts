@@ -94,6 +94,7 @@ export default async function run(options: CliOptions) {
     workspaceDir,
     reposToConvert,
     packageVersion: npmPackageVersion,
+    npmImportStyle: options['import-by-name'] ? 'name' : 'path',
   });
 
   console.log(

@@ -113,7 +113,7 @@ export class PackageUrlHandler implements UrlHandlerInterface {
   }
 
   /**
-   * Get the formatted import URL between two ConvertedDocumentUrls.
+   * Get the formatted relative import URL between two ConvertedDocumentUrls.
    */
   getPathImportUrl(fromUrl: ConvertedDocumentUrl, toUrl: ConvertedDocumentUrl):
       string {
@@ -137,5 +137,14 @@ export class PackageUrlHandler implements UrlHandlerInterface {
       }
     }
     return importUrl;
+  }
+
+  /**
+   * Get the formatted import URL for a name-based conversion.
+   *
+   * Ex: `./node_modules/@polymer/polymer/foo.js` -> `@polymer/polymer/foo.js`
+   */
+  getNameImportUrl(url: ConvertedDocumentUrl): ConvertedDocumentUrl {
+    return url.slice('./node_modules/'.length) as ConvertedDocumentUrl;
   }
 }

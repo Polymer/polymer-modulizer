@@ -127,11 +127,21 @@ export class WorkspaceUrlHandler implements UrlHandlerInterface {
     return './' + jsUrlPieces.join('/') as ConvertedDocumentUrl;
   }
 
+
   /**
-   * Get the formatted import URL between two ConvertedDocumentUrls.
+   * Get the formatted relative import URL between two ConvertedDocumentUrls.
    */
   getPathImportUrl(fromUrl: ConvertedDocumentUrl, toUrl: ConvertedDocumentUrl):
       string {
     return getRelativeUrl(fromUrl, toUrl);
+  }
+
+  /**
+   * Get the formatted import URL for a name-based conversion.
+   *
+   * Ex: `./@polymer/polymer/foo.js` -> `@polymer/polymer/foo.js`
+   */
+  getNameImportUrl(url: ConvertedDocumentUrl): ConvertedDocumentUrl {
+    return url.slice('./'.length) as ConvertedDocumentUrl;
   }
 }

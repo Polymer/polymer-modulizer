@@ -48,6 +48,15 @@ export interface ConversionSettings {
    * "rewrite" be replacing the entire reference with the given Node.
    */
   readonly referenceRewrites: Map<string, estree.Node>;
+  /**
+   * The style of imports to use in conversion:
+   *
+   * - "name": import by npm package name
+   *   (example) '@polymer/polymer/polymer-element.js'
+   * - "path": import by relative path
+   *   (example) '../../../@polymer/polymer/polymer-element.js'
+   */
+  readonly npmImportStyle: 'name'|'path';
 }
 
 /**
@@ -76,6 +85,15 @@ export interface PartialConversionSettings {
    * fail the guard.
    */
   readonly referenceExcludes?: Iterable<string>;
+  /**
+   * The style of imports to use in conversion:
+   *
+   * - "name": import by npm package name
+   *   (example) '@polymer/polymer/polymer-element.js'
+   * - "path": import by relative path
+   *   (example) '../../../@polymer/polymer/polymer-element.js'
+   */
+  readonly npmImportStyle?: 'name'|'path';
 }
 
 /**
@@ -122,6 +140,9 @@ export function createDefaultConversionSettings(
     ],
   ]);
 
+  // Configure "npmImportStyle":
+  const npmImportStyle = options.npmImportStyle || 'path';
+
   // Return configured settings.
   return {
     namespaces,
@@ -129,5 +150,6 @@ export function createDefaultConversionSettings(
     includes,
     referenceExcludes,
     referenceRewrites,
+    npmImportStyle,
   };
 }

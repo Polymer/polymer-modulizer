@@ -111,6 +111,13 @@ const optionDefinitions: commandLineArgs.OptionDefinition[] = [
         `If given, may overwrite or delete files when converting the given ` +
         `input directory.`,
   },
+  {
+    name: 'import-by-name',
+    type: Boolean,
+    defaultValue: false,
+    description:
+        `If given, import npm package dependencies by name instead of true relative paths.`,
+  },
 ];
 
 export interface CliOptions {
@@ -128,6 +135,7 @@ export interface CliOptions {
   'workspace-dir': string;
   'github-token'?: string;
   force: boolean;
+  'import-by-name': boolean;
 }
 
 export async function run() {
