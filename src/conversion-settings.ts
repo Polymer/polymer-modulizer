@@ -19,6 +19,8 @@ import {Analysis} from 'polymer-analyzer';
 
 import {getNamespaces} from './util';
 
+export type NpmImportStyle = 'name'|'path';
+
 /**
  * These are the settings used to configure the conversion. It contains
  * important information about what should be analyzed, what should be ignored,
@@ -71,6 +73,15 @@ export interface ConversionSettings {
    * ex: `document.currentScript.ownerDocument` -> `window.document`
    */
   readonly referenceRewrites: Map<string, estree.Node>;
+  /**
+   * The style of imports to use in conversion:
+   *
+   * - "name": import by npm package name
+   *   (example) '@polymer/polymer/polymer-element.js'
+   * - "path": import by relative path
+   *   (example) '../../../@polymer/polymer/polymer-element.js'
+   */
+  readonly npmImportStyle: NpmImportStyle;
 }
 
 /**
@@ -99,6 +110,15 @@ export interface PartialConversionSettings {
    * fail the guard.
    */
   readonly referenceExcludes?: Iterable<string>;
+  /**
+   * The style of imports to use in conversion:
+   *
+   * - "name": import by npm package name
+   *   (example) '@polymer/polymer/polymer-element.js'
+   * - "path": import by relative path
+   *   (example) '../../../@polymer/polymer/polymer-element.js'
+   */
+  readonly npmImportStyle?: NpmImportStyle;
 }
 
 /**
@@ -145,6 +165,9 @@ export function createDefaultConversionSettings(
     ],
   ]);
 
+  // Configure "npmImportStyle":
+  const npmImportStyle = options.npmImportStyle || 'path';
+
   // Return configured settings.
   return {
     namespaces,
@@ -152,5 +175,6 @@ export function createDefaultConversionSettings(
     includes,
     referenceExcludes,
     referenceRewrites,
+    npmImportStyle,
   };
 }
