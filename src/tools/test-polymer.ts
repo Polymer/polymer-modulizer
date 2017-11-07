@@ -75,7 +75,7 @@ function rework(line: string) {
                           .filter(([_, v]) => v !== undefined)
                           .map(([k]) => k);
   const expectedPaths = IterableX.from(walkDir(expectedDir))
-                            .map((f) => `${f}` as ConvertedDocumentFilePath)
+                            .map((f) => f as ConvertedDocumentFilePath)
                             .filter((f) => f !== './package.json');
   const allPathsUnsorted = new Set(resultPaths.concat(expectedPaths));
   const allPaths = [...allPathsUnsorted].sort((a, b) => a.localeCompare(b));
