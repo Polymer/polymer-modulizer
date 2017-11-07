@@ -14,32 +14,14 @@
 
 import {posix as path} from 'path';
 import {Document} from 'polymer-analyzer';
+import {dependencyMap} from '../manifest-converter';
 
-import {dependencyMap} from './manifest-converter';
+import {ConvertedDocumentUrl, OriginalDocumentUrl} from './types';
 
-const htmlExtension = '.html';
-
-/**
- * A URL path to an document, pre-conversion. Always relative to the current
- * project (package, workspace, etc).
- */
-export type OriginalDocumentUrl = string&{_OriginalDocumentUrl: never};
-
-/**
- * A URL path to a document, post-conversion. Uses npm naming for all urls
- * containing package names. Always relative to the current project (package,
- * workspace, etc).
- */
-export type ConvertedDocumentUrl = string&{_ConvertedDocumentUrl: never};
-/**
- * A file path to where a document will be written, post-conversion. Unlike
- * ConvertedDocumentUrl, this url keeps the original package folder and Bower
- * package name. Useful in workspace projects where converted files should still
- * be written to the original analyzed repo.
- */
-export type ConvertedDocumentFilePath =
-    string&{_ConvertedDocumentFilePath: never};
-
+/** The HTML file extension. */
+export const htmlExtension = '.html';
+/** The JavaScript file extension. */
+export const jsExtension = '.js';
 
 /**
  * Given an HTML url relative to the project root, return true if that url
