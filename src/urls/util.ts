@@ -14,49 +14,21 @@
 
 import {posix as path} from 'path';
 import {Document} from 'polymer-analyzer';
-import {lookupDependencyMapping} from '../manifest-converter';
 
 import {ConvertedDocumentUrl, OriginalDocumentUrl} from './types';
 
 /** The HTML file extension. */
 export const htmlExtension = '.html';
+
 /** The JavaScript file extension. */
 export const jsExtension = '.js';
 
 /**
- * Given an HTML url relative to the project root, return true if that url
- * points to a bower dependency file.
- */
-function isBowerDependencyUrl(htmlUrl: OriginalDocumentUrl): boolean {
-  return htmlUrl.startsWith('bower_components/') ||
-      htmlUrl.startsWith('./bower_components/');
-}
-
-/**
  * Rewrite a url to replace a `.js` file extension with `.html`.
  */
-function fixHtmlExtension(htmlUrl: string): string {
-  return htmlUrl.substring(0, htmlUrl.length - htmlExtension.length) + '.js';
-}
-
-/**
- * Update a bower package name in a url (at path index) to its matching npm
- * package name.
- */
-function convertBowerDependencyUrl(dependencyUrl: OriginalDocumentUrl):
-    ConvertedDocumentUrl {
-  // Convert component folder name
-  let jsUrl = dependencyUrl.replace('bower_components/', 'node_modules/');
-  // Convert package name
-  const jsUrlPieces = jsUrl.split('/');
-  const bowerPackageName = jsUrlPieces[1];
-  const npmPackageName = lookupDependencyMapping(bowerPackageName);
-  if (npmPackageName) {
-    jsUrlPieces[1] = npmPackageName;
-  }
-  jsUrl = jsUrlPieces.join('/');
-
-  return jsUrl as ConvertedDocumentUrl;
+export function fixHtmlExtension(htmlUrl: string): string {
+  return htmlUrl.substring(0, htmlUrl.length - htmlExtension.length) +
+      jsExtension;
 }
 
 /**
@@ -64,66 +36,6 @@ function convertBowerDependencyUrl(dependencyUrl: OriginalDocumentUrl):
  */
 export function getDocumentUrl(document: Document): OriginalDocumentUrl {
   return document.url as OriginalDocumentUrl;
-}
-
-/**
- * Converts an HTML Import path to a JS module path.
- */
-export function convertHtmlDocumentUrl(htmlUrl: OriginalDocumentUrl):
-    ConvertedDocumentUrl {
-  // TODO(fks): This can be removed later if type-checking htmlUrl is enough
-  if (htmlUrl.startsWith('.') || htmlUrl.startsWith('/')) {
-    throw new Error(
-        `convertDocumentUrl() expects an OriginalDocumentUrl string` +
-        `from the analyzer, but got "${htmlUrl}"`);
-  }
-  // Start the creation of your converted URL, based on on the original URL
-  let jsUrl = (<ConvertedDocumentUrl>(<string>htmlUrl));
-  // If url points to a bower_components dependency, update it to point to
-  // its equivilent node_modules npm dependency.
-  if (isBowerDependencyUrl(htmlUrl)) {
-    jsUrl = convertBowerDependencyUrl(htmlUrl);
-  }
-
-  // Temporary workaround for imports of some shadycss files that wrapped
-  // ES6 modules.
-  if (jsUrl.endsWith('shadycss/apply-shim.html')) {
-    jsUrl = jsUrl.replace(
-                'shadycss/apply-shim.html',
-                'shadycss/entrypoints/apply-shim.js') as ConvertedDocumentUrl;
-  }
-  if (jsUrl.endsWith('shadycss/custom-style-interface.html')) {
-    jsUrl = jsUrl.replace(
-                'shadycss/custom-style-interface.html',
-                'shadycss/entrypoints/custom-style-interface.js') as
-        ConvertedDocumentUrl;
-  }
-
-  // Convert all HTML URLs to point to JS equivilent
-  if (jsUrl.endsWith(htmlExtension)) {
-    jsUrl = fixHtmlExtension(jsUrl) as ConvertedDocumentUrl;
-  }
-  // TODO(fks): Revisit this format? The analyzer returns URLs without this
-  return ('./' + jsUrl) as ConvertedDocumentUrl;
-}
-
-export function convertJsDocumentUrl(oldUrl: OriginalDocumentUrl):
-    ConvertedDocumentUrl {
-  // TODO(fks): This can be removed later if type-checking htmlUrl is enough
-  if (oldUrl.startsWith('.') || oldUrl.startsWith('/')) {
-    throw new Error(
-        `convertDocumentUrl() expects an OriginalDocumentUrl string` +
-        `from the analyzer, but got "${oldUrl}"`);
-  }
-  let newUrl: string = oldUrl;
-  // If url points to a bower_components dependency, update it to point to
-  // its equivilent node_modules npm dependency.
-  if (isBowerDependencyUrl(oldUrl)) {
-    newUrl = convertBowerDependencyUrl(oldUrl);
-  }
-
-  // TODO(fks): Revisit this format? The analyzer returns URLs without this
-  return ('./' + newUrl) as ConvertedDocumentUrl;
 }
 
 /**

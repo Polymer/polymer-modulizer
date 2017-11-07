@@ -14,16 +14,18 @@
 
 import * as fs from 'mz/fs';
 import * as path from 'path';
-import {Analysis, Analyzer, FSUrlLoader, InMemoryOverlayUrlLoader, PackageUrlResolver} from 'polymer-analyzer';
+import {Analyzer, FSUrlLoader, InMemoryOverlayUrlLoader, PackageUrlResolver} from 'polymer-analyzer';
 import * as rimraf from 'rimraf';
 
-import {AnalysisConverter} from './analysis-converter';
-import {PartialConversionSettings} from './conversion-settings';
+import {createDefaultConversionSettings, PartialConversionSettings} from './conversion-settings';
 import {generatePackageJson, readJson, writeJson} from './manifest-converter';
+import {ProjectConverter} from './project-converter';
 import {polymerFileOverrides} from './special-casing';
+import {PackageUrlHandler} from './urls/package-url-handler';
+import {PackageType} from './urls/types';
+import {getDocumentUrl} from './urls/util';
 
 const mkdirp = require('mkdirp');
-
 
 /**
  * Configuration options required for package-layout conversions. Contains
@@ -33,17 +35,16 @@ const mkdirp = require('mkdirp');
 interface PackageConversionSettings extends PartialConversionSettings {
   readonly packageName: string;
   readonly packageVersion: string;
-  readonly packageType?: 'element'|'application';
+  readonly packageType?: PackageType;
   readonly inDir: string;
   readonly outDir: string;
   readonly cleanOutDir?: boolean;
-  readonly mainFiles?: Iterable<string>;
 }
 
 /**
  * Create and/or clean the "out" directory, setting it up for conversion.
  */
-async function setupOutDir(outDir: string, clean: boolean) {
+async function setupOutDir(outDir: string, clean?: boolean) {
   if (clean) {
     rimraf.sync(outDir);
   }
@@ -70,24 +71,21 @@ async function writeFile(outPath: string, newSource: string|undefined) {
   }
 }
 
-export function configureAnalyzer(options: PackageConversionSettings) {
-  const inDir = options.inDir;
 
-  const urlLoader = new InMemoryOverlayUrlLoader(new FSUrlLoader(inDir));
+/**
+ * Configure a basic analyzer instance for the package under conversion.
+ */
+function configureAnalyzer(options: PackageConversionSettings) {
+  const urlLoader =
+      new InMemoryOverlayUrlLoader(new FSUrlLoader(options.inDir));
   for (const [url, contents] of polymerFileOverrides) {
     urlLoader.urlContentsMap.set(url, contents);
     urlLoader.urlContentsMap.set(`bower_components/polymer/${url}`, contents);
   }
-
   return new Analyzer({
     urlLoader,
     urlResolver: new PackageUrlResolver(),
   });
-}
-
-export function configureConverter(
-    analysis: Analysis, options: PackageConversionSettings) {
-  return new AnalysisConverter(analysis, options);
 }
 
 /**
@@ -98,15 +96,44 @@ export default async function convert(options: PackageConversionSettings) {
   const npmPackageName = options.packageName;
   const npmPackageVersion = options.packageVersion;
   console.log(`Out directory: ${outDir}`);
+  await setupOutDir(outDir, options.cleanOutDir);
 
+  // Configure the analyzer and run an analysis of the package.
   const bowerJson = readJson(options.inDir, 'bower.json');
   const analyzer = configureAnalyzer(options);
   const analysis = await analyzer.analyzePackage();
-  const converter = configureConverter(analysis, options);
-  const results = await converter.convert();
-  await setupOutDir(options.outDir, !!options.cleanOutDir);
+  const htmlDocuments = [...analysis.getFeatures({kind: 'html-document'})];
 
-  for (const [newPath, newSource] of results) {
+  // create the default conversion settings, adding any "main" files from the
+  // current package's bower.json maifest to the "includes" set.
+  const conversionSettings = createDefaultConversionSettings(analysis, options);
+  let bowerMainFiles = (bowerJson.main) || [];
+  if (!Array.isArray(bowerMainFiles)) {
+    bowerMainFiles = [bowerMainFiles];
+  }
+  for (const filename of bowerMainFiles) {
+    conversionSettings.includes.add(filename);
+  }
+
+  // Create the url handler & converter.
+  const urlHandler =
+      new PackageUrlHandler(options.packageName, options.packageType);
+  const converter = new ProjectConverter(urlHandler, conversionSettings);
+
+  // Gather all relevent package documents, and run the converter on them!
+  const packageDocuments = htmlDocuments.filter((d) => {
+    return PackageUrlHandler.isUrlInternalToPackage(getDocumentUrl(d)) &&
+        !conversionSettings.excludes.has(d.url);
+  });
+  for (const document of packageDocuments) {
+    converter.convertDocument(document);
+  }
+
+  // Gather all results, and write them to disk.
+  for (const [newPath, newSource] of converter.getResults()) {
+    if (!PackageUrlHandler.isUrlInternalToPackage(newPath)) {
+      continue;
+    }
     const filePath = path.resolve(outDir, newPath);
     await writeFile(filePath, newSource);
   }

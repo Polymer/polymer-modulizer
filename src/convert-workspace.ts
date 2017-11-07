@@ -14,18 +14,18 @@
 
 import {fs} from 'mz';
 import * as path from 'path';
-import {Analysis, Analyzer, FSUrlLoader, InMemoryOverlayUrlLoader, PackageUrlResolver} from 'polymer-analyzer';
+import {Analyzer, FSUrlLoader, InMemoryOverlayUrlLoader, PackageUrlResolver} from 'polymer-analyzer';
 import {WorkspaceRepo} from 'polymer-workspaces';
 
-import {PartialConversionSettings} from './conversion-settings';
-import {generatePackageJson, lookupDependencyMapping, readJson, writeJson} from './manifest-converter';
+import {createDefaultConversionSettings, PartialConversionSettings} from './conversion-settings';
+import {generatePackageJson, readJson, writeJson} from './manifest-converter';
+import {ProjectConverter} from './project-converter';
 import {polymerFileOverrides} from './special-casing';
-import {WorkspaceConverter} from './workspace-converter';
+import {lookupNpmPackageName, WorkspaceUrlHandler} from './urls/workspace-url-handler';
 
 import util = require('util');
 import _mkdirp = require('mkdirp');
 const mkdirp = util.promisify(_mkdirp);
-
 
 /**
  * Configuration options required for workspace conversions. Contains
@@ -37,7 +37,6 @@ interface WorkspaceConversionSettings extends PartialConversionSettings {
   workspaceDir: string;
   reposToConvert: WorkspaceRepo[];
 }
-
 
 /**
  * Create a symlink from the repo into the workspace's node_modules directory.
@@ -65,35 +64,29 @@ async function writeNpmSymlink(
 /**
  * For a given repo, generate a new package.json and write it to disk.
  */
-async function writePackageJson(repo: WorkspaceRepo, packageVersion: string) {
+function writePackageJson(repo: WorkspaceRepo, packageVersion: string) {
+  const bowerPackageName = path.basename(repo.dir);
   const bowerJsonPath = path.join(repo.dir, 'bower.json');
   const bowerJson = readJson(bowerJsonPath);
-  const bowerName = bowerJson.name as string;
-  let npmPackageName = lookupDependencyMapping(bowerName);
-  if (!npmPackageName) {
-    npmPackageName = bowerName;
-  }
+  const npmPackageName = lookupNpmPackageName(bowerJsonPath) || bowerPackageName;
   const packageJson =
       generatePackageJson(bowerJson, npmPackageName, packageVersion);
   writeJson(packageJson, repo.dir, 'package.json');
 }
 
-export function configureAnalyzer(options: WorkspaceConversionSettings) {
+/**
+ * Configure a basic analyzer instance for the workspace.
+ */
+function configureAnalyzer(options: WorkspaceConversionSettings) {
   const workspaceDir = options.workspaceDir;
   const urlLoader = new InMemoryOverlayUrlLoader(new FSUrlLoader(workspaceDir));
   for (const [url, contents] of polymerFileOverrides) {
     urlLoader.urlContentsMap.set(`polymer/${url}`, contents);
   }
-
   return new Analyzer({
     urlLoader,
     urlResolver: new PackageUrlResolver(),
   });
-}
-
-export function configureConverter(
-    analysis: Analysis, options: WorkspaceConversionSettings) {
-  return new WorkspaceConverter(analysis, options);
 }
 
 /**
@@ -102,10 +95,25 @@ export function configureConverter(
 export default async function convert(options: WorkspaceConversionSettings) {
   const analyzer = configureAnalyzer(options);
   const analysis = await analyzer.analyzePackage();
-  const converter = configureConverter(analysis, options);
-  const results = await converter.convert();
+  const htmlDocuments = [...analysis.getFeatures({kind: 'html-document'})];
+  const conversionSettings = createDefaultConversionSettings(analysis, options);
+  const urlHandler = new WorkspaceUrlHandler(options.workspaceDir);
+  const converter = new ProjectConverter(urlHandler, conversionSettings);
+
+  // For each repo, convert the relevant HTML documents:
+  for (const repo of options.reposToConvert) {
+    const repoDirName = repo.dir.split('/').pop()!;
+    const repoDocuments = htmlDocuments.filter((d) => {
+      return d.url.startsWith(repoDirName) &&
+          !conversionSettings.excludes.has(d.url);
+    });
+    for (const document of repoDocuments) {
+      converter.convertDocument(document);
+    }
+  }
 
   // Process & write each conversion result:
+  const results = converter.getResults();
   for (const [outUrl, newSource] of results) {
     const outPath = path.join(options.workspaceDir, outUrl);
     if (newSource === undefined) {
