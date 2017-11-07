@@ -17,39 +17,28 @@ import * as path from 'path';
 import {Analysis, Analyzer, FSUrlLoader, InMemoryOverlayUrlLoader, PackageUrlResolver} from 'polymer-analyzer';
 import * as rimraf from 'rimraf';
 
-import {AnalysisConverter, AnalysisConverterOptions} from './analysis-converter';
+import {AnalysisConverter} from './analysis-converter';
+import {PartialConversionSettings} from './conversion-settings';
 import {generatePackageJson, readJson, writeJson} from './manifest-converter';
 import {polymerFileOverrides} from './special-casing';
 
 const mkdirp = require('mkdirp');
 
 
-type ConvertPackageOptions = AnalysisConverterOptions&{
-  /**
-   * The directory to read HTML files from.
-   */
-  readonly inDir: string;
-
-  /**
-   * The directory to write converted JavaScript files to.
-   */
-  readonly outDir: string;
-
-  /**
-   * The npm package name to use in package.json
-   */
+/**
+ * Configuration options required for package-layout conversions. Contains
+ * information about the package under conversion, including what files to
+ * convert, its new package name, and its new npm version number.
+ */
+interface PackageConversionSettings extends PartialConversionSettings {
   readonly packageName: string;
-
-  /**
-   * The npm package version to use in package.json
-   */
   readonly packageVersion: string;
-  /**
-   * Flag: If true, clear the out directory before writing to it.
-   */
-  cleanOutDir?: boolean;
-};
-
+  readonly packageType?: 'element'|'application';
+  readonly inDir: string;
+  readonly outDir: string;
+  readonly cleanOutDir?: boolean;
+  readonly mainFiles?: Iterable<string>;
+}
 
 /**
  * Create and/or clean the "out" directory, setting it up for conversion.
@@ -81,7 +70,7 @@ async function writeFile(outPath: string, newSource: string|undefined) {
   }
 }
 
-export function configureAnalyzer(options: ConvertPackageOptions) {
+export function configureAnalyzer(options: PackageConversionSettings) {
   const inDir = options.inDir;
 
   const urlLoader = new InMemoryOverlayUrlLoader(new FSUrlLoader(inDir));
@@ -97,29 +86,14 @@ export function configureAnalyzer(options: ConvertPackageOptions) {
 }
 
 export function configureConverter(
-    analysis: Analysis, options: ConvertPackageOptions) {
-  return new AnalysisConverter(analysis, {
-    packageName: options.packageName,
-    packageType: 'element',
-    namespaces: options.namespaces,
-    excludes:
-        [...(options.excludes || []), 'neon-animation/web-animations.html'],
-    referenceExcludes: options.referenceExcludes ||
-        [
-          'Polymer.Settings',
-          'Polymer.log',
-          'Polymer.rootPath',
-          'Polymer.sanitizeDOMValue',
-          'Polymer.Collection',
-        ],
-    mainFiles: options.mainFiles
-  });
+    analysis: Analysis, options: PackageConversionSettings) {
+  return new AnalysisConverter(analysis, options);
 }
 
 /**
  * Convert a package-layout project to JavaScript modules & npm.
  */
-export default async function convert(options: ConvertPackageOptions) {
+export default async function convert(options: PackageConversionSettings) {
   const outDir = options.outDir;
   const npmPackageName = options.packageName;
   const npmPackageVersion = options.packageVersion;
