@@ -30,7 +30,7 @@ function isBowerDependencyUrl(htmlUrl: OriginalDocumentUrl): boolean {
 /**
  * Rewrite a url to replace a `.html` file extension with `.js`, if found.
  */
-function fixHtmlExtensionIfFound(url: string): string {
+function replaceHtmlExtensionIfFound(url: string): string {
   if (url.endsWith('.html')) {
     url = url.substring(0, url.length - '.html'.length) + '.js';
   }
@@ -43,7 +43,7 @@ function fixHtmlExtensionIfFound(url: string): string {
  */
 export function getJsModuleConvertedFilePath(originalUrl: OriginalDocumentUrl):
     ConvertedDocumentFilePath {
-  return fixHtmlExtensionIfFound(originalUrl) as ConvertedDocumentFilePath;
+  return replaceHtmlExtensionIfFound(originalUrl) as ConvertedDocumentFilePath;
 }
 
 /**
@@ -117,7 +117,7 @@ export function convertHtmlDocumentUrl(htmlUrl: OriginalDocumentUrl):
         'shadycss/entrypoints/custom-style-interface.js');
   }
   // Convert any ".html" URLs to point to their new ".js" module equivilent
-  jsUrl = fixHtmlExtensionIfFound(jsUrl);
+  jsUrl = replaceHtmlExtensionIfFound(jsUrl);
   // TODO(fks): Revisit this format? The analyzer returns URLs without this
   return ('./' + jsUrl) as ConvertedDocumentUrl;
 }
