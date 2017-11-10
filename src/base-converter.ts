@@ -109,7 +109,7 @@ export abstract class BaseConverter {
             this.convertDocument(document, new Set()) :
             this.convertHtmlToHtml(document, new Set());
       } catch (e) {
-        console.error(`Error in ${document.url}`, e);
+        console.error(`Error in ${document.url} -- `, e);
       }
     }
 
