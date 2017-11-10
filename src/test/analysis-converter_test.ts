@@ -2314,7 +2314,7 @@ console.log('two');
       });
 
       assertSources(await convert(), {
-        './test.js': `
+        'test.js': `
 /* First comment */
 ;
 
@@ -2340,7 +2340,7 @@ console.log('second script');
       });
 
       assertSources(await convert(), {
-        './test.js': `
+        'test.js': `
 /* First comment */
 /* Second comment */
 /* Final trailing comment */
@@ -2360,7 +2360,7 @@ console.log('second script');
       });
 
       assertSources(await convert(), {
-        './test.js': `
+        'test.js': `
 /** @license This is a license */
 /* Second comment */
 /* Final trailing comment */
