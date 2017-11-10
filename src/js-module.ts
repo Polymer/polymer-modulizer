@@ -32,6 +32,12 @@ export interface ConversionResult {
   readonly originalUrl: OriginalDocumentUrl;
   readonly convertedUrl: ConvertedDocumentUrl;
   readonly convertedFilePath: ConvertedDocumentFilePath;
+  /**
+   * Explicitly keep or remove the original file from disk. By default, the
+   * original file will be destroyed. If the convertedFilePath matches
+   * originalUrl, the original file will always be overwritten with the
+   * converted output.
+   */
   readonly keepOriginal?: boolean;
   readonly output: HtmlFile|JsModule;
 }
