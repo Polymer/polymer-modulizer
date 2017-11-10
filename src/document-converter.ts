@@ -31,7 +31,7 @@ import {removeUnnecessaryEventListeners} from './passes/remove-unnecessary-waits
 import {removeWrappingIIFEs} from './passes/remove-wrapping-iife';
 import {rewriteNamespacesAsExports} from './passes/rewrite-namespace-exports';
 import {rewriteToplevelThis} from './passes/rewrite-toplevel-this';
-import {ConvertedDocumentFilePath, ConvertedDocumentUrl, convertHtmlDocumentUrl, convertJsDocumentUrl, getDocumentUrl, getRelativeUrl, OriginalDocumentUrl} from './url-converter';
+import {ConvertedDocumentUrl, convertHtmlDocumentUrl, convertJsDocumentUrl, getDocumentUrl, getHtmlDocumentConvertedFilePath, getJsModuleConvertedFilePath, getRelativeUrl, OriginalDocumentUrl} from './url-converter';
 import {findAvailableIdentifier, getMemberName, getMemberPath, getModuleId, getNodeGivenAnalyzerAstNode, nodeToTemplateLiteral, serializeNode} from './util';
 
 /**
@@ -239,8 +239,7 @@ export class DocumentConverter {
     return {
       originalUrl: this.originalUrl,
       convertedUrl: this.convertedUrl,
-      convertedFilePath: this.originalUrl.replace('.html', '.js') as
-          ConvertedDocumentFilePath,
+      convertedFilePath: getJsModuleConvertedFilePath(this.originalUrl),
       output: {
         type: 'js-module',
         source: outputProgram.code + '\n',
@@ -406,8 +405,7 @@ export class DocumentConverter {
     return {
       originalUrl: this.originalUrl,
       convertedUrl: this.convertedUrl,
-      convertedFilePath: this.originalUrl as string as
-          ConvertedDocumentFilePath,
+      convertedFilePath: getHtmlDocumentConvertedFilePath(this.originalUrl),
       output: {
         type: 'html-file',
         source: contents,
