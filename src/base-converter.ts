@@ -140,7 +140,7 @@ export abstract class BaseConverter {
     if (!this.results.has(getDocumentUrl(document))) {
       const newModule =
           this.getDocumentConverter(document, visited).convertToJsModule();
-      if (newModule) {
+      if (newModule !== undefined) {
         this.handleNewJsModules(newModule);
       }
     }
