@@ -110,7 +110,7 @@ export abstract class BaseConverter {
             this.convertDocument(document, new Set()) :
             this.convertHtmlToHtml(document, new Set());
       } catch (e) {
-        console.error(`Error in ${document.url}`, e);
+        console.error(`Error in ${document.url} -- `, e);
       }
     }
 
@@ -135,27 +135,44 @@ export abstract class BaseConverter {
   }
 
   /**
+   * Check if a document is explicitly excluded or has already been converted
+   * to decide if it should be converted or skipped.
+   */
+  shouldConvertDocument(document: Document): boolean {
+    const documentUrl = getDocumentUrl(document);
+    if (this.results.has(documentUrl)) {
+      return false;
+    }
+    for (const exclude of this.excludes) {
+      if (documentUrl.endsWith(exclude)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /**
    * Converts a Polymer Analyzer HTML document to a JS module
    */
   convertDocument(document: Document, visited: Set<OriginalDocumentUrl>) {
-    if (!this.results.has(getDocumentUrl(document))) {
-      const newModule =
-          this.getDocumentConverter(document, visited).convertToJsModule();
-      if (newModule) {
-        this.handleNewJsModules(newModule);
-      }
+    if (!this.shouldConvertDocument(document)) {
+      return;
     }
+    const newModule =
+        this.getDocumentConverter(document, visited).convertToJsModule();
+    this.handleNewJsModules(newModule);
   }
 
   /**
    * Converts HTML Imports and inline scripts to module scripts as necessary.
    */
   convertHtmlToHtml(document: Document, visited: Set<OriginalDocumentUrl>) {
-    if (!this.results.has(getDocumentUrl(document))) {
-      const newModule = this.getDocumentConverter(document, visited)
-                            .convertAsToplevelHtmlDocument();
-      this.handleNewJsModules(newModule);
+    if (!this.shouldConvertDocument(document)) {
+      return;
     }
+    const newModule = this.getDocumentConverter(document, visited)
+                          .convertAsToplevelHtmlDocument();
+    this.handleNewJsModules(newModule);
   }
 
   private handleNewJsModules(newModule: ConversionResult): void {

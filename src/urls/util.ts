@@ -16,7 +16,7 @@ import {posix as path} from 'path';
 import {Document} from 'polymer-analyzer';
 import {dependencyMap} from '../manifest-converter';
 
-import {ConvertedDocumentUrl, OriginalDocumentUrl} from './types';
+import {ConvertedDocumentUrl, OriginalDocumentUrl, ConvertedDocumentFilePath} from './types';
 
 /**
  * Given an HTML url relative to the project root, return true if that url
@@ -26,6 +26,36 @@ function isBowerDependencyUrl(htmlUrl: OriginalDocumentUrl): boolean {
   return htmlUrl.startsWith('bower_components/') ||
       htmlUrl.startsWith('./bower_components/');
 }
+
+/**
+ * Rewrite a url to replace a `.html` file extension with `.js`, if found.
+ */
+function fixHtmlExtensionIfFound(url: string): string {
+  if (url.endsWith('.html')) {
+    url = url.substring(0, url.length - '.html'.length) + '.js';
+  }
+  return url;
+}
+
+/**
+ * Create a ConvertedDocumentFilePath for the OriginalDocumentUrl of a document
+ * being converted to a JS module.
+ */
+export function getJsModuleConvertedFilePath(originalUrl: OriginalDocumentUrl):
+    ConvertedDocumentFilePath {
+  return fixHtmlExtensionIfFound(originalUrl) as ConvertedDocumentFilePath;
+}
+
+/**
+ * Create a ConvertedDocumentFilePath for the OriginalDocumentUrl of a document
+ * being converted to a top-level HTML document. (Note that this is a no-op
+ * since HTML documents should keep their current html file extension).
+ */
+export function getHtmlDocumentConvertedFilePath(
+    originalUrl: OriginalDocumentUrl): ConvertedDocumentFilePath {
+  return originalUrl as string as ConvertedDocumentFilePath;
+}
+
 
 /**
  * Update a bower package name in a url (at path index) to its matching npm
@@ -87,9 +117,7 @@ export function convertHtmlDocumentUrl(htmlUrl: OriginalDocumentUrl):
         'shadycss/entrypoints/custom-style-interface.js');
   }
   // Convert any ".html" URLs to point to their new ".js" module equivilent
-  if (jsUrl.endsWith('.html')) {
-    jsUrl = (jsUrl.substring(0, jsUrl.length - '.html'.length) + '.js');
-  }
+  jsUrl = fixHtmlExtensionIfFound(jsUrl);
   // TODO(fks): Revisit this format? The analyzer returns URLs without this
   return ('./' + jsUrl) as ConvertedDocumentUrl;
 }
