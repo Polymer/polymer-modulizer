@@ -31,5 +31,6 @@ export interface ConversionMetadata {
   readonly referenceRewrites: ReadonlyMap<string, estree.Node>;
   readonly dangerousReferences: ReadonlyMap<string, string>;
 
+  shouldConvertDocument(document: Document): boolean;
   convertDocument(document: Document, visited: Set<OriginalDocumentUrl>): void;
 }

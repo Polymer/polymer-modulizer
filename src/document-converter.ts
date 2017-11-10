@@ -182,12 +182,7 @@ export class DocumentConverter {
         });
   }
 
-  convertToJsModule(): ConversionResult|void {
-    for (const exclude of this.conversionMetadata.excludes) {
-      if (this.originalUrl.endsWith(exclude)) {
-        return;
-      }
-    }
+  convertToJsModule(): ConversionResult {
     const combinedToplevelStatements = [];
     for (const script of this.document.getFeatures({kind: 'js-document'})) {
       const scriptProgram =
@@ -725,10 +720,10 @@ export class DocumentConverter {
   private convertDependencies() {
     this.visited.add(this.originalUrl);
     for (const htmlImport of this.getHtmlImports()) {
-      const documentUrl = getDocumentUrl(htmlImport.document);
-      if (this.conversionMetadata.results.has(documentUrl)) {
+      if (!this.conversionMetadata.shouldConvertDocument(htmlImport.document)) {
         continue;
       }
+      const documentUrl = getDocumentUrl(htmlImport.document);
       if (this.visited.has(documentUrl)) {
         console.warn(
             `Cycle in dependency graph found where ` +
