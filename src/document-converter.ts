@@ -32,8 +32,8 @@ import {removeUnnecessaryEventListeners} from './passes/remove-unnecessary-waits
 import {removeWrappingIIFEs} from './passes/remove-wrapping-iife';
 import {rewriteNamespacesAsExports} from './passes/rewrite-namespace-exports';
 import {rewriteToplevelThis} from './passes/rewrite-toplevel-this';
-import {ConvertedDocumentFilePath, ConvertedDocumentUrl, OriginalDocumentUrl} from './urls/types';
-import {convertHtmlDocumentUrl, convertJsDocumentUrl, getDocumentUrl, getRelativeUrl} from './urls/util';
+import {ConvertedDocumentUrl, OriginalDocumentUrl} from './urls/types';
+import {convertHtmlDocumentUrl, convertJsDocumentUrl, getDocumentUrl, getHtmlDocumentConvertedFilePath, getJsModuleConvertedFilePath, getRelativeUrl} from './urls/util';
 import {findAvailableIdentifier, getMemberName, getMemberPath, getModuleId, getNodeGivenAnalyzerAstNode, nodeToTemplateLiteral, serializeNode} from './util';
 
 /**
@@ -200,13 +200,9 @@ export class DocumentConverter {
         });
   }
 
-  convertToJsModule(): ConversionResult|void {
-    for (const exclude of this.conversionSettings.excludes) {
-      if (this.originalUrl.endsWith(exclude)) {
-        return;
-      }
-    }
+  convertToJsModule(): ConversionResult {
     const combinedToplevelStatements = [];
+    let prevScriptNode: parse5.ASTNode|undefined = undefined;
     for (const script of this.document.getFeatures({kind: 'js-document'})) {
       const scriptProgram =
           recast.parse(script.parsedDocument.contents).program;
@@ -214,8 +210,18 @@ export class DocumentConverter {
       // We need to inline templates on a per-script basis, otherwise we run
       // into trouble matching up analyzer AST nodes with our own.
       this.inlineTemplates(scriptProgram, script);
-      combinedToplevelStatements.push(...scriptProgram.body);
+      const comments: string[] = getCommentsBetween(
+          this.document.parsedDocument.ast, prevScriptNode, script.astNode);
+      const statements =
+          attachCommentsToFirstStatement(comments, scriptProgram.body);
+      combinedToplevelStatements.push(...statements);
+      prevScriptNode = script.astNode;
     }
+    const trailingComments = getCommentsBetween(
+        this.document.parsedDocument.ast, prevScriptNode, undefined);
+    const maybeCommentStatement =
+        attachCommentsToFirstStatement(trailingComments, []);
+    combinedToplevelStatements.push(...maybeCommentStatement);
     const program = jsc.program(combinedToplevelStatements);
     this.convertDependencies();
     removeUnnecessaryEventListeners(program);
@@ -257,8 +263,7 @@ export class DocumentConverter {
     return {
       originalUrl: this.originalUrl,
       convertedUrl: this.convertedUrl,
-      convertedFilePath: this.originalUrl.replace('.html', '.js') as
-          ConvertedDocumentFilePath,
+      convertedFilePath: getJsModuleConvertedFilePath(this.originalUrl),
       output: {
         type: 'js-module',
         source: outputProgram.code + '\n',
@@ -424,8 +429,7 @@ export class DocumentConverter {
     return {
       originalUrl: this.originalUrl,
       convertedUrl: this.convertedUrl,
-      convertedFilePath: this.originalUrl as string as
-          ConvertedDocumentFilePath,
+      convertedFilePath: getHtmlDocumentConvertedFilePath(this.originalUrl),
       output: {
         type: 'html-file',
         source: contents,
@@ -746,10 +750,10 @@ export class DocumentConverter {
   private convertDependencies() {
     this.visited.add(this.originalUrl);
     for (const htmlImport of this.getHtmlImports()) {
-      const documentUrl = getDocumentUrl(htmlImport.document);
-      if (this.projectConverter.conversionResults.has(documentUrl)) {
+      if (!this.projectConverter.shouldConvertDocument(htmlImport.document)) {
         continue;
       }
+      const documentUrl = getDocumentUrl(htmlImport.document);
       if (this.visited.has(documentUrl)) {
         console.warn(
             `Cycle in dependency graph found where ` +
@@ -1304,4 +1308,116 @@ function domModuleCanBeInlined(domModule: parse5.ASTNode) {
   }
 
   return true;
+}
+
+/**
+ * Yields all nodes inside the given node in top-down, first-to-last order.
+ */
+function* nodesInside(node: parse5.ASTNode): Iterable<parse5.ASTNode> {
+  const childNodes = parse5.treeAdapters.default.getChildNodes(node);
+  if (childNodes === undefined) {
+    return;
+  }
+  for (const child of childNodes) {
+    yield child;
+    yield* nodesInside(child);
+  }
+}
+
+/**
+ * Yields all nodes that come after the given node, including later siblings
+ * of ancestors.
+ */
+function* nodesAfter(node: parse5.ASTNode): Iterable<parse5.ASTNode> {
+  const parentNode = node.parentNode;
+  if (!parentNode) {
+    return;
+  }
+  const siblings = parse5.treeAdapters.default.getChildNodes(parentNode);
+  for (let i = siblings.indexOf(node) + 1; i < siblings.length; i++) {
+    const laterSibling = siblings[i];
+    yield laterSibling;
+    yield* nodesInside(laterSibling);
+  }
+  yield* nodesAfter(parentNode);
+}
+
+/**
+ * Returns the text of all comments in the document between the two optional
+ * points.
+ *
+ * If `from` is given, returns all comments after `from` in the document.
+ * If `until` is given, returns all comments up to `until` in the document.
+ */
+function getCommentsBetween(
+    document: parse5.ASTNode,
+    from: parse5.ASTNode|undefined,
+    until: parse5.ASTNode|undefined): string[] {
+  const nodesStart =
+      from === undefined ? nodesInside(document) : nodesAfter(from);
+  const nodesBetween =
+      IterableX.from(nodesStart).takeWhile((node) => node !== until);
+  const commentNodesBetween =
+      nodesBetween.filter((node) => dom5.isCommentNode(node));
+  const commentStringsBetween =
+      commentNodesBetween.map((node) => dom5.getTextContent(node));
+  const formattedCommentStringsBetween =
+      commentStringsBetween.map((commentText) => {
+        // If it looks like there might be jsdoc in the comment, start the
+        // comment with an extra * so that the js comment looks like a jsdoc
+        // comment.
+        if (/@\w+/.test(commentText)) {
+          return '*' + commentText;
+        }
+        return commentText;
+      });
+  return Array.from(formattedCommentStringsBetween);
+}
+
+/**
+ * Given some comments, attach them to the first statement, if any, in the
+ * given array of statements.
+ *
+ * If there is no first statement, one will be created.
+ */
+function attachCommentsToFirstStatement(
+    comments: string[],
+    statements: Array<estree.Statement|estree.ModuleDeclaration>) {
+  if (comments.length === 0) {
+    return statements;
+  }
+  if (statements.length === 0) {
+    // Create the emptiest statement we can. This is serialized as just ';'
+    statements = [jsc.expressionStatement(jsc.identifier(''))];
+  }
+
+  // Ok, definitely is a first statement, and definitely are comments.
+  // Do the attach.
+
+  /** Recast represents comments differently than espree. */
+  interface RecastNode {
+    comments?: null|undefined|Array<RecastComment>;
+  }
+
+  interface RecastComment {
+    type: 'Line'|'Block';
+    leading: boolean;
+    trailing: boolean;
+    value: string;
+  }
+  const firstStatement: (estree.Statement|estree.ModuleDeclaration)&RecastNode =
+      statements[0]!;
+
+  const recastComments: RecastComment[] = comments.map((c) => {
+    return {
+      type: 'Block' as 'Block',
+      leading: true,
+      trailing: false,
+      value: c,
+    };
+  });
+  firstStatement.comments =
+      (firstStatement.comments || []).concat(recastComments);
+
+  return statements;
 }

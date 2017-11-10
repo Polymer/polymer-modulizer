@@ -12,17 +12,14 @@
  * http://polymer.github.io/PATENTS.txt
  */
 
-import * as fs from 'mz/fs';
-import * as path from 'path';
 import {Analysis, Analyzer, FSUrlLoader, InMemoryOverlayUrlLoader, PackageUrlResolver} from 'polymer-analyzer';
-import * as rimraf from 'rimraf';
 
 import {AnalysisConverter} from './analysis-converter';
 import {PartialConversionSettings} from './conversion-settings';
 import {generatePackageJson, readJson, writeJson} from './manifest-converter';
 import {polymerFileOverrides} from './special-casing';
+import {mkdirp, rimraf, writeFileResults} from './util';
 
-const mkdirp = require('mkdirp');
 
 
 /**
@@ -45,28 +42,16 @@ interface PackageConversionSettings extends PartialConversionSettings {
  */
 async function setupOutDir(outDir: string, clean: boolean) {
   if (clean) {
-    rimraf.sync(outDir);
+    await rimraf(outDir);
   }
   try {
-    await fs.mkdir(outDir);
+    await mkdirp(outDir);
   } catch (e) {
     if (e.errno === -17) {
       // directory exists, do nothing
     } else {
       throw e;
     }
-  }
-}
-
-/**
- * Create and/or clean the "out" directory, setting it up for conversion.
- */
-async function writeFile(outPath: string, newSource: string|undefined) {
-  mkdirp.sync(path.dirname(outPath));
-  if (newSource !== undefined) {
-    await fs.writeFile(outPath, newSource);
-  } else if (fs.existsSync(outPath)) {
-    await fs.unlink(outPath);
   }
 }
 
@@ -105,11 +90,7 @@ export default async function convert(options: PackageConversionSettings) {
   const converter = configureConverter(analysis, options);
   const results = await converter.convert();
   await setupOutDir(options.outDir, !!options.cleanOutDir);
-
-  for (const [newPath, newSource] of results) {
-    const filePath = path.resolve(outDir, newPath);
-    await writeFile(filePath, newSource);
-  }
+  await writeFileResults(outDir, results);
 
   // Generate a new package.json, and write it to disk.
   try {

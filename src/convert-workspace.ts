@@ -20,11 +20,8 @@ import {WorkspaceRepo} from 'polymer-workspaces';
 import {PartialConversionSettings} from './conversion-settings';
 import {dependencyMap, generatePackageJson, readJson, writeJson} from './manifest-converter';
 import {polymerFileOverrides} from './special-casing';
+import {mkdirp, writeFileResults} from './util';
 import {WorkspaceConverter} from './workspace-converter';
-
-import util = require('util');
-import _mkdirp = require('mkdirp');
-const mkdirp = util.promisify(_mkdirp);
 
 
 /**
@@ -105,16 +102,7 @@ export default async function convert(options: WorkspaceConversionSettings) {
   const analysis = await analyzer.analyzePackage();
   const converter = configureConverter(analysis, options);
   const results = await converter.convert();
-
-  // Process & write each conversion result:
-  for (const [outUrl, newSource] of results) {
-    const outPath = path.join(options.workspaceDir, outUrl);
-    if (newSource === undefined) {
-      await fs.unlink(outPath);
-    } else {
-      await fs.writeFile(outPath, newSource);
-    }
-  }
+  await writeFileResults(options.workspaceDir, results);
 
   // For each repo, generate a new package.json:
   for (const repo of options.reposToConvert) {

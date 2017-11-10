@@ -13,7 +13,7 @@
  */
 
 /**
- * A URL path to an document, pre-conversion. Always relative to the current
+ * A URL path to a document, pre-conversion. Always relative to the current
  * project layout (package, workspace, etc).
  */
 export type OriginalDocumentUrl = string&{_OriginalDocumentUrl: never};
