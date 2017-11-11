@@ -55,8 +55,8 @@
   resolved "https://registry.yarnpkg.com/@types/estree/-/estree-0.0.34.tgz#aa7af69a3a91922171ee411b3c9d8f6beb4af321"
 
 "@types/glob@*":
-  version "5.0.32"
-  resolved "https://registry.yarnpkg.com/@types/glob/-/glob-5.0.32.tgz#aec5cfe987c72f099fdb1184452986aa506d5e8f"
+  version "5.0.33"
+  resolved "https://registry.yarnpkg.com/@types/glob/-/glob-5.0.33.tgz#3dff7c6ce09d65abe919c7961dc3dee016f36ad7"
   dependencies:
     "@types/minimatch" "*"
     "@types/node" "*"
@@ -89,8 +89,8 @@
     "@types/node" "*"
 
 "@types/node@*":
-  version "8.0.29"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-8.0.29.tgz#4d6b33df66b15611b40452a581c40d9c94341ba1"
+  version "8.0.51"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-8.0.51.tgz#b31d716fb8d58eeb95c068a039b9b6292817d5fb"
 
 "@types/node@^6.0.0":
   version "6.0.88"
@@ -1432,7 +1432,13 @@ dateformat@^2.0.0:
   version "2.2.0"
   resolved "https://registry.yarnpkg.com/dateformat/-/dateformat-2.2.0.tgz#4065e2013cf9fb916ddfd82efb506ad4c6769062"
 
-debug@2, debug@2.6.8, debug@^2.1.1, debug@^2.2.0, debug@^2.6.8:
+debug@2, debug@^2.2.0:
+  version "2.6.9"
+  resolved "https://registry.yarnpkg.com/debug/-/debug-2.6.9.tgz#5d128515df134ff327e90a4c93f4e077a536341f"
+  dependencies:
+    ms "2.0.0"
+
+debug@2.6.8, debug@^2.1.1, debug@^2.6.8:
   version "2.6.8"
   resolved "https://registry.yarnpkg.com/debug/-/debug-2.6.8.tgz#e731531ca2ede27d188222427da17821d68ff4fc"
   dependencies:
@@ -3107,8 +3113,8 @@ polymer-analyzer@^2.0.2:
     strip-indent "^2.0.0"
 
 polymer-workspaces@^1.0.0:
-  version "1.0.2"
-  resolved "https://registry.yarnpkg.com/polymer-workspaces/-/polymer-workspaces-1.0.2.tgz#fd5463953a88bb2ac0b1547610d3cd2882ead03a"
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/polymer-workspaces/-/polymer-workspaces-1.1.0.tgz#e049fe07ba338dc0188591160f5615fa78e484c2"
   dependencies:
     "@types/rimraf" "^2.0.2"
     github "^11.0.0"
