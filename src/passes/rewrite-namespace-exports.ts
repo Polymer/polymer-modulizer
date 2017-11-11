@@ -18,8 +18,8 @@ import * as estree from 'estree';
 import * as jsc from 'jscodeshift';
 import {Document} from 'polymer-analyzer';
 
+import {getMemberName, getMemberPath, getNodePathInProgram, isSourceLocationEqual, getTopLevelStatements} from '../document-util';
 import {NamespaceMemberToExport} from '../js-module';
-import {getMemberName, getMemberPath, getNodePathGivenAnalyzerAstNode, sourceLocationsEqual, toplevelStatements} from '../util';
 
 export function rewriteNamespacesAsExports(
     program: estree.Program,
@@ -59,7 +59,7 @@ class RewriteNamespaceExportsPass {
    * Mutates this.program, this.namespaceNames, and this.exportMigrationRecords.
    */
   run() {
-    for (const path of toplevelStatements(this.program)) {
+    for (const path of getTopLevelStatements(this.program)) {
       const statement = path.node;
       const namespaceDeclaration =
           getNamespaceDeclaration(statement, this.namespaces);
@@ -200,7 +200,7 @@ class RewriteNamespaceExportsPass {
       // // Polymer.X = X; where X is previously defined as a namespace
 
       // Find the namespace node and containing statement
-      const namespaceDeclarationStatement = getNodePathGivenAnalyzerAstNode(
+      const namespaceDeclarationStatement = getNodePathInProgram(
           this.program, namespaceFeature.astNode);
       if (namespaceDeclarationStatement == null) {
         throw new Error(`can't find associated node for namespace`);
@@ -235,7 +235,7 @@ class RewriteNamespaceExportsPass {
   private isNamespace(node: estree.Node) {
     const namespaces = this.document.getFeatures({kind: 'namespace'});
     for (const namespace of namespaces) {
-      if (sourceLocationsEqual(namespace.astNode, node)) {
+      if (isSourceLocationEqual(namespace.astNode, node)) {
         return true;
       }
     }
