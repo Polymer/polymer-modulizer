@@ -138,11 +138,19 @@ export class ProjectConverter {
     const results = new Map<ConvertedDocumentFilePath, string|undefined>();
 
     for (const convertedModule of this.conversionResults.values()) {
-      if (convertedModule.originalUrl.endsWith(
-              'shadycss/entrypoints/apply-shim.js') ||
-          convertedModule.originalUrl.endsWith(
-              'shadycss/entrypoints/custom-style-interface.js')) {
-        // These are already ES6, and messed with in url-handler.
+      // These files were already ES6 modules, so don't write our conversions.
+      // Can't be handled in `excludes` because we want to preserve imports of.
+      // TODO(fks): This is hacky, ProjectConverter isn't supposed to know about
+      //  project layout / file location. Move into URLHandler, potentially make
+      //  its own `excludes`-like settings option.
+      if (convertedModule.originalUrl ===
+              'shadycss/entrypoints/apply-shim.js' ||
+          convertedModule.originalUrl ===
+              'bower_components/shadycss/entrypoints/apply-shim.js' ||
+          convertedModule.originalUrl ===
+              'shadycss/entrypoints/custom-style-interface.js' ||
+          convertedModule.originalUrl ===
+              'bower_components/shadycss/entrypoints/custom-style-interface.js') {
         continue;
       }
       if (convertedModule.keepOriginal !== true) {
