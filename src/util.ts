@@ -292,18 +292,3 @@ export async function exec(
     throw err;
   }
 }
-
-/**
- * A helper function to check whether a shell command exists or not.
- * Useful for user-facing warnings.
- */
-export async function checkCommand(commandName: string): Promise<boolean> {
-  try {
-    // the "command" command will exit with an error code, which Node
-    // will throw from execFile() as an error object.
-    await execFile('command', ['-v', commandName]);
-    return true;
-  } catch (err) {
-    return false;
-  }
-}
