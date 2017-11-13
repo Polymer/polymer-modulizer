@@ -34,7 +34,7 @@ import {rewriteToplevelThis} from './passes/rewrite-toplevel-this';
 import {ProjectConverter} from './project-converter';
 import {ConvertedDocumentUrl, OriginalDocumentUrl, PackageType} from './urls/types';
 import {UrlHandlerInterface} from './urls/url-handler-interface';
-import {getDocumentUrl, getHtmlDocumentConvertedFilePath, getJsModuleConvertedFilePath, isValidOriginalDocumentUrl, replaceHtmlExtensionIfFound} from './urls/util';
+import {getDocumentUrl, getHtmlDocumentConvertedFilePath, getJsModuleConvertedFilePath, isOriginalDocumentUrlFormat, replaceHtmlExtensionIfFound} from './urls/util';
 import {findAvailableIdentifier, getMemberName, getMemberPath, getModuleId, getNodeGivenAnalyzerAstNode, nodeToTemplateLiteral, serializeNode} from './util';
 
 /**
@@ -1050,7 +1050,7 @@ export class DocumentConverter {
   private convertDocumentUrl(htmlUrl: OriginalDocumentUrl):
       ConvertedDocumentUrl {
     // TODO(fks): This can be removed later if type-checking htmlUrl is enough
-    if (!isValidOriginalDocumentUrl(htmlUrl)) {
+    if (!isOriginalDocumentUrlFormat(htmlUrl)) {
       throw new Error(
           `convertDocumentUrl() expects an OriginalDocumentUrl string` +
           `from the analyzer, but got "${htmlUrl}"`);
@@ -1081,7 +1081,7 @@ export class DocumentConverter {
    */
   private convertScriptUrl(oldUrl: OriginalDocumentUrl): ConvertedDocumentUrl {
     // TODO(fks): This can be removed later if type-checking htmlUrl is enough
-    if (!isValidOriginalDocumentUrl(oldUrl)) {
+    if (!isOriginalDocumentUrlFormat(oldUrl)) {
       throw new Error(
           `convertDocumentUrl() expects an OriginalDocumentUrl string` +
           `from the analyzer, but got "${oldUrl}"`);

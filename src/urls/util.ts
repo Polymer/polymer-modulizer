@@ -22,7 +22,7 @@ import {ConvertedDocumentFilePath, ConvertedDocumentUrl, OriginalDocumentUrl} fr
  * All ConvertedDocumentUrls have a `./` prefix, while OriginalDocumentUrl
  * (returned from the Analyzer) has no such prefix.
  */
-export function isValidOriginalDocumentUrl(url: string): boolean {
+export function isOriginalDocumentUrlFormat(url: string): boolean {
   return !url.startsWith('./');
 }
 
@@ -73,7 +73,7 @@ export function getRelativeUrl(
   }
   let moduleJsUrl = path.relative(path.dirname(fromUrl), toUrl);
   // Correct URL format to add './' preface if none exists
-  if (isValidOriginalDocumentUrl(moduleJsUrl)) {
+  if (!moduleJsUrl.startsWith('.') && !moduleJsUrl.startsWith('/')) {
     moduleJsUrl = './' + moduleJsUrl;
   }
   return moduleJsUrl;
