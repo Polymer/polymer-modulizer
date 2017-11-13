@@ -41,7 +41,7 @@ export interface PackageConversionSettings extends PartialConversionSettings {
 /**
  * Create and/or clean the "out" directory, setting it up for conversion.
  */
-async function setupOutDir(outDir: string, clean?: boolean) {
+async function setupOutDir(outDir: string, clean = false) {
   if (clean) {
     await rimraf(outDir);
   }
@@ -107,7 +107,6 @@ export default async function convert(options: PackageConversionSettings) {
   const outDir = options.outDir;
   const npmPackageName = options.packageName;
   const npmPackageVersion = options.packageVersion;
-  console.log(`Out directory: ${outDir}`);
   await setupOutDir(outDir, options.cleanOutDir);
 
   // Configure the analyzer and run an analysis of the package.

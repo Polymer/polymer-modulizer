@@ -86,6 +86,7 @@ export default async function run(options: CliOptions) {
 
   console.log(
       chalk.dim('[1/2]') + ' 🌀  ' + chalk.magenta(`Converting Package...`));
+  console.log(`Out directory: ${outDir}`);
 
   await convertPackage({
     inDir: inDir,

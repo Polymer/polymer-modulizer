@@ -34,7 +34,7 @@ import {rewriteToplevelThis} from './passes/rewrite-toplevel-this';
 import {ProjectConverter} from './project-converter';
 import {ConvertedDocumentUrl, OriginalDocumentUrl, PackageType} from './urls/types';
 import {UrlHandlerInterface} from './urls/url-handler-interface';
-import {getDocumentUrl, getHtmlDocumentConvertedFilePath, getJsModuleConvertedFilePath, replaceHtmlExtensionIfFound} from './urls/util';
+import {getDocumentUrl, getHtmlDocumentConvertedFilePath, getJsModuleConvertedFilePath, replaceHtmlExtensionIfFound, isValidOriginalDocumentUrl} from './urls/util';
 import {findAvailableIdentifier, getMemberName, getMemberPath, getModuleId, getNodeGivenAnalyzerAstNode, nodeToTemplateLiteral, serializeNode} from './util';
 
 /**
@@ -1052,7 +1052,7 @@ export class DocumentConverter {
   private convertDocumentUrl(htmlUrl: OriginalDocumentUrl):
       ConvertedDocumentUrl {
     // TODO(fks): This can be removed later if type-checking htmlUrl is enough
-    if (htmlUrl.startsWith('.') || htmlUrl.startsWith('/')) {
+    if (!isValidOriginalDocumentUrl(htmlUrl)) {
       throw new Error(
           `convertDocumentUrl() expects an OriginalDocumentUrl string` +
           `from the analyzer, but got "${htmlUrl}"`);
@@ -1083,7 +1083,7 @@ export class DocumentConverter {
    */
   private convertScriptUrl(oldUrl: OriginalDocumentUrl): ConvertedDocumentUrl {
     // TODO(fks): This can be removed later if type-checking htmlUrl is enough
-    if (oldUrl.startsWith('.') || oldUrl.startsWith('/')) {
+    if (!isValidOriginalDocumentUrl(oldUrl)) {
       throw new Error(
           `convertDocumentUrl() expects an OriginalDocumentUrl string` +
           `from the analyzer, but got "${oldUrl}"`);
@@ -1101,20 +1101,20 @@ export class DocumentConverter {
    * TODO(fks) 10-26-2017: Make this run on Windows/Non-Unix systems.
    */
   private formatImportUrl(
-      jsRootUrl: ConvertedDocumentUrl, originalHtmlImportUrl?: string): string {
+      toUrl: ConvertedDocumentUrl, originalHtmlImportUrl?: string): string {
     // Return an absolute URL path if the original HTML import was absolute.
     // TODO(fks) 11-06-2017: Still return true absolute paths when using
     // bare/named imports?
     if (originalHtmlImportUrl && path.posix.isAbsolute(originalHtmlImportUrl)) {
-      return '/' + jsRootUrl.slice('./'.length);
+      return '/' + toUrl.slice('./'.length);
     }
     // If the import is contained within a single package (internal), return
     // a path-based import.
-    if (this.urlHandler.isImportInternal(this.convertedUrl, jsRootUrl)) {
-      return this.urlHandler.getPathImportUrl(this.convertedUrl, jsRootUrl);
+    if (this.urlHandler.isImportInternal(this.convertedUrl, toUrl)) {
+      return this.urlHandler.getPathImportUrl(this.convertedUrl, toUrl);
     }
-    // Otheriwse, return the external import URL formatted for paths.
-    return this.urlHandler.getPathImportUrl(this.convertedUrl, jsRootUrl);
+    // Otherwise, return the external import URL formatted for paths.
+    return this.urlHandler.getPathImportUrl(this.convertedUrl, toUrl);
   }
 
   /**
@@ -1169,8 +1169,6 @@ export class DocumentConverter {
       const namedExports =
           new Set(IterableX.from(references || []).map((ref) => ref.target));
       const jsFormattedImportUrl = this.formatImportUrl(jsImplicitImportUrl);
-
-
       jsImportDeclarations.push(...getImportDeclarations(
           jsFormattedImportUrl, namedExports, references, usedIdentifiers));
     }
@@ -1180,7 +1178,6 @@ export class DocumentConverter {
     return jsImportDeclarations.length > 0;
   }
 }
-
 
 function* enumerate<V>(iter: Iterable<V>): Iterable<[number, V]> {
   let i = 0;

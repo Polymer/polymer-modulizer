@@ -97,7 +97,7 @@ export class ProjectConverter {
     }
     const documentConverter = new DocumentConverter(this, document, visited);
     const newModule = documentConverter.convertToJsModule();
-    this.handleConversionResult(newModule);
+    this._handleConversionResult(newModule);
   }
 
   /**
@@ -111,14 +111,14 @@ export class ProjectConverter {
     }
     const documentConverter = new DocumentConverter(this, document, visited);
     const newModule = documentConverter.convertAsToplevelHtmlDocument();
-    this.handleConversionResult(newModule);
+    this._handleConversionResult(newModule);
   }
 
   /**
    * A private instance method for handling new conversion results, exports,
    * etc.
    */
-  private handleConversionResult(newModule: ConversionResult): void {
+  private _handleConversionResult(newModule: ConversionResult): void {
     this.conversionResults.set(newModule.originalUrl, newModule);
     if (newModule.output.type === 'js-module') {
       for (const expr of newModule.output.exportedNamespaceMembers) {

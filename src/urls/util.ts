@@ -18,13 +18,19 @@ import {Document} from 'polymer-analyzer';
 import {ConvertedDocumentFilePath, ConvertedDocumentUrl, OriginalDocumentUrl} from './types';
 
 /**
+ * Return true if url is formatted correctly as a OriginalDocumentUrl.
+ * All ConvertedDocumentUrls have a `./` prefix, while OriginalDocumentUrl
+ * (returned from the Analyzer) has no such prefix.
+ */
+export function isValidOriginalDocumentUrl(url: string): boolean {
+  return !url.startsWith('./');
+}
+
+/**
  * Rewrite a url to replace a `.html` file extension with `.js`, if found.
  */
 export function replaceHtmlExtensionIfFound(url: string): string {
-  if (url.endsWith('.html')) {
-    url = url.substring(0, url.length - '.html'.length) + '.js';
-  }
-  return url;
+  return url.replace(/\.html$/, '.js');
 }
 
 /**
@@ -67,7 +73,7 @@ export function getRelativeUrl(
   }
   let moduleJsUrl = path.relative(path.dirname(fromUrl), toUrl);
   // Correct URL format to add './' preface if none exists
-  if (!moduleJsUrl.startsWith('.') && !moduleJsUrl.startsWith('/')) {
+  if (isValidOriginalDocumentUrl(moduleJsUrl)) {
     moduleJsUrl = './' + moduleJsUrl;
   }
   return moduleJsUrl;
