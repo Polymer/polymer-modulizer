@@ -18,8 +18,6 @@ import {ConvertedDocumentFilePath, ConvertedDocumentUrl, OriginalDocumentUrl, Pa
 import {UrlHandlerInterface} from './url-handler-interface';
 import {getRelativeUrl} from './util';
 
-const isInBowerComponentsRegex = /(\b|\/|\\)(bower_components)(\/|\\)/;
-const isInNodeModulesRegex = /(\b|\/|\\)(node_modules)(\/|\\)/;
 
 /**
  * Handle URLs in a single "package-based" layout. This converter should be used
@@ -37,8 +35,8 @@ export class PackageUrlHandler implements UrlHandlerInterface {
    */
   static isUrlInternalToPackage(url: ConvertedDocumentUrl|OriginalDocumentUrl|
                                 ConvertedDocumentFilePath) {
-    return !isInBowerComponentsRegex.test(url) &&
-        !isInNodeModulesRegex.test(url);
+    return !url.startsWith('bower_components/') &&
+        !url.startsWith('./node_modules/');
   }
 
   constructor(packageName: string, packageType?: PackageType) {
