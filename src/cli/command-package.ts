@@ -63,15 +63,6 @@ export default async function run(options: CliOptions) {
       inPackageJson && inPackageJson.version ||
       outPackageJson && outPackageJson.version;
 
-  let bowerMainAny = (inBowerJson && inBowerJson.main) || [];
-  if (!Array.isArray(bowerMainAny)) {
-    bowerMainAny = [bowerMainAny];
-  }
-  const bowerMain: string[] =
-      bowerMainAny.filter((m: any) => typeof m === 'string');
-
-  const mainFiles = [...bowerMain, ...options.include];
-
   // Prompt user for new package name & version if none exists
   // TODO(fks) 07-19-2017: Add option to suppress prompts
   if (typeof npmPackageName !== 'string') {
@@ -104,7 +95,6 @@ export default async function run(options: CliOptions) {
     packageName: npmPackageName.toLowerCase(),
     packageVersion: npmPackageVersion,
     cleanOutDir: options.clean!!,
-    mainFiles,
   });
 
   console.log(

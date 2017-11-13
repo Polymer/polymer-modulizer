@@ -28,17 +28,17 @@ export interface ConversionSettings {
   /**
    * Namespace names used to detect exports.
    */
-  readonly namespaces: ReadonlySet<string>;
+  readonly namespaces: Set<string>;
   /**
    * Files to exclude from conversion (ie lib/utils/boot.html).
    */
-  readonly excludes: ReadonlySet<string>;
+  readonly excludes: Set<string>;
   /**
    * Additional files to include in conversion. By default, all files HTML
    * imported somewhere in the project (excluding external packages) are
    * included for conversion.
    */
-  readonly includes: ReadonlySet<string>;
+  readonly includes: Set<string>;
   /**
    * Namespace references (ie, Polymer.DomModule) to "exclude" in the conversion
    * by replacing the entire reference with `undefined`. This assumes that those
@@ -47,14 +47,14 @@ export interface ConversionSettings {
    *
    * ex: `if(Polymer.DomModule) {...` -> `if (undefined) {...`
    */
-  readonly referenceExcludes: ReadonlySet<string>;
+  readonly referenceExcludes: Set<string>;
   /**
    * Namespace references (ie, document.currentScript.ownerDocument) to
    * "rewrite" be replacing the entire reference with the given Node.
    *
    * ex: `document.currentScript.ownerDocument` -> `window.document`
    */
-  readonly referenceRewrites: ReadonlyMap<string, estree.Node>;
+  readonly referenceRewrites: Map<string, estree.Node>;
 }
 
 /**
