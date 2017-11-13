@@ -12,7 +12,6 @@
  * http://polymer.github.io/PATENTS.txt
  */
 import * as chalk from 'chalk';
-import {exec} from 'child_process';
 import * as inquirer from 'inquirer';
 import * as path from 'path';
 import * as semver from 'semver';
@@ -20,38 +19,26 @@ import * as semver from 'semver';
 import {CliOptions} from '../cli';
 import convertPackage from '../convert-package';
 import {readJson} from '../manifest-converter';
+import exec from '../test/util/exec';
 
 export default async function run(options: CliOptions) {
+  const inDir = path.resolve(options.in || process.cwd());
+  const outDir = path.resolve(options.out);
+
   // Ok, we're updating a package in a directory not under our control.
   // We need to be sure it's safe.
-  try {
-    await new Promise((resolve, reject) => {
-      exec('git status -s', {
-        cwd: options.in || process.cwd()
-      }, (error, stdout, stderr) => {
-        if (error || stderr || stdout) {
-          return reject();
-        }
-
-        resolve();
-      });
-    });
-  } catch (ex) {
-    if (!options.force) {
-      console.error(
-          `When running modulizer on an existing directory, ` +
-          `be sure that all changes are checked into source control. ` +
-          `Run again once you've verified.`);
-      process.exit(1);
-    }
+  const {stdout, stderr} = await exec(inDir, 'git', ['status', '-s']);
+  if (!options.force && (stdout || stderr)) {
+    console.error(
+        `Git repo is dirty. Check all changes in to source control and ` +
+        `then try again.`);
+    process.exit(1);
   }
 
   // TODO: each file is not always needed, refactor to optimize loading
   let inBowerJson: {name: string, version: string, main: any}|undefined;
   let inPackageJson: {name: string, version: string}|undefined;
   let outPackageJson: {name: string, version: string}|undefined;
-  const inDir = path.resolve(options.in || process.cwd());
-  const outDir = path.resolve(options.out);
   try {
     outPackageJson = readJson(outDir, 'package.json');
   } catch (e) {
