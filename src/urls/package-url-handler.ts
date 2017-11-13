@@ -51,19 +51,21 @@ export class PackageUrlHandler implements UrlHandlerInterface {
    * of any file that lives in that package.
    */
   getPackageNameForUrl(url: OriginalDocumentUrl) {
-    if (PackageUrlHandler.isUrlInternalToPackage(url)) {
+    // If url contains no directories it must be internal. Explicitly check
+    // `basePackageName` here since it is needed below.
+    const urlParts = url.split('/');
+    const basePackageName = urlParts[1] as (string | undefined);
+    if (!basePackageName || PackageUrlHandler.isUrlInternalToPackage(url)) {
       return this.packageName;
-    } else {
-      // For a a single package layout, the Bower package name is included in
-      // the URL. ie: bower_components/PACKAGE_NAME/...
-      const basePackageName = url.split('/')[1];
-      // Check the dependency map to get the new NPM name for the package.
-      const depInfo = lookupDependencyMapping(basePackageName);
-      if (!depInfo) {
-        return basePackageName;
-      }
-      return depInfo.npm;
     }
+    // For a a single package layout, the Bower package name is included in
+    // the URL. ie: bower_components/PACKAGE_NAME/...
+    // Check the dependency map to get the new NPM name for the package.
+    const depInfo = lookupDependencyMapping(basePackageName);
+    if (!depInfo) {
+      return basePackageName;
+    }
+    return depInfo.npm;
   }
 
   /**

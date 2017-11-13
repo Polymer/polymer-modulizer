@@ -34,7 +34,7 @@ import {rewriteToplevelThis} from './passes/rewrite-toplevel-this';
 import {ProjectConverter} from './project-converter';
 import {ConvertedDocumentUrl, OriginalDocumentUrl, PackageType} from './urls/types';
 import {UrlHandlerInterface} from './urls/url-handler-interface';
-import {getDocumentUrl, getHtmlDocumentConvertedFilePath, getJsModuleConvertedFilePath, replaceHtmlExtensionIfFound, isValidOriginalDocumentUrl} from './urls/util';
+import {getDocumentUrl, getHtmlDocumentConvertedFilePath, getJsModuleConvertedFilePath, isValidOriginalDocumentUrl, replaceHtmlExtensionIfFound} from './urls/util';
 import {findAvailableIdentifier, getMemberName, getMemberPath, getModuleId, getNodeGivenAnalyzerAstNode, nodeToTemplateLiteral, serializeNode} from './util';
 
 /**
