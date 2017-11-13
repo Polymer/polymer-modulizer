@@ -193,14 +193,12 @@ export class DocumentConverter {
    */
   private getHtmlImports() {
     return IterableX.from(this.document.getFeatures({kind: 'html-import'}))
-        .filter((f: Import) => {
-          for (const exclude of this.conversionSettings.excludes) {
-            if (f.document.url.endsWith(exclude)) {
-              return false;
-            }
-          }
-          return true;
-        });
+      .filter((f: Import) => {
+        if (this.conversionSettings.excludes.has(f.document.url)) {
+          return false;
+        }
+        return true;
+      });
   }
 
   convertToJsModule(): ConversionResult {

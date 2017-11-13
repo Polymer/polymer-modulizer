@@ -79,10 +79,8 @@ export class ProjectConverter {
     if (this.conversionResults.has(documentUrl)) {
       return false;
     }
-    for (const exclude of this.conversionSettings.excludes) {
-      if (documentUrl.endsWith(exclude)) {
-        return false;
-      }
+    if (this.conversionSettings.excludes.has(documentUrl)) {
+      return false;
     }
     return true;
   }
