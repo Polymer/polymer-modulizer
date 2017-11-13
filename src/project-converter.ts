@@ -88,10 +88,35 @@ export class ProjectConverter {
    * Check if a document is explicitly excluded or has already been converted
    * to decide if it should be converted or skipped.
    */
-  shouldConvertDocument(document: Document): boolean {
+  private shouldConvertDocument(document: Document): boolean {
     const documentUrl = getDocumentUrl(document);
     return !this.conversionResults.has(documentUrl) &&
         !this.conversionSettings.excludes.has(documentUrl);
+  }
+
+  /**
+   * Convert document dependencies. Should be called early in the conversion
+   * process so that it can read this document's dependencies' exports.
+   */
+  private convertDependencies(
+      document: Document, visited: Set<OriginalDocumentUrl>) {
+    for (const htmlImport of DocumentConverter.getAllHtmlImports(document)) {
+      // Only convert what we need, ignore excluded/already converted documents.
+      if (!this.shouldConvertDocument(htmlImport.document)) {
+        continue;
+      }
+      // Warn if a cyclical dependency is found.
+      if (visited.has(getDocumentUrl(htmlImport.document))) {
+        console.warn(
+            `Cycle in dependency graph found where ` +
+            `${document.url} imports ${htmlImport.document.url}.\n` +
+            `    Modulizer does not yet support rewriting references among ` +
+            `cyclic dependencies.`);
+        continue;
+      }
+      // Run a full conversion on the dependency document and its dependencies.
+      this.convertDocumentToJs(htmlImport.document, visited);
+    }
   }
 
   /**
@@ -102,7 +127,13 @@ export class ProjectConverter {
     if (!this.shouldConvertDocument(document)) {
       return;
     }
-    const documentConverter = new DocumentConverter(this, document, visited);
+    visited.add(getDocumentUrl(document));
+    this.convertDependencies(document, visited);
+    const documentConverter = new DocumentConverter(
+        document,
+        this.namespacedExports,
+        this.urlHandler,
+        this.conversionSettings);
     const newModule = documentConverter.convertToJsModule();
     this._handleConversionResult(newModule);
   }
@@ -116,7 +147,13 @@ export class ProjectConverter {
     if (!this.shouldConvertDocument(document)) {
       return;
     }
-    const documentConverter = new DocumentConverter(this, document, visited);
+    visited.add(getDocumentUrl(document));
+    this.convertDependencies(document, visited);
+    const documentConverter = new DocumentConverter(
+        document,
+        this.namespacedExports,
+        this.urlHandler,
+        this.conversionSettings);
     const newModule = documentConverter.convertAsToplevelHtmlDocument();
     this._handleConversionResult(newModule);
   }

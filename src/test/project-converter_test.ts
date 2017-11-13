@@ -2101,7 +2101,7 @@ export const foo = 10;
       });
       const expectedWarnings =
           ['Cycle in dependency graph found where b.html imports a.html.\n' +
-           '    modulizer does not yet support rewriting references among ' +
+           '    Modulizer does not yet support rewriting references among ' +
            'cyclic dependencies.'];
       assertSources(await convert({expectedWarnings}), {
         'a.js': `
@@ -2141,7 +2141,7 @@ export const bar = 20;
 
       const expectedWarnings =
           ['Cycle in dependency graph found where b.html imports a.html.\n' +
-           '    modulizer does not yet support rewriting references among ' +
+           '    Modulizer does not yet support rewriting references among ' +
            'cyclic dependencies.'];
       assertSources(await convert({expectedWarnings}), {
         'a.js': `
