@@ -34,40 +34,47 @@ export interface ConversionSettings {
    */
   readonly excludes: ReadonlySet<string>;
   /**
-   * Files to exclusively include in conversion. Defaults to all files HTML
-   * imported somewhere in the project (excluding external packages).
+   * Additional files to include in conversion. By default, all files HTML
+   * imported somewhere in the project (excluding external packages) are
+   * included for conversion.
    */
   readonly includes: ReadonlySet<string>;
   /**
-   * Namespace references (ie, Polymer.DomModule) to "exclude" be replacing
-   * the entire reference with `undefined`.
+   * Namespace references (ie, Polymer.DomModule) to "exclude" in the conversion
+   * by replacing the entire reference with `undefined`. This assumes that those
+   * references were conditionally checked for before accessing, or used in some
+   * other way that this simple transformation is okay.
+   *
+   * ex: `if(Polymer.DomModule) {...` -> `if (undefined) {...`
    */
   readonly referenceExcludes: ReadonlySet<string>;
   /**
    * Namespace references (ie, document.currentScript.ownerDocument) to
    * "rewrite" be replacing the entire reference with the given Node.
+   *
+   * ex: `document.currentScript.ownerDocument` -> `window.document`
    */
   readonly referenceRewrites: ReadonlyMap<string, estree.Node>;
 }
 
 /**
- * This is the partial, user-provided configuration that a ConversionSettings
+ * This is the partial, user-provided configuration that a `ConversionSettings`
  * object is generated from. User values are processed and expected defaults are
  * added.
  */
 export interface PartialConversionSettings {
   /**
    * Namespace names used to detect exports. Namespaces declared in the
-   * code with an @namespace declaration are automatically detected.
+   * code with an `@namespace` declaration are automatically detected.
    */
   readonly namespaces?: Iterable<string>;
   /**
-   * Files to exclude from conversion (ie lib/utils/boot.html). Imports
+   * Files to exclude from conversion (ie `lib/utils/boot.html`). Imports
    * to these files are also excluded.
    */
   readonly excludes?: Iterable<string>;
   /**
-   * Namespace references (ie, Polymer.DomModule) to "exclude be replacing
+   * Namespace references (ie, `Polymer.DomModule`) to "exclude be replacing
    * the entire reference with `undefined`.
    *
    * These references would normally be rewritten to module imports, but in some
