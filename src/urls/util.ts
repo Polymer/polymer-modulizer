@@ -14,7 +14,9 @@
 
 import {posix as path} from 'path';
 import {Document} from 'polymer-analyzer';
+
 import {lookupDependencyMapping} from '../manifest-converter';
+
 
 import {ConvertedDocumentFilePath, ConvertedDocumentUrl, OriginalDocumentUrl} from './types';
 
