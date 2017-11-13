@@ -34,9 +34,24 @@ export interface ConversionSettings {
    */
   readonly excludes: Set<string>;
   /**
-   * Additional files to include in conversion. By default, all files HTML
-   * imported somewhere in the project (excluding external packages) are
-   * included for conversion.
+   * Files to include in JS conversion. By default this is all local files that
+   * are imported anywhere inside the package. It is up to the conversion setup
+   * to make sure this includes any entrypoints into the package (that would
+   * never be imported themselves).
+   *
+   * Any files marked for conversion but not included in this set will be
+   * converted in-place, remaining HTML. This is preferable for HTML entrypoints
+   * like tests, demos, etc.
+   *
+   * Example: In "paper-input", `includes` by default will include all local
+   * HTML files imported within the package (paper-input-behavior.html,
+   * paper-input-error.html, etc). The package conversion setup is responsible
+   * for adding the main package entrypoint (paper-input.html) as well. HTML
+   * entrypoints (test/index.html, demo/index.html, etc) should not be added so
+   * that they remain HTML files after conversion is complete.
+   *
+   * TODO(fks) 11-13-2017: Simplify this relationship and what it means to be
+   * "marked for JS conversion" vs. "marked for HTML in-place conversion".
    */
   readonly includes: Set<string>;
   /**
