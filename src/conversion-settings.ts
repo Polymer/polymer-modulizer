@@ -46,9 +46,10 @@ export interface ConversionSettings {
    * Example: In "paper-input", `includes` by default will include all local
    * HTML files imported within the package (paper-input-behavior.html,
    * paper-input-error.html, etc). The package conversion setup is responsible
-   * for adding the main package entrypoint (paper-input.html) as well. HTML
-   * entrypoints (test/index.html, demo/index.html, etc) should not be added so
-   * that they remain HTML files after conversion is complete.
+   * for adding the main package entrypoint (paper-input.html) as well. Other
+   * entrypoints (test/index.html, demo/index.html, etc) that are not a part of
+   * the module code should not be included in `includes` so that they remain
+   * HTML files after conversion is complete.
    *
    * TODO(fks) 11-13-2017: Simplify this relationship and what it means to be
    * "marked for JS conversion" vs. "marked for HTML in-place conversion".

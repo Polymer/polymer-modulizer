@@ -152,6 +152,7 @@ suite('AnalysisConverter', () => {
         'dep.html': `<h1>Hi</h1>`,
         'bower_components/dep/dep.html': `<h1>Hi</h1>`,
       });
+      // Warnings are non memoized, duplicates are expected
       const expectedWarnings = [
         `WARN: bower->npm mapping for "dep" not found`,
         `WARN: bower->npm mapping for "dep" not found`,

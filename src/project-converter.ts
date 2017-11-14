@@ -18,8 +18,17 @@ import {ConversionSettings} from './conversion-settings';
 import {DocumentConverter} from './document-converter';
 import {ConversionResult, JsExport} from './js-module';
 import {ConvertedDocumentFilePath, OriginalDocumentUrl} from './urls/types';
-import {UrlHandlerInterface} from './urls/url-handler-interface';
+import {UrlHandler} from './urls/url-handler';
 import {getDocumentUrl} from './urls/util';
+
+// These files were already ES6 modules, so don't write our conversions.
+// Can't be handled in `excludes` because we want to preserve imports of.
+const excludeFromResults = new Set([
+  'shadycss/entrypoints/apply-shim.js',
+  'bower_components/shadycss/entrypoints/apply-shim.js',
+  'shadycss/entrypoints/custom-style-interface.js',
+  'bower_components/shadycss/entrypoints/custom-style-interface.js',
+]);
 
 /**
  * ProjectConverter provides the top-level interface for running a project
@@ -35,7 +44,7 @@ import {getDocumentUrl} from './urls/util';
  * constructor.
  */
 export class ProjectConverter {
-  readonly urlHandler: UrlHandlerInterface;
+  readonly urlHandler: UrlHandler;
   readonly conversionSettings: ConversionSettings;
 
   /**
@@ -43,6 +52,7 @@ export class ProjectConverter {
    * explicit named JS imports.
    */
   readonly namespacedExports = new Map<string, JsExport>();
+
   /**
    * A cache of all converted documents. Document conversions should be
    * idempotent, so conversion results can be safely cached.
@@ -50,7 +60,7 @@ export class ProjectConverter {
   readonly conversionResults = new Map<OriginalDocumentUrl, ConversionResult>();
 
   constructor(
-      urlHandler: UrlHandlerInterface, conversionSettings: ConversionSettings) {
+      urlHandler: UrlHandler, conversionSettings: ConversionSettings) {
     this.urlHandler = urlHandler;
     this.conversionSettings = conversionSettings;
   }
@@ -61,6 +71,10 @@ export class ProjectConverter {
    * conversionSettings.includes.
    */
   convertDocument(document: Document) {
+    console.assert(
+        document.kinds.has('html-document'),
+        `convertDocument() must be called with an HTML document, but got ${
+            document.kinds}`);
     try {
       this.conversionSettings.includes.has(document.url) ?
           this.convertDocumentToJs(document, new Set()) :
@@ -76,18 +90,13 @@ export class ProjectConverter {
    */
   shouldConvertDocument(document: Document): boolean {
     const documentUrl = getDocumentUrl(document);
-    if (this.conversionResults.has(documentUrl)) {
-      return false;
-    }
-    if (this.conversionSettings.excludes.has(documentUrl)) {
-      return false;
-    }
-    return true;
+    return !this.conversionResults.has(documentUrl) &&
+        !this.conversionSettings.excludes.has(documentUrl);
   }
 
   /**
-   * Specifically convert an HTML document to a JS module. Useful during
-   * conversion for dependencies where the type of result is explictly expected.
+   * Convert an HTML document to a JS module. Useful during conversion for
+   * dependencies where the type of result is explictly expected.
    */
   convertDocumentToJs(document: Document, visited: Set<OriginalDocumentUrl>) {
     if (!this.shouldConvertDocument(document)) {
@@ -99,9 +108,9 @@ export class ProjectConverter {
   }
 
   /**
-   * Specifically convert an HTML document without changing the file type
-   * (changes imports and inline scripts to modules as necessary.) Useful during
-   * conversion for dependencies where the type of result is explictly expected.
+   * Convert an HTML document without changing the file type (changes imports and
+   * inline scripts to modules as necessary). Useful during conversion for
+   * dependencies where the type of result is explictly expected.
    */
   convertDocumentToHtml(document: Document, visited: Set<OriginalDocumentUrl>) {
     if (!this.shouldConvertDocument(document)) {
@@ -136,22 +145,13 @@ export class ProjectConverter {
     const results = new Map<ConvertedDocumentFilePath, string|undefined>();
 
     for (const convertedModule of this.conversionResults.values()) {
-      // These files were already ES6 modules, so don't write our conversions.
-      // Can't be handled in `excludes` because we want to preserve imports of.
       // TODO(fks): This is hacky, ProjectConverter isn't supposed to know about
       //  project layout / file location. Move into URLHandler, potentially make
       //  its own `excludes`-like settings option.
-      if (convertedModule.originalUrl ===
-              'shadycss/entrypoints/apply-shim.js' ||
-          convertedModule.originalUrl ===
-              'bower_components/shadycss/entrypoints/apply-shim.js' ||
-          convertedModule.originalUrl ===
-              'shadycss/entrypoints/custom-style-interface.js' ||
-          convertedModule.originalUrl ===
-              'bower_components/shadycss/entrypoints/custom-style-interface.js') {
+      if (excludeFromResults.has(convertedModule.originalUrl)) {
         continue;
       }
-      if (convertedModule.keepOriginal !== true) {
+      if (convertedModule.deleteOriginal) {
         results.set(
             convertedModule.originalUrl as string as ConvertedDocumentFilePath,
             undefined);

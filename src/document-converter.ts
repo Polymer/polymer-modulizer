@@ -33,7 +33,7 @@ import {rewriteNamespacesAsExports} from './passes/rewrite-namespace-exports';
 import {rewriteToplevelThis} from './passes/rewrite-toplevel-this';
 import {ProjectConverter} from './project-converter';
 import {ConvertedDocumentUrl, OriginalDocumentUrl, PackageType} from './urls/types';
-import {UrlHandlerInterface} from './urls/url-handler-interface';
+import {UrlHandler} from './urls/url-handler';
 import {getDocumentUrl, getHtmlDocumentConvertedFilePath, getJsModuleConvertedFilePath, isOriginalDocumentUrlFormat, replaceHtmlExtensionIfFound} from './urls/util';
 import {findAvailableIdentifier, getMemberName, getMemberPath, getModuleId, getNodeGivenAnalyzerAstNode, nodeToTemplateLiteral, serializeNode} from './util';
 
@@ -160,7 +160,7 @@ export class DocumentConverter {
   private readonly originalUrl: OriginalDocumentUrl;
   private readonly convertedUrl: ConvertedDocumentUrl;
   private readonly projectConverter: ProjectConverter;
-  private readonly urlHandler: UrlHandlerInterface;
+  private readonly urlHandler: UrlHandler;
   private readonly conversionSettings: ConversionSettings;
   private readonly document: Document;
   private readonly packageName: string;
@@ -193,12 +193,9 @@ export class DocumentConverter {
    */
   private getHtmlImports() {
     return IterableX.from(this.document.getFeatures({kind: 'html-import'}))
-        .filter((f: Import) => {
-          if (this.conversionSettings.excludes.has(f.document.url)) {
-            return false;
-          }
-          return true;
-        });
+        .filter(
+            (f: Import) =>
+                !this.conversionSettings.excludes.has(f.document.url));
   }
 
   convertToJsModule(): ConversionResult {
@@ -266,6 +263,7 @@ export class DocumentConverter {
       originalUrl: this.originalUrl,
       convertedUrl: this.convertedUrl,
       convertedFilePath: getJsModuleConvertedFilePath(this.originalUrl),
+      deleteOriginal: true,
       output: {
         type: 'js-module',
         source: outputProgram.code + '\n',
@@ -1096,7 +1094,7 @@ export class DocumentConverter {
    * import URL as much as possible. For example, if the original import URL was
    * an absolute path, return an absolute path as well.
    *
-   * TODO(fks) 10-26-2017: Make this run on Windows/Non-Unix systems.
+   * TODO(fks): Make this run on Windows/Non-Unix systems (#236)
    */
   private formatImportUrl(
       toUrl: ConvertedDocumentUrl, originalHtmlImportUrl?: string): string {
@@ -1106,12 +1104,7 @@ export class DocumentConverter {
     if (originalHtmlImportUrl && path.posix.isAbsolute(originalHtmlImportUrl)) {
       return '/' + toUrl.slice('./'.length);
     }
-    // If the import is contained within a single package (internal), return
-    // a path-based import.
-    if (this.urlHandler.isImportInternal(this.convertedUrl, toUrl)) {
-      return this.urlHandler.getPathImportUrl(this.convertedUrl, toUrl);
-    }
-    // Otherwise, return the external import URL formatted for paths.
+    // Return the external import URL formatted for paths.
     return this.urlHandler.getPathImportUrl(this.convertedUrl, toUrl);
   }
 

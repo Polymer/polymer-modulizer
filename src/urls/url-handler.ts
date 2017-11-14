@@ -21,7 +21,7 @@ import {ConvertedDocumentUrl, OriginalDocumentUrl, PackageType} from './types';
  *
  * See PackageUrlHandler, WorkspaceUrlHandler for example implementations.
  */
-export interface UrlHandlerInterface {
+export interface UrlHandler {
   getPackageNameForUrl(url: OriginalDocumentUrl): string;
   getPackageTypeForUrl(url: OriginalDocumentUrl): PackageType;
   isImportInternal(fromUrl: ConvertedDocumentUrl, toUrl: ConvertedDocumentUrl):

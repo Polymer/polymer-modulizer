@@ -15,7 +15,7 @@
 import {lookupDependencyMapping} from '../manifest-converter';
 
 import {ConvertedDocumentFilePath, ConvertedDocumentUrl, OriginalDocumentUrl, PackageType} from './types';
-import {UrlHandlerInterface} from './url-handler-interface';
+import {UrlHandler} from './url-handler';
 import {getRelativeUrl} from './util';
 
 
@@ -25,7 +25,7 @@ import {getRelativeUrl} from './util';
  * installed in a "bower_components/" sub-directory inside the main package
  * directory.
  */
-export class PackageUrlHandler implements UrlHandlerInterface {
+export class PackageUrlHandler implements UrlHandler {
   readonly packageName: string;
   readonly packageType: PackageType;
 
@@ -34,19 +34,22 @@ export class PackageUrlHandler implements UrlHandlerInterface {
    * being converted (vs. a dependency).
    */
   static isUrlInternalToPackage(url: ConvertedDocumentUrl|OriginalDocumentUrl|
-                                ConvertedDocumentFilePath) {
+    ConvertedDocumentFilePath) {
+    // OriginalDocumentUrl will always be format `bower_components/*`
+    // ConvertedDocument[Url|FilePath] will always be format `./node_modules/*`
     return !url.startsWith('bower_components/') &&
         !url.startsWith('./node_modules/');
   }
 
-  constructor(packageName: string, packageType?: PackageType) {
+  constructor(packageName: string, packageType: PackageType = 'element') {
     this.packageName = packageName;
-    this.packageType = packageType || 'element';
+    this.packageType = packageType;
   }
 
   /**
-   * Get the converted NPM name for a package, given the original document URL
-   * of any file that lives in that package.
+   * Get the bower package name from an OriginalDocumentUrl and check our
+   * dependency map for the matching npm package name match. If URL is internal
+   * (no bower package name in URL) return the current package name.
    */
   getPackageNameForUrl(url: OriginalDocumentUrl) {
     // If url contains no directories it must be internal. Explicitly check
@@ -93,17 +96,14 @@ export class PackageUrlHandler implements UrlHandlerInterface {
   }
 
   /**
-   * Update a Bower package name in a url (at path index) to its matching npm
-   * package name.
+   * Rewrite a Bower package name in a URL to its matching npm package name.
    */
   convertUrl(url: OriginalDocumentUrl): ConvertedDocumentUrl {
     if (PackageUrlHandler.isUrlInternalToPackage(url)) {
       // TODO(fks): Revisit this format? The analyzer returns URLs without this
       return ('./' + url) as ConvertedDocumentUrl;
     }
-    // Convert component folder name
     const newUrl = url.replace('bower_components/', 'node_modules/');
-    // Convert package name
     const newUrlPieces = newUrl.split('/');
     const bowerPackageName = newUrlPieces[1];
     const depInfo = lookupDependencyMapping(bowerPackageName);
@@ -118,7 +118,7 @@ export class PackageUrlHandler implements UrlHandlerInterface {
    */
   getPathImportUrl(fromUrl: ConvertedDocumentUrl, toUrl: ConvertedDocumentUrl):
       string {
-    const isPackageNameScoped = this.packageName.includes('/');
+    const isPackageNameScoped = this.packageName.startsWith('@');
     const isPackageTypeElement = this.packageType === 'element';
     const isImportFromLocalFile =
         PackageUrlHandler.isUrlInternalToPackage(fromUrl);

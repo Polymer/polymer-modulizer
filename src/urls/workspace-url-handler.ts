@@ -18,7 +18,7 @@ import {lookupDependencyMapping} from '../manifest-converter';
 import {readJson} from '../manifest-converter';
 
 import {ConvertedDocumentUrl, OriginalDocumentUrl, PackageType} from './types';
-import {UrlHandlerInterface} from './url-handler-interface';
+import {UrlHandler} from './url-handler';
 import {getRelativeUrl} from './util';
 
 /**
@@ -51,7 +51,7 @@ export function lookupNpmPackageName(bowerJsonPath: string): string|undefined {
 }
 
 
-export class WorkspaceUrlHandler implements UrlHandlerInterface {
+export class WorkspaceUrlHandler implements UrlHandler {
   readonly workspaceDir: string;
 
   constructor(workspaceDir: string) {
@@ -113,11 +113,9 @@ export class WorkspaceUrlHandler implements UrlHandlerInterface {
   }
 
   /**
-   * Update a bower package name in a url (at path index) to its matching npm
-   * package name.
+   * Rewrite a bower package name in a URL to its matching npm package name.
    */
   convertUrl(dependencyUrl: OriginalDocumentUrl): ConvertedDocumentUrl {
-    // Convert package name
     const jsUrlPieces = dependencyUrl.split('/');
     const bowerPackageName = jsUrlPieces[0];
     const depInfo = lookupDependencyMapping(bowerPackageName);
