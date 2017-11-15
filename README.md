@@ -166,7 +166,7 @@ yarn test
 ### Running on Polymer
 
 ```sh
-yarn link
+yarn global add
 cd ../polymer
 modulizer
 ```
