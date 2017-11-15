@@ -66,7 +66,7 @@ window.customElements.define(MyElement.is, MyElement);
 Install polymer-modulizer from npm:
 
 ```
-npm install -g polymer-modulizer
+yarn install -g polymer-modulizer
 ```
 
 `polymer-modulizer` has two modes: package mode, which converts the current directory as a package,
@@ -160,13 +160,13 @@ Converting HTML to modules involves a few breaking changes. See [./docs/breaking
 git clone https://github.com/Polymer/polymer-modulizer.git
 cd polymer-modulizer
 yarn install
-npm test
+yarn test
 ```
 
 ### Running on Polymer
 
 ```sh
-npm link
+yarn link
 cd ../polymer
 modulizer
 ```
