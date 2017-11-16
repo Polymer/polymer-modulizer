@@ -88,7 +88,7 @@ export class ProjectConverter {
    * Check if a document is explicitly excluded or has already been converted
    * to decide if it should be converted or skipped.
    */
-  private shouldConvertDocument(document: Document): boolean {
+  private _shouldConvertDocument(document: Document): boolean {
     const documentUrl = getDocumentUrl(document);
     return !this.conversionResults.has(documentUrl) &&
         !this.conversionSettings.excludes.has(documentUrl);
@@ -98,11 +98,11 @@ export class ProjectConverter {
    * Convert document dependencies. Should be called early in the conversion
    * process so that it can read this document's dependencies' exports.
    */
-  private convertDependencies(
+  private _convertDependencies(
       document: Document, visited: Set<OriginalDocumentUrl>) {
     for (const htmlImport of DocumentConverter.getAllHtmlImports(document)) {
       // Only convert what we need, ignore excluded/already converted documents.
-      if (!this.shouldConvertDocument(htmlImport.document)) {
+      if (!this._shouldConvertDocument(htmlImport.document)) {
         continue;
       }
       // Warn if a cyclical dependency is found.
@@ -124,11 +124,11 @@ export class ProjectConverter {
    * dependencies where the type of result is explictly expected.
    */
   convertDocumentToJs(document: Document, visited: Set<OriginalDocumentUrl>) {
-    if (!this.shouldConvertDocument(document)) {
+    if (!this._shouldConvertDocument(document)) {
       return;
     }
     visited.add(getDocumentUrl(document));
-    this.convertDependencies(document, visited);
+    this._convertDependencies(document, visited);
     const documentConverter = new DocumentConverter(
         document,
         this.namespacedExports,
@@ -144,11 +144,11 @@ export class ProjectConverter {
    * dependencies where the type of result is explictly expected.
    */
   convertDocumentToHtml(document: Document, visited: Set<OriginalDocumentUrl>) {
-    if (!this.shouldConvertDocument(document)) {
+    if (!this._shouldConvertDocument(document)) {
       return;
     }
     visited.add(getDocumentUrl(document));
-    this.convertDependencies(document, visited);
+    this._convertDependencies(document, visited);
     const documentConverter = new DocumentConverter(
         document,
         this.namespacedExports,
