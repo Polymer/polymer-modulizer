@@ -10,7 +10,9 @@ Fixtures are checked in to enable deterministic CI testing. Each fixture directo
 
 ## Updating Fixtures
 
-Fixtures won't update manually. They require a manual run of the `build:fixtures` package.json script. This script runs `update-fixtures.ts`, which is keeps a list of all fixtures to fetch from github (`-> /source/`) and then convert (`-> /expected/`). Since this run generates your expected conversion to match against, make sure you only check in conversions when modulizer is in a known, working state.
+Fixtures won't update manually. They require a manual run of the `build:fixtures` package.json script. This script runs `update-fixtures.ts`, which is keeps a list of all fixtures to fetch from github (`-> /source/`) and then convert (`-> /expected/`).
+
+Note that `build:fixtures` trusts that the converter is in a working state when run. Make sure you only check in conversions from a working version of modulizer (usually a checkout of the master branch). Check the output & git diff manually after running just to be sure.
 
 ## Adding New Fixtures
 
