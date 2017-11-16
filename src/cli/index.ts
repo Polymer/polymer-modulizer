@@ -118,7 +118,7 @@ const optionDefinitions: commandLineArgs.OptionDefinition[] = [
   },
   {
     name: 'import-style',
-    type: Boolean,
+    type: String,
     defaultValue: 'path',
     description:
         `[name|path] The desired format for npm package import URLs/specifiers. ` +

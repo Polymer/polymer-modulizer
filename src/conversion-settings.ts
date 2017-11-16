@@ -27,14 +27,17 @@ export type NpmImportStyle = 'name'|'path';
  * and how each file should be formatted for conversion.
  */
 export interface ConversionSettings {
+
   /**
    * Namespace names used to detect exports.
    */
   readonly namespaces: Set<string>;
+
   /**
    * Files to exclude from conversion (ie lib/utils/boot.html).
    */
   readonly excludes: Set<string>;
+
   /**
    * Files to include in JS conversion. By default this is all local files that
    * are imported anywhere inside the package. It is up to the conversion setup
@@ -57,6 +60,7 @@ export interface ConversionSettings {
    * "marked for JS conversion" vs. "marked for HTML in-place conversion".
    */
   readonly includes: Set<string>;
+
   /**
    * Namespace references (ie, Polymer.DomModule) to "exclude" in the conversion
    * by replacing the entire reference with `undefined`. This assumes that those
@@ -66,6 +70,7 @@ export interface ConversionSettings {
    * ex: `if(Polymer.DomModule) {...` -> `if (undefined) {...`
    */
   readonly referenceExcludes: Set<string>;
+
   /**
    * Namespace references (ie, document.currentScript.ownerDocument) to
    * "rewrite" be replacing the entire reference with the given Node.
@@ -73,6 +78,7 @@ export interface ConversionSettings {
    * ex: `document.currentScript.ownerDocument` -> `window.document`
    */
   readonly referenceRewrites: Map<string, estree.Node>;
+
   /**
    * The style of imports to use in conversion:
    *
@@ -90,16 +96,19 @@ export interface ConversionSettings {
  * added.
  */
 export interface PartialConversionSettings {
+
   /**
    * Namespace names used to detect exports. Namespaces declared in the
    * code with an `@namespace` declaration are automatically detected.
    */
   readonly namespaces?: Iterable<string>;
+
   /**
    * Files to exclude from conversion (ie `lib/utils/boot.html`). Imports
    * to these files are also excluded.
    */
   readonly excludes?: Iterable<string>;
+
   /**
    * Namespace references (ie, `Polymer.DomModule`) to exclude be replacing
    * the entire reference with `undefined`.
@@ -110,6 +119,7 @@ export interface PartialConversionSettings {
    * fail the guard.
    */
   readonly referenceExcludes?: Iterable<string>;
+
   /**
    * The style of imports to use in conversion:
    *
