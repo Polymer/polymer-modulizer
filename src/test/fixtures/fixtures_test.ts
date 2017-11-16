@@ -19,10 +19,8 @@ import * as fs from 'mz/fs';
 import * as path from 'path';
 import * as rimraf from 'rimraf';
 
-import exec from '../util/exec';
+import {exec} from '../../util';
 
-// Install source map support for stack traces, etc.
-require('source-map-support').install();
 // TODO(fks): Add 'dir-compare' typings.
 const dircompare = require('dir-compare');
 
