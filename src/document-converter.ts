@@ -25,7 +25,7 @@ import {Document, Import, isPositionInsideRange, ParsedHtmlDocument, Severity, W
 import * as recast from 'recast';
 
 import {ConversionSettings} from './conversion-settings';
-import {attachCommentsToFirstStatement, collectIdentifierNames, containsWriteToGlobalSettingsObject, canDomModuleBeInlined, filterClone, findAvailableIdentifier, createDomNodeInsertStatements, getCommentsBetween, getMemberPath, getNodePathInProgram, getPathOfAssignmentTo, getSetterName, serializeNodeToTemplateLiteral, serializeNode} from './document-util';
+import {attachCommentsToFirstStatement, canDomModuleBeInlined, collectIdentifierNames, containsWriteToGlobalSettingsObject, createDomNodeInsertStatements, filterClone, findAvailableIdentifier, getCommentsBetween, getMemberPath, getNodePathInProgram, getPathOfAssignmentTo, getSetterName, insertStatementsIntoProgramBody, serializeNode, serializeNodeToTemplateLiteral} from './document-util';
 import {ConversionResult, JsExport} from './js-module';
 import {removeNamespaceInitializers} from './passes/remove-namespace-initializers';
 import {removeUnnecessaryEventListeners} from './passes/remove-unnecessary-waits';
@@ -90,7 +90,7 @@ const legacyJavascriptTypes: ReadonlySet<string|null> = new Set([
 /**
  * Detect legacy JavaScript "type" attributes.
  */
-function isLegacyJavaScriptType(scriptNode: parse5.ASTNode) {
+function isLegacyJavaScriptTag(scriptNode: parse5.ASTNode) {
   if (scriptNode.tagName !== 'script') {
     return false;
   }
@@ -310,7 +310,7 @@ export class DocumentConverter {
     const edits: Array<Edit> = [];
     for (const script of this.document.getFeatures({kind: 'js-document'})) {
       const astNode = script.astNode;
-      if (!astNode || !isLegacyJavaScriptType(astNode)) {
+      if (!astNode || !isLegacyJavaScriptTag(astNode)) {
         continue;  // ignore unknown script tags and preexisting modules
       }
       const sourceRange = script.astNode ?
@@ -357,7 +357,7 @@ export class DocumentConverter {
           dom5.childNodesIncludeTemplate));
     }
     for (const astNode of scriptsToConvert) {
-      if (!isLegacyJavaScriptType(astNode)) {
+      if (!isLegacyJavaScriptTag(astNode)) {
         continue;
       }
       const sourceRange =
@@ -467,6 +467,10 @@ export class DocumentConverter {
   }
 
   private rewriteInlineScript(program: Program) {
+
+    // Any code that sets the global settings object cannot be inlined (and
+    // deferred) because the settings object must be created/configured
+    // before anything else.
     if (containsWriteToGlobalSettingsObject(program)) {
       return undefined;
     }
@@ -558,7 +562,8 @@ export class DocumentConverter {
           htmlDocument.sourceRangeForNode(bodyNode)!);
       const scriptTag = parse5.parseFragment(`<script type="module"></script>`)
                             .childNodes![0];
-      const program = jsc.program(createDomNodeInsertStatements([bodyNode], true));
+      const program =
+          jsc.program(createDomNodeInsertStatements([bodyNode], true));
       dom5.setTextContent(
           scriptTag,
           '\n' +
@@ -605,19 +610,7 @@ export class DocumentConverter {
       return;
     }
     const statements = createDomNodeInsertStatements(genericElements);
-    let insertionPoint = 0;
-    for (let i = 0; i < program.body.length; i++) {
-      const bodyStatement = program.body[i];
-      if (bodyStatement.type === 'ImportDeclaration') {
-        // cover the case where the import is at the end
-        insertionPoint = i + 1;
-      } else {
-        // otherwise, break
-        insertionPoint = i;
-        break;
-      }
-    }
-    program.body.splice(insertionPoint, 0, ...statements);
+    insertStatementsIntoProgramBody(statements, program);
   }
 
   /**

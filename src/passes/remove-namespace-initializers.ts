@@ -17,7 +17,7 @@ import * as estree from 'estree';
 import {getMemberOrIdentifierName} from '../document-util';
 
 /**
- * Detect certain types of expressions that we deep noops when looking for
+ * Detect certain types of expressions that we deem noops when looking for
  * namespace initializers.
  */
 function isNoopInitializationValue(
@@ -42,7 +42,7 @@ function isNoopInitializationValue(
 }
 
 /**
- * Remove initializers for a set fo namespaces in a program.
+ * Remove initializers for a set of namespaces in a program.
  */
 export function removeNamespaceInitializers(
     program: estree.Program, namespaces: ReadonlySet<string|undefined>) {

@@ -25,7 +25,6 @@ export type NpmImportStyle = 'name'|'path';
  * and how each file should be formatted for conversion.
  */
 export interface ConversionSettings {
-
   /**
    * Namespace names used to detect exports.
    */
@@ -94,7 +93,6 @@ export interface ConversionSettings {
  * added.
  */
 export interface PartialConversionSettings {
-
   /**
    * Namespace names used to detect exports. Namespaces declared in the
    * code with an `@namespace` declaration are automatically detected.

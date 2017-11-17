@@ -520,3 +520,25 @@ export function createDomNodeInsertStatements(
         [jsc.identifier(varName)]))
   ];
 }
+
+/**
+ * Insert an array of statements into the program at the correct location. The
+ * correct location for new statements is after ImportDeclarations, if any
+ * exist.
+ */
+export function insertStatementsIntoProgramBody(
+    statements: estree.Statement[], program: estree.Program) {
+  let insertionPoint = 0;
+  for (let i = 0; i < program.body.length; i++) {
+    const bodyStatement = program.body[i];
+    if (bodyStatement.type === 'ImportDeclaration') {
+      // cover the case where the import is at the end
+      insertionPoint = i + 1;
+    } else {
+      // otherwise, break
+      insertionPoint = i;
+      break;
+    }
+  }
+  program.body.splice(insertionPoint, 0, ...statements);
+}

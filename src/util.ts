@@ -16,7 +16,7 @@ import {Iterable as IterableX} from 'ix';
 import * as fs from 'mz/fs';
 import * as path from 'path';
 
-import { ConvertedDocumentFilePath } from './urls/types';
+import {ConvertedDocumentFilePath} from './urls/types';
 
 import _mkdirp = require('mkdirp');
 import _rimraf = require('rimraf');

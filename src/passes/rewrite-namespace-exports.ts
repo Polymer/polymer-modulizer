@@ -18,7 +18,7 @@ import * as estree from 'estree';
 import * as jsc from 'jscodeshift';
 import {Document} from 'polymer-analyzer';
 
-import {getMemberName, getMemberPath, getNodePathInProgram, isSourceLocationEqual, getTopLevelStatements} from '../document-util';
+import {getMemberName, getMemberPath, getNodePathInProgram, getTopLevelStatements, isSourceLocationEqual} from '../document-util';
 import {NamespaceMemberToExport} from '../js-module';
 
 export function rewriteNamespacesAsExports(
@@ -200,8 +200,8 @@ class RewriteNamespaceExportsPass {
       // // Polymer.X = X; where X is previously defined as a namespace
 
       // Find the namespace node and containing statement
-      const namespaceDeclarationStatement = getNodePathInProgram(
-          this.program, namespaceFeature.astNode);
+      const namespaceDeclarationStatement =
+          getNodePathInProgram(this.program, namespaceFeature.astNode);
       if (namespaceDeclarationStatement == null) {
         throw new Error(`can't find associated node for namespace`);
       }
