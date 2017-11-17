@@ -56,7 +56,7 @@ export function getHtmlDocumentConvertedFilePath(
  * Return a document url property as a OriginalDocumentUrl type.
  */
 export function getDocumentUrl(document: Document): OriginalDocumentUrl {
-  return document.url as OriginalDocumentUrl;
+  return document.url as string as OriginalDocumentUrl;
 }
 
 /**
