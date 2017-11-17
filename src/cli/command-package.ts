@@ -16,10 +16,10 @@ import * as inquirer from 'inquirer';
 import * as path from 'path';
 import * as semver from 'semver';
 
-import {CliOptions} from '../cli';
 import convertPackage from '../convert-package';
 import {readJson} from '../manifest-converter';
 import {exec} from '../util';
+import {CliOptions} from './args';
 
 export default async function run(options: CliOptions) {
   const inDir = path.resolve(options.in || process.cwd());
