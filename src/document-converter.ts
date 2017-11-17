@@ -466,11 +466,15 @@ export class DocumentConverter {
     };
   }
 
+  /**
+   * Rewrite an inline script that will exist inlined inside an HTML document.
+   * Should not be called on top-level JS Modules.
+   */
   private rewriteInlineScript(program: Program) {
 
     // Any code that sets the global settings object cannot be inlined (and
     // deferred) because the settings object must be created/configured
-    // before anything else.
+    // before other imports evaluate in following module scripts.
     if (containsWriteToGlobalSettingsObject(program)) {
       return undefined;
     }
