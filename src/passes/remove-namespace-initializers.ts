@@ -18,7 +18,7 @@ import {getMemberOrIdentifierName} from '../document-util';
 
 /**
  * Detect certain types of expressions that we deem noops when looking for
- * namespace initializers.
+ * namespace initializers. For example, `var namespace = window.namespace`.
  */
 function isNoopInitializationValue(
     expression: estree.Expression, assigningTo: string): boolean {
@@ -36,7 +36,6 @@ function isNoopInitializationValue(
   if (getMemberOrIdentifierName(expression) === assigningTo) {
     return true;
   }
-
   // Most expressions are not noop initializations.
   return false;
 }
