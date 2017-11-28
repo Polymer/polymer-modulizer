@@ -101,7 +101,8 @@ export class ProjectConverter {
   private _convertDependencies(
       document: Document, visited: Set<OriginalDocumentUrl>) {
     for (const htmlImport of DocumentConverter.getAllHtmlImports(document)) {
-      // Only convert what we need, ignore excluded/already converted documents.
+      // Ignore excluded or already-converted documents before checking for
+      // cyclical dependencies below.
       if (!this._shouldConvertDocument(htmlImport.document)) {
         continue;
       }
