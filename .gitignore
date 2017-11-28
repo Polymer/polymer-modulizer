@@ -1,6 +1,3 @@
-# npm lockfile (we use yarn)
-package-lock.json
-
 # Logs
 logs
 *.log
@@ -25,9 +22,6 @@ coverage
 
 # Grunt intermediate storage (http://gruntjs.com/creating-plugins#storing-task-files)
 .grunt
-
-# Bower dependency directory (https://bower.io/)
-bower_components
 
 # node-waf configuration
 .lock-wscript
@@ -61,7 +55,7 @@ typings/
 .env
 
 /lib
-/fixtures/generated
+/fixtures/**/generated
 /modulizer_workspace
 /modularizer_workspace
 /untouched_workspace
