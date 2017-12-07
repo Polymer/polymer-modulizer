@@ -30,6 +30,20 @@ const dependencyMap: DependencyMap =
 const warningCache: Set<String> = new Set();
 
 /**
+ * For a given dependency at path, return the value that will point to it in a
+ * package.json "dependencies" or "devDependencies" object.
+ */
+function getLocalDependencyValue(path: string) {
+  return `git+file:${path}#${localDependenciesBranch}`;
+}
+
+/**
+ * The name of the git branch for local git dependencies to point to. Without
+ * a branch name, npm would just install from master.
+ */
+export const localDependenciesBranch = 'polymer-modulizer-testing';
+
+/**
  * Lookup the corresponding npm package name in our local map. By default, this
  * method will log a standard warning message to the user if no mapping was
  * found.
@@ -66,7 +80,10 @@ export function writeJson(json: any, ...pathPieces: string[]) {
  * Given a bower.json manifest, generate a package.json manifest for npm.
  */
 export function generatePackageJson(
-    bowerJson: any, npmName: string, npmVersion: string) {
+    bowerJson: any,
+    npmName: string,
+    npmVersion: string,
+    preferLocal?: Map<string, string>) {
   const packageJson = {
     name: npmName,
     flat: true,
@@ -80,25 +97,49 @@ export function generatePackageJson(
     license: bowerJson.license,
     homepage: bowerJson.homepage,
     dependencies: <any>{},
-    devDependencies: <any>{}
+    devDependencies: <any>{},
+    // resolutions needed for wct-browser-legacy
+    resolutions: {
+      'inherits': '2.0.3',
+      'samsam': '1.1.3',
+      'supports-color': '3.1.2',
+      'type-detect': '1.0.0',
+    }
   };
 
   if (bowerJson.license.includes('polymer.github.io/LICENSE')) {
     packageJson.license = 'BSD-3-Clause';
   } else if (!spdxLicenseList.has(bowerJson.license)) {
-    console.warn(`"${bowerJson.license}" is not a valid SPDX license. ` +
-      `You can find a list of valid licenses at https://spdx.org/licenses/`);
+    console.warn(
+        `"${bowerJson.license}" is not a valid SPDX license. ` +
+        `You can find a list of valid licenses at https://spdx.org/licenses/`);
   }
 
   for (const bowerPackageName in bowerJson.dependencies) {
     const depInfo = lookupDependencyMapping(bowerPackageName);
-    if (depInfo) {
+    if (!depInfo) {
+      continue;
+    }
+    if (preferLocal && preferLocal.has(depInfo.npm)) {
+      packageJson.dependencies[depInfo.npm] =
+          getLocalDependencyValue(preferLocal.get(depInfo.npm)!);
+    } else {
       packageJson.dependencies[depInfo.npm] = depInfo.semver;
     }
   }
 
-  // TODO(fks) 07-18-2017: handle devDependencies. Right now wct creates a too
-  // complicated flat dependency install.
+  for (const bowerPackageName in bowerJson.devDependencies) {
+    const depInfo = lookupDependencyMapping(bowerPackageName);
+    if (!depInfo) {
+      continue;
+    }
+    if (preferLocal && preferLocal.has(depInfo.npm)) {
+      packageJson.devDependencies[depInfo.npm] =
+          getLocalDependencyValue(preferLocal.get(depInfo.npm)!);
+    } else {
+      packageJson.devDependencies[depInfo.npm] = depInfo.semver;
+    }
+  }
 
   return packageJson;
 }

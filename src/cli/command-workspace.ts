@@ -12,13 +12,15 @@
  * http://polymer.github.io/PATENTS.txt
  */
 
-import chalk from 'chalk';
 import * as fs from 'fs';
+import * as inquirer from 'inquirer';
 import * as path from 'path';
 import {Workspace} from 'polymer-workspaces';
 
 import {CliOptions} from '../cli';
 import convertWorkspace from '../convert-workspace';
+import {testWorkspace, testWorkspaceInstallOnly} from '../test-workspace';
+import {logStep} from '../util';
 
 const githubTokenMessage = `
 You need to create a github token and place it in a file named 'github-token'.
@@ -31,6 +33,31 @@ Then:
 echo 'PASTE TOKEN HEX HERE' > ./github-token
 `;
 
+/**
+ * Post-Conversion steps that the user can select to run after workspace
+ * conversion.
+ */
+enum PostConversionStep {
+  Test = 'test',
+  TestInstallOnly = 'test (install only)',
+  Quit = 'quit',
+}
+
+/**
+ * Create an array of post-conversion steps to run automatically from the given
+ * CLI options. For example, when `--test` is provided the "test"
+ * post-conversion step should be run without prompting.
+ *
+ * Steps should be run in the order returned.
+ */
+function postConversionStepsFromCliOptions(options: CliOptions):
+    PostConversionStep[] {
+  const steps = [];
+  if (options.test === true) {
+    steps.push(PostConversionStep.Test);
+  }
+  return steps;
+}
 
 /**
  * Checks for github-token in the RunnerOptions and if not specified, will look
@@ -56,9 +83,7 @@ function loadGitHubToken(): string|null {
 
 export default async function run(options: CliOptions) {
   const workspaceDir = path.resolve(options['workspace-dir']);
-  console.log(
-      chalk.dim('[1/3]') + ' 🚧  ' +
-      chalk.magenta(`Setting Up Workspace "${workspaceDir}"...`));
+  logStep('[1/3]', '🚧', `Setting Up Workspace "${workspaceDir}"...`);
 
   if (!options['npm-version']) {
     throw new Error('--npm-version required');
@@ -76,7 +101,7 @@ export default async function run(options: CliOptions) {
     dir: workspaceDir,
   });
 
-  const reposToConvert = await workspace.init(
+  const {workspaceRepos: reposToConvert} = await workspace.init(
       {
         include: options['repo']!,
         exclude: options['exclude'],
@@ -86,17 +111,59 @@ export default async function run(options: CliOptions) {
         verbose: true,
       });
 
-  console.log(
-      chalk.dim('[2/3]') + ' 🌀  ' +
-      chalk.magenta(`Converting ${reposToConvert.length} Package(s)...`));
+  await workspace.installBowerDependencies();
 
-  await convertWorkspace({
+  logStep('[2/3]', '🌀', `Converting ${reposToConvert.length} Package(s)...`);
+
+  const convertedPackages = await convertWorkspace({
     workspaceDir,
     npmImportStyle: options['import-style'],
     packageVersion: npmPackageVersion,
     reposToConvert,
   });
 
-  console.log(
-      chalk.dim('[3/3]') + ' 🎉  ' + chalk.magenta(`Conversion Complete!`));
+  logStep('[3/3]', '🎉', `Conversion Complete!`);
+
+  // Loop indefinitely here so that we can control the function exit via the
+  // user prompt.
+  const todoConversionSteps = postConversionStepsFromCliOptions(options);
+  while (true) {
+    // Pull off a "to-do" post-conversion step if any were provided from the
+    // command line, otherwise prompt the user for one.
+    const stepSelection = todoConversionSteps.shift() ||
+        (await inquirer.prompt([{
+          type: 'list',
+          name: 'post-conversion-step',
+          message: ' What do you want to do now?',
+          choices: [
+            PostConversionStep.Test,
+            PostConversionStep.TestInstallOnly,
+            PostConversionStep.Quit
+          ],
+        }]))['post-conversion-step'] as string;
+    switch (stepSelection) {
+      case PostConversionStep.Test:
+        await testWorkspace(convertedPackages, {
+          workspaceDir,
+          packageVersion: npmPackageVersion,
+          reposToConvert,
+        });
+        break;
+      case PostConversionStep.TestInstallOnly:
+        await testWorkspaceInstallOnly(convertedPackages, {
+          workspaceDir,
+          packageVersion: npmPackageVersion,
+          reposToConvert,
+        });
+        break;
+      // TODO(fks): Add 'push to github' support
+      // TODO(fks): Add 'publish to npm' support
+      case PostConversionStep.Quit:
+        console.log('👋  Goodbye.');
+        return;
+      default:
+        console.log(`ERR: option "${stepSelection}" not recognized`);
+        break;
+    }
+  }
 }

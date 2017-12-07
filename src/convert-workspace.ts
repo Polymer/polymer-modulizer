@@ -15,23 +15,21 @@
 import {fs} from 'mz';
 import * as path from 'path';
 import {Analyzer, FSUrlLoader, InMemoryOverlayUrlLoader, PackageUrlResolver} from 'polymer-analyzer';
-import {WorkspaceRepo} from 'polymer-workspaces';
+import {run, WorkspaceRepo} from 'polymer-workspaces';
 
 import {createDefaultConversionSettings, PartialConversionSettings} from './conversion-settings';
 import {generatePackageJson, readJson, writeJson} from './manifest-converter';
 import {ProjectConverter} from './project-converter';
 import {polymerFileOverrides} from './special-casing';
 import {lookupNpmPackageName, WorkspaceUrlHandler} from './urls/workspace-url-handler';
-
-import {mkdirp, writeFileResults} from './util';
-
+import {exec, logRepoError, mkdirp, writeFileResults} from './util';
 
 /**
  * Configuration options required for workspace conversions. Contains
  * information about which repos to convert and what new version to set
  * each npm package at.
  */
-interface WorkspaceConversionSettings extends PartialConversionSettings {
+export interface WorkspaceConversionSettings extends PartialConversionSettings {
   packageVersion: string;
   workspaceDir: string;
   reposToConvert: WorkspaceRepo[];
@@ -91,48 +89,68 @@ function configureAnalyzer(options: WorkspaceConversionSettings) {
 }
 
 /**
- * Convert a set of workspace repos to JavaScript modules & npm.
+ * The results of a conversion, as a map of converted package npm names -> their
+ * full file path location on disk.
  */
-export default async function convert(options: WorkspaceConversionSettings) {
+export type ConversionResultsMap = Map<string, string>;
+
+/**
+ * Convert a set of workspace repos to npm packages and JavaScript modules.
+ * Returns a map of all packages converted, keyed by npm package name.
+ */
+export default async function convert(options: WorkspaceConversionSettings):
+    Promise<ConversionResultsMap> {
   const analyzer = configureAnalyzer(options);
   const analysis = await analyzer.analyzePackage();
   const htmlDocuments = [...analysis.getFeatures({kind: 'html-document'})];
   const conversionSettings = createDefaultConversionSettings(analysis, options);
   const urlHandler = new WorkspaceUrlHandler(options.workspaceDir);
   const converter = new ProjectConverter(urlHandler, conversionSettings);
+  const convertedPackageResults: ConversionResultsMap = new Map();
 
   // For each repo, convert the relevant HTML documents:
   for (const repo of options.reposToConvert) {
-    const repoDirName = repo.dir.split('/').pop()!;
-    const repoDocuments = htmlDocuments.filter((d) => {
-      return d.url.startsWith(repoDirName) &&
-          !conversionSettings.excludes.has(d.url);
-    });
-    for (const document of repoDocuments) {
+    const repoDirName = path.basename(repo.dir);
+    const bowerPath = path.join(repo.dir, 'bower.json');
+    const packageName = lookupNpmPackageName(bowerPath);
+    if (!packageName) {
+      continue;
+    }
+    for (const document of htmlDocuments) {
+      if (!document.url.startsWith(repoDirName) ||
+          conversionSettings.excludes.has(document.url)) {
+        continue;
+      }
       converter.convertDocument(document);
     }
+    convertedPackageResults.set(packageName, repo.dir);
   }
 
   // Process & write each conversion result:
   await writeFileResults(options.workspaceDir, converter.getResults());
 
-  // For each repo, generate a new package.json:
-  for (const repo of options.reposToConvert) {
-    try {
-      writePackageJson(repo, options.packageVersion);
-    } catch (err) {
-      console.log('Error in bower.json -> package.json conversion:');
-      console.error(err);
-    }
-  }
+  // Generate a new package.json for each repo:
+  const packageJsonResults = await run(options.reposToConvert, async (repo) => {
+    return writePackageJson(repo, options.packageVersion);
+  });
+  packageJsonResults.failures.forEach(logRepoError);
 
-  // For each repo, generate a node_modules/ symlink in the workspace directory:
-  for (const repo of options.reposToConvert) {
-    try {
-      await writeNpmSymlink(options, repo);
-    } catch (err) {
-      console.log(`Error in npm symlink creation:`);
-      console.error(err);
-    }
-  }
+  // Commit all changes to a staging branch for easy state resetting.
+  // Useful when performing actions that modify the repo, like installing deps.
+  const commitResults = await run(options.reposToConvert, async (repo) => {
+    await repo.git.createBranch('polymer-modulizer-staging');
+    await exec(repo.dir, 'git', ['add', '-A']);
+    // TODO(fks): Add node_modules to .gitignore, if not found
+    await exec(repo.dir, 'echo', ['reset', '--', 'node_modules/']);
+    await repo.git.commit('auto-converted by polymer-modulizer');
+  });
+  commitResults.failures.forEach(logRepoError);
+
+  const symlinkResults = await run(options.reposToConvert, async (repo) => {
+    await writeNpmSymlink(options, repo);
+  });
+  symlinkResults.failures.forEach(logRepoError);
+
+  // Return a map of all packages converted, keyed by npm package name.
+  return convertedPackageResults;
 }

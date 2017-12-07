@@ -113,6 +113,12 @@ const optionDefinitions: commandLineArgs.OptionDefinition[] = [
         `input directory.`,
   },
   {
+    name: 'test',
+    type: Boolean,
+    defaultValue: false,
+    description: `If given, run tests after workspace conversion.`,
+  },
+  {
     name: 'import-style',
     type: String,
     defaultValue: 'path',
@@ -137,6 +143,7 @@ export interface CliOptions {
   'workspace-dir': string;
   'github-token'?: string;
   force: boolean;
+  test: boolean;
   'import-style': NpmImportStyle;
 }
 
