@@ -17,8 +17,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import {Workspace} from 'polymer-workspaces';
 
-import {CliOptions} from '../cli';
 import convertWorkspace from '../convert-workspace';
+import {CliOptions} from './args';
 
 const githubTokenMessage = `
 You need to create a github token and place it in a file named 'github-token'.
