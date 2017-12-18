@@ -93,6 +93,6 @@ export function logRepoError(err: Error, repo: WorkspaceRepo) {
  */
 export function logStep(
     stepNum: number, totalNum: number, emoji: string, msg: string) {
-  const stepInfo = `${stepNum}/${totalNum}`;
+  const stepInfo = `[${stepNum}/${totalNum}]`;
   console.log(`${chalk.dim(stepInfo)} ${emoji}  ${chalk.magenta(msg)}`);
 }
