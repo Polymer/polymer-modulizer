@@ -12,7 +12,6 @@
  * http://polymer.github.io/PATENTS.txt
  */
 
-import {fs} from 'mz';
 import * as path from 'path';
 import {Analyzer, FSUrlLoader, InMemoryOverlayUrlLoader, PackageUrlResolver} from 'polymer-analyzer';
 import {run, WorkspaceRepo} from 'polymer-workspaces';
@@ -22,7 +21,7 @@ import {generatePackageJson, readJson, writeJson} from './manifest-converter';
 import {ProjectConverter} from './project-converter';
 import {polymerFileOverrides} from './special-casing';
 import {lookupNpmPackageName, WorkspaceUrlHandler} from './urls/workspace-url-handler';
-import {exec, logRepoError, mkdirp, writeFileResults} from './util';
+import {exec, logRepoError, writeFileResults} from './util';
 
 /**
  * Configuration options required for workspace conversions. Contains
@@ -36,29 +35,6 @@ export interface WorkspaceConversionSettings extends PartialConversionSettings {
 }
 
 export const GIT_STAGING_BRANCH_NAME = 'polymer-modulizer-staging';
-
-/**
- * Create a symlink from the repo into the workspace's node_modules directory.
- */
-async function writeNpmSymlink(
-    options: WorkspaceConversionSettings, repo: WorkspaceRepo) {
-  const packageJsonPath = path.join(repo.dir, 'package.json');
-  if (!await fs.exists(packageJsonPath)) {
-    return;
-  }
-  const packageJson = readJson(packageJsonPath);
-  let packageName = packageJson['name'] as string;
-  let parentName = path.join(options.workspaceDir, 'node_modules');
-  if (packageName.startsWith('@')) {
-    const slashIndex = packageName.indexOf('/');
-    const scopeName = packageName.substring(0, slashIndex);
-    parentName = path.join(parentName, scopeName);
-    packageName = packageName.substring(slashIndex + 1);
-  }
-  await mkdirp(parentName);
-  const linkName = path.join(parentName, packageName);
-  await fs.symlink(repo.dir, path.resolve(linkName));
-}
 
 /**
  * For a given repo, generate a new package.json and write it to disk.
@@ -147,11 +123,6 @@ export default async function convert(options: WorkspaceConversionSettings):
     await repo.git.commit('auto-converted by polymer-modulizer');
   });
   commitResults.failures.forEach(logRepoError);
-
-  const symlinkResults = await run(options.reposToConvert, async (repo) => {
-    await writeNpmSymlink(options, repo);
-  });
-  symlinkResults.failures.forEach(logRepoError);
 
   // Return a map of all packages converted, keyed by npm package name.
   return convertedPackageResults;
