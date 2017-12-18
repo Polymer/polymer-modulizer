@@ -71,7 +71,6 @@ async function testRepos(reposUnderTest: WorkspaceRepo[]) {
   return run(reposUnderTest, async (repo) => {
     const repoDirName = path.basename(repo.dir);
     const {stdout, stderr} = await exec(repo.dir, 'wct', ['--npm']);
-    console.log(stdout, stderr);
     if (stdout.length > 0) {
       console.log(chalk.dim(`${repoDirName}: ${stdout}`));
     }
@@ -130,7 +129,7 @@ export async function testWorkspace(
   testResults.failures.forEach(logRepoError);
 
   logStep(4, 5, '🔧', `Restoring Repos...`);
-  const restoreResults = await restoreRepos([...testResults.successes.keys()]);
+  const restoreResults = await restoreRepos(allRepos);
   restoreResults.failures.forEach(logRepoError);
 
   logStep(5, 5, '🔧', `Tests Complete!`);
