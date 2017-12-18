@@ -59,13 +59,13 @@ export function lookupDependencyMapping(bowerPackageName: string) {
 }
 
 function setNpmDependencyFromBower(
-    obj: any, bowerPackageName: string, preferLocal?: Map<string, string>) {
+    obj: any, bowerPackageName: string, useLocal?: Map<string, string>) {
   const depInfo = lookupDependencyMapping(bowerPackageName);
   if (!depInfo) {
     return;
   }
-  if (preferLocal && preferLocal.has(depInfo.npm)) {
-    obj[depInfo.npm] = getLocalDependencyValue(preferLocal.get(depInfo.npm)!);
+  if (useLocal && useLocal.has(depInfo.npm)) {
+    obj[depInfo.npm] = getLocalDependencyValue(useLocal.get(depInfo.npm)!);
   } else {
     obj[depInfo.npm] = depInfo.semver;
   }
@@ -92,7 +92,7 @@ export function writeJson(json: any, ...pathPieces: string[]) {
 /**
  * Given a bower.json manifest, generate a package.json manifest for npm.
  *
- * Function takes an optional `preferLocal` argument containing a map of any
+ * Function takes an optional `useLocal` argument containing a map of any
  * npm dependencies (name -> local file path) that should be referenced via
  * local file path and not public package name in the package.json. This is
  * useful for testing against other, converted repos.
@@ -101,7 +101,7 @@ export function generatePackageJson(
     bowerJson: any,
     npmName: string,
     npmVersion: string,
-    preferLocal?: Map<string, string>) {
+    useLocal?: Map<string, string>) {
   const packageJson = {
     name: npmName,
     flat: true,
@@ -136,11 +136,11 @@ export function generatePackageJson(
 
   for (const bowerPackageName in bowerJson.dependencies) {
     setNpmDependencyFromBower(
-        packageJson.dependencies, bowerPackageName, preferLocal);
+        packageJson.dependencies, bowerPackageName, useLocal);
   }
   for (const bowerPackageName in bowerJson.devDependencies) {
     setNpmDependencyFromBower(
-        packageJson.devDependencies, bowerPackageName, preferLocal);
+        packageJson.devDependencies, bowerPackageName, useLocal);
   }
 
   return packageJson;
