@@ -102,17 +102,13 @@ export default async function run(options: CliOptions) {
   const workspace = new Workspace({
     token: githubToken,
     dir: workspaceDir,
+    match: options['repo']!,
+    exclude: options['exclude'],
+    fresh: options['clean'],
+    verbose: true,
   });
 
-  const {workspaceRepos: reposToConvert} = await workspace.init(
-      {
-        include: options['repo']!,
-        exclude: options['exclude'],
-      },
-      {
-        fresh: options['clean'],
-        verbose: true,
-      });
+  const {workspaceRepos: reposToConvert} = await workspace.init();
 
   await workspace.installBowerDependencies();
 
