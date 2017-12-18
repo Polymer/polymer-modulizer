@@ -113,6 +113,13 @@ const optionDefinitions: commandLineArgs.OptionDefinition[] = [
         `input directory.`,
   },
   {
+    name: 'install',
+    type: Boolean,
+    defaultValue: false,
+    description:
+        `If given, installs dependencies in all repos after workspace conversion.`,
+  },
+  {
     name: 'test',
     type: Boolean,
     defaultValue: false,
@@ -143,6 +150,7 @@ export interface CliOptions {
   'workspace-dir': string;
   'github-token'?: string;
   force: boolean;
+  install: boolean;
   test: boolean;
   'import-style': NpmImportStyle;
 }

@@ -35,6 +35,7 @@ export interface WorkspaceConversionSettings extends PartialConversionSettings {
   reposToConvert: WorkspaceRepo[];
 }
 
+export const GIT_STAGING_BRANCH_NAME = 'polymer-modulizer-staging';
 
 /**
  * Create a symlink from the repo into the workspace's node_modules directory.
@@ -111,9 +112,9 @@ export default async function convert(options: WorkspaceConversionSettings):
   // For each repo, convert the relevant HTML documents:
   for (const repo of options.reposToConvert) {
     const repoDirName = path.basename(repo.dir);
-    const bowerPath = path.join(repo.dir, 'bower.json');
-    const packageName = lookupNpmPackageName(bowerPath);
-    if (!packageName) {
+    const bowerConfigPath = path.join(repo.dir, 'bower.json');
+    const npmPackageName = lookupNpmPackageName(bowerConfigPath);
+    if (!npmPackageName) {
       continue;
     }
     for (const document of htmlDocuments) {
@@ -123,7 +124,7 @@ export default async function convert(options: WorkspaceConversionSettings):
       }
       converter.convertDocument(document);
     }
-    convertedPackageResults.set(packageName, repo.dir);
+    convertedPackageResults.set(npmPackageName, repo.dir);
   }
 
   // Process & write each conversion result:
@@ -138,10 +139,11 @@ export default async function convert(options: WorkspaceConversionSettings):
   // Commit all changes to a staging branch for easy state resetting.
   // Useful when performing actions that modify the repo, like installing deps.
   const commitResults = await run(options.reposToConvert, async (repo) => {
-    await repo.git.createBranch('polymer-modulizer-staging');
+    await repo.git.createBranch(GIT_STAGING_BRANCH_NAME);
     await exec(repo.dir, 'git', ['add', '-A']);
     // TODO(fks): Add node_modules to .gitignore, if not found
-    await exec(repo.dir, 'echo', ['reset', '--', 'node_modules/']);
+    // https://github.com/Polymer/polymer-modulizer/issues/250
+    await exec(repo.dir, 'git', ['reset', '--', 'node_modules/']);
     await repo.git.commit('auto-converted by polymer-modulizer');
   });
   commitResults.failures.forEach(logRepoError);

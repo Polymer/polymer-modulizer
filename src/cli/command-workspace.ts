@@ -38,9 +38,9 @@ echo 'PASTE TOKEN HEX HERE' > ./github-token
  * conversion.
  */
 enum PostConversionStep {
-  Test = 'test',
-  TestInstallOnly = 'test (install only)',
-  Quit = 'quit',
+  Test = 'Install dependencies and run tests',
+  TestInstallOnly = 'Install dependencies only',
+  Exit = 'Exit',
 }
 
 /**
@@ -53,6 +53,9 @@ enum PostConversionStep {
 function postConversionStepsFromCliOptions(options: CliOptions):
     PostConversionStep[] {
   const steps = [];
+  if (options.install === true) {
+    steps.push(PostConversionStep.TestInstallOnly);
+  }
   if (options.test === true) {
     steps.push(PostConversionStep.Test);
   }
@@ -83,7 +86,7 @@ function loadGitHubToken(): string|null {
 
 export default async function run(options: CliOptions) {
   const workspaceDir = path.resolve(options['workspace-dir']);
-  logStep('[1/3]', '🚧', `Setting Up Workspace "${workspaceDir}"...`);
+  logStep(1, 3, '🚧', `Setting Up Workspace "${workspaceDir}"...`);
 
   if (!options['npm-version']) {
     throw new Error('--npm-version required');
@@ -113,7 +116,7 @@ export default async function run(options: CliOptions) {
 
   await workspace.installBowerDependencies();
 
-  logStep('[2/3]', '🌀', `Converting ${reposToConvert.length} Package(s)...`);
+  logStep(2, 3, '🌀', `Converting ${reposToConvert.length} Package(s)...`);
 
   const convertedPackages = await convertWorkspace({
     workspaceDir,
@@ -122,7 +125,7 @@ export default async function run(options: CliOptions) {
     reposToConvert,
   });
 
-  logStep('[3/3]', '🎉', `Conversion Complete!`);
+  logStep(3, 3, '🎉', `Conversion Complete!`);
 
   // Loop indefinitely here so that we can control the function exit via the
   // user prompt.
@@ -134,12 +137,8 @@ export default async function run(options: CliOptions) {
         (await inquirer.prompt([{
           type: 'list',
           name: 'post-conversion-step',
-          message: ' What do you want to do now?',
-          choices: [
-            PostConversionStep.Test,
-            PostConversionStep.TestInstallOnly,
-            PostConversionStep.Quit
-          ],
+          message: 'What do you want to do now?',
+          choices: Object.keys(PostConversionStep),
         }]))['post-conversion-step'] as string;
     switch (stepSelection) {
       case PostConversionStep.Test:
@@ -156,9 +155,9 @@ export default async function run(options: CliOptions) {
           reposToConvert,
         });
         break;
-      // TODO(fks): Add 'push to github' support
-      // TODO(fks): Add 'publish to npm' support
-      case PostConversionStep.Quit:
+      // TODO(fks): Add 'push to github' & 'publish to npm' support
+      // https://github.com/Polymer/polymer-modulizer/issues/249
+      case PostConversionStep.Exit:
         console.log('👋  Goodbye.');
         return;
       default:

@@ -91,6 +91,8 @@ export function logRepoError(err: Error, repo: WorkspaceRepo) {
 /**
  * Log a user-facing message about progress through some set of steps.
  */
-export function logStep(stepNum: string, emoji: string, msg: string) {
-  console.log(`${chalk.dim(stepNum)} ${emoji}  ${chalk.magenta(msg)}`);
+export function logStep(
+    stepNum: number, totalNum: number, emoji: string, msg: string) {
+  const stepInfo = `${stepNum}/${totalNum}`;
+  console.log(`${chalk.dim(stepInfo)} ${emoji}  ${chalk.magenta(msg)}`);
 }

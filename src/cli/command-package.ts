@@ -84,7 +84,7 @@ export default async function run(options: CliOptions) {
         }]))['npm-version'] as string;
   }
 
-  logStep('[1/2]', '🌀', `Converting Package...`);
+  logStep(1, 2, '🌀', `Converting Package...`);
   console.log(`Out directory: ${outDir}`);
   await convertPackage({
     inDir: inDir,
@@ -97,5 +97,5 @@ export default async function run(options: CliOptions) {
     cleanOutDir: options.clean!!,
   });
 
-  logStep('[2/2]', '🎉', `Conversion Complete!`);
+  logStep(2, 2, '🎉', `Conversion Complete!`);
 }

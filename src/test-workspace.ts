@@ -16,7 +16,7 @@ import chalk from 'chalk';
 import * as path from 'path';
 import {run, WorkspaceRepo} from 'polymer-workspaces';
 
-import {WorkspaceConversionSettings} from './convert-workspace';
+import {ConversionResultsMap, GIT_STAGING_BRANCH_NAME, WorkspaceConversionSettings} from './convert-workspace';
 import {generatePackageJson, localDependenciesBranch, readJson, writeJson} from './manifest-converter';
 import {lookupNpmPackageName} from './urls/workspace-url-handler';
 import {exec, logRepoError, logStep} from './util';
@@ -33,7 +33,7 @@ interface WorkspaceTestSettings extends WorkspaceConversionSettings {}
  */
 async function setupRepos(
     reposUnderTest: WorkspaceRepo[],
-    localConversionMap: Map<string, string>,
+    localConversionMap: ConversionResultsMap,
     options: WorkspaceTestSettings) {
   // Yarn sometimes has some issues with bad packages entering the cache from
   // modulizer. Clear the cache before starting.
@@ -42,41 +42,33 @@ async function setupRepos(
     console.log(chalk.dim(`yarn cache clean: ${stderr}`));
   }
 
-  const batchResults = await run(reposUnderTest, async (repo) => {
+  return run(reposUnderTest, async (repo) => {
     await exec(repo.dir, 'git', ['checkout', '-B', localDependenciesBranch]);
     writeTestingPackageJson(repo, localConversionMap, options.packageVersion);
     await exec(
-        repo.dir,
-        'git',
-        ['commit', '-a', '-m', 'testing commit', '--allow-empty']);
+        repo.dir, 'git', ['commit', '-am', 'testing commit', '--allow-empty']);
   }, {concurrency: 10});
-  batchResults.failures.forEach(logRepoError);
-
-  return [...batchResults.successes.keys()];
 }
 
 /**
  * Run `yarn install` to install dependencies in a repo. Note that this creates
  * a node_modules/ folder & an associated yarn.lock file as side effects.
  */
-async function installDependencies(reposUnderTest: WorkspaceRepo[]) {
-  const batchResults = await run(reposUnderTest, async (repo) => {
+async function installYarnDependencies(reposUnderTest: WorkspaceRepo[]) {
+  return run(reposUnderTest, async (repo) => {
     const repoDirName = path.basename(repo.dir);
-    const {stderr} = await exec(repo.dir, 'npm', ['install']);
+    const {stderr} = await exec(repo.dir, 'yarn', ['install']);
     if (stderr.length > 0) {
       console.log(chalk.dim(`${repoDirName}: ${stderr}`));
     }
   }, {concurrency: 1});
-
-  batchResults.failures.forEach(logRepoError);
-  return [...batchResults.successes.keys()];
 }
 
 /**
  * Run `wct --npm` in a repo.
  */
 async function testRepos(reposUnderTest: WorkspaceRepo[]) {
-  const batchResults = await run(reposUnderTest, async (repo) => {
+  return run(reposUnderTest, async (repo) => {
     const repoDirName = path.basename(repo.dir);
     const {stdout, stderr} = await exec(repo.dir, 'wct', ['--npm']);
     console.log(stdout, stderr);
@@ -87,26 +79,23 @@ async function testRepos(reposUnderTest: WorkspaceRepo[]) {
       console.log(chalk.red(`${repoDirName}: ${stderr}`));
     }
   }, {concurrency: 1});
-
-  batchResults.failures.forEach(logRepoError);
-  return [...batchResults.successes.keys()];
 }
 
 /**
  * Restore the repos to their proper state.
  */
 async function restoreRepos(reposUnderTest: WorkspaceRepo[]) {
-  const batchResults = await run(reposUnderTest, async (repo) => {
+  return run(reposUnderTest, async (repo) => {
     await repo.git.destroyAllUncommittedChangesAndFiles();
-    await repo.git.checkout('polymer-modulizer-staging');
+    await repo.git.checkout(GIT_STAGING_BRANCH_NAME);
   }, {concurrency: 10});
-
-  batchResults.failures.forEach(logRepoError);
-  return [...batchResults.successes.keys()];
 }
 
 /**
- * For a given repo, generate a new package.json and write it to disk.
+ * For a given repo, generate a new package.json and write it to disk. This
+ * is a testing-specific package.json manifest, which means that it will
+ * include local references to dependencies that were also converted in the
+ * workspace.
  */
 function writeTestingPackageJson(
     repo: WorkspaceRepo,
@@ -126,37 +115,46 @@ export async function testWorkspace(
     localConversionMap: Map<string, string>, options: WorkspaceTestSettings) {
   const allRepos = options.reposToConvert;
 
-  logStep('[1/5]', '🔧', `Preparing Repos...`);
-  const setupSuccesses =
+  logStep(1, 5, '🔧', `Preparing Repos...`);
+  const setupRepoResults =
       await setupRepos(allRepos, localConversionMap, options);
+  setupRepoResults.failures.forEach(logRepoError);
 
-  logStep('[2/5]', '🔧', `Installing Dependencies...`);
-  const installSuccesses = await installDependencies(setupSuccesses);
+  logStep(2, 5, '🔧', `Installing Dependencies...`);
+  const installResults =
+      await installYarnDependencies([...setupRepoResults.successes.keys()]);
+  installResults.failures.forEach(logRepoError);
 
-  logStep('[3/5]', '🔧', `Running Tests...`);
-  const testResults = await testRepos(installSuccesses);
+  logStep(3, 5, '🔧', `Running Tests...`);
+  const testResults = await testRepos([...installResults.successes.keys()]);
+  testResults.failures.forEach(logRepoError);
 
-  logStep('[4/5]', '🔧', `Restoring Repos...`);
-  await restoreRepos(allRepos);
+  logStep(4, 5, '🔧', `Restoring Repos...`);
+  const restoreResults = await restoreRepos([...testResults.successes.keys()]);
+  restoreResults.failures.forEach(logRepoError);
 
-  logStep('[5/5]', '🔧', `Tests Complete!`);
-  return testResults;
+  logStep(5, 5, '🔧', `Tests Complete!`);
+  return [...restoreResults.successes.keys()];
 }
 
 export async function testWorkspaceInstallOnly(
     localConversionMap: Map<string, string>, options: WorkspaceTestSettings) {
   const allRepos = options.reposToConvert;
 
-  logStep('[1/4]', '🔧', `Preparing Repos...`);
-  const setupSuccesses =
+  logStep(1, 4, '🔧', `Preparing Repos...`);
+  const setupRepoResults =
       await setupRepos(allRepos, localConversionMap, options);
+  setupRepoResults.failures.forEach(logRepoError);
 
-  logStep('[2/4]', '🔧', `Installing Dependencies...`);
-  const installResults = await installDependencies(setupSuccesses);
+  logStep(2, 4, '🔧', `Installing Dependencies...`);
+  const installResults =
+      await installYarnDependencies([...setupRepoResults.successes.keys()]);
+  installResults.failures.forEach(logRepoError);
 
-  logStep('[3/4]', '🔧', `Restoring Repos...`);
-  await restoreRepos(allRepos);
+  logStep(3, 4, '🔧', `Restoring Repos...`);
+  const restoreResults = await restoreRepos(allRepos);
+  restoreResults.failures.forEach(logRepoError);
 
-  logStep('[4/4]', '🔧', `Tests Complete!`);
-  return installResults;
+  logStep(4, 4, '🔧', `Tests Complete!`);
+  return [...restoreResults.successes.keys()];
 }
