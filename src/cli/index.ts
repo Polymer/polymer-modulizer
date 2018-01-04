@@ -126,6 +126,20 @@ const optionDefinitions: commandLineArgs.OptionDefinition[] = [
     description: `If given, run tests after workspace conversion.`,
   },
   {
+    name: 'push',
+    type: Boolean,
+    defaultValue: false,
+    description:
+        `If given, run prompts after conversion to push repo changes to github.`,
+  },
+  {
+    name: 'publish',
+    type: Boolean,
+    defaultValue: false,
+    description:
+        `If given, run prompts after conversion to publish package changes to npm.`,
+  },
+  {
     name: 'import-style',
     type: String,
     defaultValue: 'path',
@@ -159,6 +173,8 @@ export interface CliOptions {
   force: boolean;
   install: boolean;
   test: boolean;
+  push: boolean;
+  publish: boolean;
   'import-style': NpmImportStyle;
   'add-import-path': boolean;
 }
