@@ -20,6 +20,7 @@ import {ConversionResultsMap, GIT_STAGING_BRANCH_NAME, WorkspaceConversionSettin
 import {generatePackageJson, localDependenciesBranch, readJson, writeJson} from './manifest-converter';
 import {lookupNpmPackageName} from './urls/workspace-url-handler';
 import {exec, logRepoError, logStep} from './util';
+import { ExecResult } from 'polymer-workspaces/lib/util/exec';
 
 /**
  * Configuration options required for workspace testing. Same as conversion
@@ -61,7 +62,14 @@ async function installNpmDependencies(reposUnderTest: WorkspaceRepo[]) {
 async function testRepos(reposUnderTest: WorkspaceRepo[]) {
   return run(reposUnderTest, async (repo) => {
     const repoDirName = path.basename(repo.dir);
-    const {stdout, stderr} = await exec(repo.dir, 'wct', ['--npm']);
+    let results: ExecResult;
+    try {
+      results = await exec(repo.dir, 'wct', ['--npm', '-l', 'chrome']);
+    } catch (err) {
+      logRepoError(err, repo);
+      throw err;
+    }
+    const { stdout, stderr } = results;
     if (stdout.length > 0) {
       console.log(chalk.dim(`${repoDirName}: ${stdout}`));
     }
@@ -117,7 +125,7 @@ export async function testWorkspace(
 
   logStep(3, 5, '🔧', `Running Tests...`);
   const testResults = await testRepos([...installResults.successes.keys()]);
-  testResults.failures.forEach(logRepoError);
+  // Note: testRepos performs its own step-by-step logging
 
   logStep(4, 5, '🔧', `Restoring Repos...`);
   const restoreResults = await restoreRepos(allRepos);
