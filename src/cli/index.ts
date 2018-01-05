@@ -123,21 +123,21 @@ const optionDefinitions: commandLineArgs.OptionDefinition[] = [
     name: 'test',
     type: Boolean,
     defaultValue: false,
-    description: `If given, run tests after workspace conversion.`,
+    description: `Run tests after workspace conversion.`,
   },
   {
     name: 'push',
     type: Boolean,
     defaultValue: false,
     description:
-        `If given, run prompts after conversion to push repo changes to github.`,
+        `Push changes to GitHub after conversion (will prompt to confirm).`,
   },
   {
     name: 'publish',
     type: Boolean,
     defaultValue: false,
     description:
-        `If given, run prompts after conversion to publish package changes to npm.`,
+        `Publish changes to npm after conversion (will prompt to confirm).`,
   },
   {
     name: 'import-style',

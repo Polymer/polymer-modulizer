@@ -42,8 +42,8 @@ echo 'PASTE TOKEN HEX HERE' > ./github-token
 enum PostConversionStep {
   Test = 'Install dependencies and run tests',
   TestInstallOnly = 'Install dependencies only',
-  Push = 'push changes to GitHub',
-  Publish = 'publish changes to npm',
+  Push = 'Push changes to GitHub',
+  Publish = 'Publish changes to npm',
   Exit = 'Exit',
 }
 

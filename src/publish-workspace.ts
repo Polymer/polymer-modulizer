@@ -28,7 +28,7 @@ export default async function run(reposToConvert: WorkspaceRepo[]) {
       type: 'input',
       name: 'publishTag',
       message: 'publish to npm tag:',
-      default: 'latest',
+      default: 'next',
     },
   ]);
 
