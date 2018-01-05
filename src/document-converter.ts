@@ -36,7 +36,7 @@ import {rewriteNamespacesThisReferences} from './passes/rewrite-namespace-this-r
 import {rewriteReferencesToLocalExports} from './passes/rewrite-references-to-local-exports';
 import {rewriteReferencesToNamespaceMembers} from './passes/rewrite-references-to-namespace-members';
 import {rewriteToplevelThis} from './passes/rewrite-toplevel-this';
-import {ConvertedDocumentUrl, OriginalDocumentUrl} from './urls/types';
+import {ConvertedDocumentFilePath, ConvertedDocumentUrl, OriginalDocumentUrl} from './urls/types';
 import {UrlHandler} from './urls/url-handler';
 import {isOriginalDocumentUrlFormat} from './urls/util';
 import {getDocumentUrl, getHtmlDocumentConvertedFilePath, getJsModuleConvertedFilePath, getModuleId, replaceHtmlExtensionIfFound} from './urls/util';
@@ -210,7 +210,7 @@ export class DocumentConverter {
     this.urlHandler = urlHandler;
     this.document = document;
     this.originalUrl = getDocumentUrl(document);
-    this.convertedUrl = this.convertDocumentUrl(this.originalUrl);
+    this.convertedUrl = this.convertDocumentUrl(this.originalUrl, true);
   }
 
   /**
@@ -304,7 +304,7 @@ export class DocumentConverter {
     return {
       originalUrl: this.originalUrl,
       convertedUrl: this.convertedUrl,
-      convertedFilePath: getJsModuleConvertedFilePath(this.originalUrl),
+      convertedFilePath: this.convertedUrl as any as ConvertedDocumentFilePath,
       deleteOriginal: true,
       output: {
         type: 'js-module',
@@ -906,8 +906,9 @@ export class DocumentConverter {
    * Converts an HTML Document's path from old world to new. Use new NPM naming
    * as needed in the path, and change any .html extension to .js.
    */
-  private convertDocumentUrl(htmlUrl: OriginalDocumentUrl):
-      ConvertedDocumentUrl {
+  private convertDocumentUrl(
+      htmlUrl: OriginalDocumentUrl,
+      avoidCollisions = false): ConvertedDocumentUrl {
     // TODO(fks): This can be removed later if type-checking htmlUrl is enough
     if (!isOriginalDocumentUrlFormat(htmlUrl)) {
       throw new Error(
@@ -929,6 +930,23 @@ export class DocumentConverter {
     }
     // Convert any ".html" URLs to point to their new ".js" module equivilent
     jsUrl = replaceHtmlExtensionIfFound(jsUrl);
+
+    if (avoidCollisions) {
+      const allFeatures = this.document.getFeatures({imported: true});
+      const hasCollision = () => Array.from(allFeatures).some((f) => {
+        if (f.kinds.has('import')) {
+          const sciprtImport = f as Import;
+          const oldScriptUrl = getDocumentUrl(sciprtImport.document);
+          const newScriptUrl = this.convertScriptUrl(oldScriptUrl);
+          return newScriptUrl === jsUrl;
+        }
+        return false;
+      });
+      let i = 1;
+      while (hasCollision()) {
+        jsUrl = jsUrl.replace(/(\.\d+)?\.js$/, () => `.${i++}.js`);
+      }
+    }
     return jsUrl as ConvertedDocumentUrl;
   }
 

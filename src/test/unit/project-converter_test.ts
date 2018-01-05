@@ -15,6 +15,7 @@
 import {assert} from 'chai';
 import * as esprima from 'esprima';
 import * as estree from 'estree';
+import {normalize as normalizePath} from 'path';
 import {Analyzer, InMemoryOverlayUrlLoader} from 'polymer-analyzer';
 
 import {createDefaultConversionSettings, PartialConversionSettings} from '../../conversion-settings';
@@ -110,12 +111,20 @@ suite('AnalysisConverter', () => {
     function assertSources(
         results: Map<string, string|undefined>,
         expected: {[path: string]: string | undefined}) {
-      for (const [expectedPath, expectedContents] of Object.entries(expected)) {
+      const normalizedResults = new Map<string, string|undefined>();
+      for (const [path, result] of results) {
+        normalizedResults.set(normalizePath(path), result);
+      }
+      for (let [expectedPath, expectedContents] of Object.entries(expected)) {
+        expectedPath = normalizePath(expectedPath);
         assert.isTrue(
-            results.has(expectedPath),
+            normalizedResults.has(expectedPath),
             `No output named ${expectedPath} was generated. ` +
-                `Generated outputs: ${[...results.keys()].join(', ')}`);
-        const actualContents = results.get(expectedPath);
+                `Generated outputs: ${
+                                          [...normalizedResults.keys()].join(
+                                              ', ')
+                                    }`);
+        const actualContents = normalizedResults.get(expectedPath);
         if (actualContents === undefined) {
           assert.deepEqual(
               actualContents,
@@ -308,6 +317,30 @@ console.log('foo');
         'test.js': `
 import './foo.js';
 `
+      });
+    });
+
+    test('does not overwrite files', async () => {
+      setSources({
+        'test.html': `
+          <link rel="import" href="./foo.html">
+          <script src="test.js"></script>
+        `,
+        'test.js': `
+          console.log('test');
+        `,
+        'foo.html': `
+          <script>console.log('foo');</script>
+        `,
+      });
+      assertSources(await convert(), {
+        'test.1.js': `
+import './foo.js';
+import './test.js';
+`,
+        'foo.js': `
+console.log('foo');
+`,
       });
     });
 
