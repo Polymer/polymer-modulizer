@@ -1,7 +1,18 @@
 # Polymer 3.0 Status Page
 
-## Last run: 2018-01-05
+**Last run: 2018-01-05**
 
+This table contains the status of every Polymer 3.0 element being run through automated testing.
+
+## Legend
+
+| icon | meaning |
+|------|---------|
+| ✅   | This step is passing, without errors. |
+| ⚠️   | The status of this step is unknown (see: "reason?"). |
+| ❌   | This step is failing, with errors (see: "reason?"). |
+
+## Support Table
 
 | repo | `npm install` | `npm test` | reason? |
 |------|---------------|------------|---------|
