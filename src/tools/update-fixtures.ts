@@ -87,7 +87,7 @@ async function overridePolymer(sourceDir: string) {
 }
 
 (async () => {
-  let errored = false;
+  let exitCode = 0;
 
   await Promise.all([
     updateFixture({
@@ -111,10 +111,8 @@ async function overridePolymer(sourceDir: string) {
   ].map((p) => p.catch((e) => {
     // Exit with an error code if any fixture fails, but let them all finish.
     console.error(e);
-    errored = true;
+    exitCode = 1;
   })));
 
-  if (errored) {
-    process.exit(1);
-  }
+  process.exit(exitCode);
 })();
