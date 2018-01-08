@@ -34,12 +34,13 @@ export function replaceHtmlExtensionIfFound(url: string): string {
 }
 
 /**
- * Create a ConvertedDocumentFilePath for the OriginalDocumentUrl of a document
- * being converted to a JS module.
+ * Convert a ConvertedDocumentUrl to a ConvertedDocumentFilePath
  */
-export function getJsModuleConvertedFilePath(originalUrl: OriginalDocumentUrl):
-    ConvertedDocumentFilePath {
-  return replaceHtmlExtensionIfFound(originalUrl) as ConvertedDocumentFilePath;
+export function getJsModuleConvertedFilePath(
+    convertedUrl: ConvertedDocumentUrl): ConvertedDocumentFilePath {
+  // 1. remove npm package
+  // 2. add bower/workspace package
+  return convertedUrl as string as ConvertedDocumentFilePath;
 }
 
 /**
