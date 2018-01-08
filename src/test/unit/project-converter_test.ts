@@ -334,9 +334,9 @@ import './foo.js';
         `,
       });
       assertSources(await convert(), {
-        'test.1.js': `
+        'test.js': `
 import './foo.js';
-import './test.js';
+console.log('test');
 `,
         'foo.js': `
 console.log('foo');
@@ -2153,10 +2153,10 @@ var metaDatas = IronMeta.types;
       });
     });
 
-    test('External scripts get turned into imports too', async () => {
+    test('External modules get turned into imports too', async () => {
       setSources({
         'test.html': `
-          <script src='foo.js'></script>
+          <script src='foo.js' type='module'></script>
         `,
         'foo.js': 'console.log("foo");'
       });

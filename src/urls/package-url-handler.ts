@@ -86,7 +86,7 @@ export class PackageUrlHandler implements UrlHandler {
   isImportInternal(fromUrl: ConvertedDocumentUrl, toUrl: ConvertedDocumentUrl) {
     if (fromUrl.startsWith('./node_modules') &&
         toUrl.startsWith('./node_modules')) {
-      return true;
+      return this.getNpmPackageName(fromUrl) === this.getNpmPackageName(toUrl);
     }
     if (!fromUrl.startsWith('./node_modules') &&
         !toUrl.startsWith('./node_modules')) {
@@ -154,5 +154,10 @@ export class PackageUrlHandler implements UrlHandler {
    */
   getNameImportUrl(url: ConvertedDocumentUrl): ConvertedDocumentUrl {
     return url.slice('./node_modules/'.length) as ConvertedDocumentUrl;
+  }
+
+  getNpmPackageName(url: ConvertedDocumentUrl): string {
+    const parts = this.getNameImportUrl(url).split('/');
+    return (parts[0].startsWith('@')) ? `${parts[0]}/${parts[1]}` : parts[0];
   }
 }

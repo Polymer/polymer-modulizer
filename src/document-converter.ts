@@ -36,7 +36,7 @@ import {rewriteNamespacesThisReferences} from './passes/rewrite-namespace-this-r
 import {rewriteReferencesToLocalExports} from './passes/rewrite-references-to-local-exports';
 import {rewriteReferencesToNamespaceMembers} from './passes/rewrite-references-to-namespace-members';
 import {rewriteToplevelThis} from './passes/rewrite-toplevel-this';
-import {ConvertedDocumentFilePath, ConvertedDocumentUrl, OriginalDocumentUrl} from './urls/types';
+import {ConvertedDocumentUrl, OriginalDocumentUrl} from './urls/types';
 import {UrlHandler} from './urls/url-handler';
 import {isOriginalDocumentUrlFormat} from './urls/util';
 import {getDocumentUrl, getHtmlDocumentConvertedFilePath, getJsModuleConvertedFilePath, getModuleId, replaceHtmlExtensionIfFound} from './urls/util';
@@ -210,7 +210,7 @@ export class DocumentConverter {
     this.urlHandler = urlHandler;
     this.document = document;
     this.originalUrl = getDocumentUrl(document);
-    this.convertedUrl = this.convertDocumentUrl(this.originalUrl, true);
+    this.convertedUrl = this.convertDocumentUrl(this.originalUrl);
   }
 
   /**
@@ -236,27 +236,52 @@ export class DocumentConverter {
   }
 
   convertToJsModule(): ConversionResult {
-    if (this._isWrapperHTMLDocument) {
-      return {
-        originalUrl: this.originalUrl,
-        convertedUrl: this.convertedUrl,
-        convertedFilePath: getJsModuleConvertedFilePath(this.originalUrl),
-        deleteOriginal: true,
-        output: undefined,
-      };
-    }
-
     const combinedToplevelStatements = [];
     let prevScriptNode: parse5.ASTNode|undefined = undefined;
-    for (const script of this.document.getFeatures({kind: 'js-document'})) {
+    const allFeatures = this.document.getFeatures();
+    const scripts = Array.from(allFeatures).filter((f) => {
+      if (f.kinds.has('js-document')) {
+        return true;
+      }
+      if (f.kinds.has('html-script')) {
+        const scriptImport = f as Import;
+
+        const isModule =
+            dom5.getAttribute(scriptImport.astNode, 'type') === 'module';
+        if (isModule) {
+          return false;
+        }
+
+        const oldScriptUrl = getDocumentUrl(scriptImport.document);
+        const newScriptUrl = this.convertScriptUrl(oldScriptUrl);
+        const isInternal =
+            this.urlHandler.isImportInternal(this.convertedUrl, newScriptUrl);
+        console.log(
+            this.originalUrl,
+            this.convertedUrl,
+            oldScriptUrl,
+            newScriptUrl,
+            isInternal);
+      }
+      return false;
+    });
+
+    const inlinedScript = scripts.filter((s) => s.kinds.has('html-script'));
+
+    console.log(`${this.originalUrl} inlined scripts: ${inlinedScript}`);
+
+    for (const script of scripts) {
+      const scriptDocument = script.kinds.has('js-document') ?
+          (script as Document) :
+          (script as Import).document;
       const scriptProgram =
-          recast.parse(script.parsedDocument.contents).program;
+          recast.parse(scriptDocument.parsedDocument.contents).program;
       rewriteToplevelThis(scriptProgram);
       // We need to inline templates on a per-script basis, otherwise we run
       // into trouble matching up analyzer AST nodes with our own.
-      this.inlineTemplates(scriptProgram, script);
+      this.inlineTemplates(scriptProgram, scriptDocument);
       if (this.conversionSettings.addImportPath) {
-        this.addImportPathsToElements(scriptProgram, script);
+        this.addImportPathsToElements(scriptProgram, scriptDocument);
       }
       const comments: string[] = getCommentsBetween(
           this.document.parsedDocument.ast, prevScriptNode, script.astNode);
@@ -274,14 +299,22 @@ export class DocumentConverter {
     removeUnnecessaryEventListeners(program);
     removeWrappingIIFEs(program);
     const importedReferences = this.collectNamespacedReferences(program);
+
     // Add imports for every non-module <script> tag to just import the file
     // itself.
     for (const scriptImport of this.document.getFeatures(
              {kind: 'html-script'})) {
       const oldScriptUrl = getDocumentUrl(scriptImport.document);
       const newScriptUrl = this.convertScriptUrl(oldScriptUrl);
-      importedReferences.set(newScriptUrl, new Set());
+      const isModule =
+          dom5.getAttribute(scriptImport.astNode, 'type') === 'module';
+
+      if (isModule ||
+          !this.urlHandler.isImportInternal(this.convertedUrl, newScriptUrl)) {
+        importedReferences.set(newScriptUrl, new Set());
+      }
     }
+
     this.addJsImports(program, importedReferences);
     this.insertCodeToGenerateHtmlElements(program);
 
@@ -304,7 +337,7 @@ export class DocumentConverter {
     return {
       originalUrl: this.originalUrl,
       convertedUrl: this.convertedUrl,
-      convertedFilePath: this.convertedUrl as any as ConvertedDocumentFilePath,
+      convertedFilePath: getJsModuleConvertedFilePath(this.convertedUrl),
       deleteOriginal: true,
       output: {
         type: 'js-module',
@@ -476,28 +509,6 @@ export class DocumentConverter {
         source: contents,
       }
     };
-  }
-
-  /**
-   * Determines if a document is just a wrapper around a script tag pointing
-   * to an external script of the same name as this file.
-   */
-  private get _isWrapperHTMLDocument() {
-    const allFeatures = Array.from(this.document.getFeatures())
-                            .filter(
-                                (f) =>
-                                    !(f.kinds.has('html-document') &&
-                                      (f as Document).isInline === false));
-    if (allFeatures.length === 1) {
-      const f = allFeatures[0];
-      if (f.kinds.has('html-script')) {
-        const sciprtImport = f as Import;
-        const oldScriptUrl = getDocumentUrl(sciprtImport.document);
-        const newScriptUrl = this.convertScriptUrl(oldScriptUrl);
-        return newScriptUrl === this.convertedUrl;
-      }
-    }
-    return false;
   }
 
   /**
