@@ -2120,7 +2120,7 @@ var metaDatas = IronMeta.types;
       });
     });
 
-    test('External scripts get turned into imports too', async () => {
+    test('External scripts get inlined into the parent module', async () => {
       setSources({
         'test.html': `
           <script src='foo.js'></script>
@@ -2130,7 +2130,7 @@ var metaDatas = IronMeta.types;
 
       assertSources(await convert(), {
         'test.js': `
-import './foo.js';
+console.log("foo");
 `
       });
     });
