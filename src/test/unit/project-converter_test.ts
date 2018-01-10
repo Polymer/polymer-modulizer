@@ -2120,7 +2120,7 @@ var metaDatas = IronMeta.types;
       });
     });
 
-    test('External scripts get inlined into the parent module', async () => {
+    test('Internal imported scripts get inlined into a module', async () => {
       setSources({
         'test.html': `
           <script src='foo.js'></script>
@@ -2131,6 +2131,22 @@ var metaDatas = IronMeta.types;
       assertSources(await convert(), {
         'test.js': `
 console.log("foo");
+`
+      });
+    });
+
+
+    test('External imported scripts do not get inlined into a module', async () => {
+      setSources({
+        'test.html': `
+          <script src='../dep/dep.js'></script>
+        `,
+        'bower_components/dep/dep.js': 'console.log("foo");'
+      });
+
+      assertSources(await convert(), {
+        'test.js': `
+import '../dep/dep.js';
 `
       });
     });
