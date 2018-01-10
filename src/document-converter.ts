@@ -87,6 +87,19 @@ const legacyJavascriptTypes: ReadonlySet<string|null> = new Set([
 ]);
 
 /**
+ * This is a set of JavaScript files that we know to be converted as modules.
+ * This is neccessary because we don't definitively know the type of an external
+ * JavaScript file loaded in to a top-level HTML file.
+ *
+ * TODO(fks): Add the ability to know via conversion manifest support or
+ * convert dependencies as entire packages instead of file-by-file.
+ * (See https://github.com/Polymer/polymer-modulizer/issues/268)
+ */
+const knownScriptModules = new Set<string>([
+  'iron-test-helpers/mock-interactions.js',
+]);
+
+/**
  * Detect legacy JavaScript "type" attributes.
  */
 function isLegacyJavaScriptTag(scriptNode: parse5.ASTNode) {
@@ -235,6 +248,16 @@ export class DocumentConverter {
                 !this.conversionSettings.excludes.has(f.document.url));
   }
 
+  private isInternalNonModuleImport(scriptImport: Import): boolean {
+    const oldScriptUrl = getDocumentUrl(scriptImport.document);
+    const newScriptUrl = this.convertScriptUrl(oldScriptUrl);
+    const isModuleImport =
+        dom5.getAttribute(scriptImport.astNode, 'type') === 'module';
+    const isInternalImport =
+        this.urlHandler.isImportInternal(this.convertedUrl, newScriptUrl);
+    return isInternalImport && !isModuleImport;
+  }
+
   convertToJsModule(): ConversionResult {
     if (this._isWrapperHTMLDocument) {
       return {
@@ -248,15 +271,29 @@ export class DocumentConverter {
 
     const combinedToplevelStatements = [];
     let prevScriptNode: parse5.ASTNode|undefined = undefined;
-    for (const script of this.document.getFeatures({kind: 'js-document'})) {
+    const allFeatures = this.document.getFeatures();
+    const relevantScripts = Array.from(allFeatures).filter((f) => {
+      if (f.kinds.has('js-document')) {
+        return true;
+      }
+      if (f.kinds.has('html-script')) {
+        return this.isInternalNonModuleImport(f as Import);
+      }
+      return false;
+    });
+
+    for (const script of relevantScripts) {
+      const scriptDocument = script.kinds.has('js-document') ?
+          (script as Document) :
+          (script as Import).document;
       const scriptProgram =
-          recast.parse(script.parsedDocument.contents).program;
+          recast.parse(scriptDocument.parsedDocument.contents).program;
       rewriteToplevelThis(scriptProgram);
       // We need to inline templates on a per-script basis, otherwise we run
       // into trouble matching up analyzer AST nodes with our own.
-      this.inlineTemplates(scriptProgram, script);
+      this.inlineTemplates(scriptProgram, scriptDocument);
       if (this.conversionSettings.addImportPath) {
-        this.addImportPathsToElements(scriptProgram, script);
+        this.addImportPathsToElements(scriptProgram, scriptDocument);
       }
       const comments: string[] = getCommentsBetween(
           this.document.parsedDocument.ast, prevScriptNode, script.astNode);
@@ -276,11 +313,13 @@ export class DocumentConverter {
     const importedReferences = this.collectNamespacedReferences(program);
     // Add imports for every non-module <script> tag to just import the file
     // itself.
-    for (const scriptImport of this.document.getFeatures(
-             {kind: 'html-script'})) {
+    const scriptImports = this.document.getFeatures({kind: 'html-script'});
+    for (const scriptImport of scriptImports) {
       const oldScriptUrl = getDocumentUrl(scriptImport.document);
       const newScriptUrl = this.convertScriptUrl(oldScriptUrl);
-      importedReferences.set(newScriptUrl, new Set());
+      if (!this.isInternalNonModuleImport(scriptImport)) {
+        importedReferences.set(newScriptUrl, new Set());
+      }
     }
     this.addJsImports(program, importedReferences);
     this.insertCodeToGenerateHtmlElements(program);
@@ -368,6 +407,7 @@ export class DocumentConverter {
           [],
           dom5.childNodesIncludeTemplate));
     }
+
     for (const astNode of scriptsToConvert) {
       if (!isLegacyJavaScriptTag(astNode)) {
         continue;
@@ -418,6 +458,7 @@ export class DocumentConverter {
       const replacementText = serializeNode(scriptTag);
       edits.push({offsets, replacementText});
     }
+
     for (const scriptImport of this.document.getFeatures(
              {kind: 'html-script'})) {
       // ignore fake script imports injected by various hacks in the
@@ -433,10 +474,18 @@ export class DocumentConverter {
       const offsets = htmlDocument.sourceRangeToOffsets(
           htmlDocument.sourceRangeForNode(scriptImport.astNode)!);
 
-      const correctedUrl = this.formatImportUrl(
-          this.convertDocumentUrl(getDocumentUrl(scriptImport.document)),
-          scriptImport.url);
+      const convertedUrl =
+          this.convertDocumentUrl(getDocumentUrl(scriptImport.document));
+      const correctedUrl = this.formatImportUrl(convertedUrl, scriptImport.url);
       dom5.setAttribute(scriptImport.astNode, 'src', correctedUrl);
+
+      // Temporary: Check if imported script is a known module.
+      // See `knownScriptModules` for more information.
+      for (const importUrlEnding of knownScriptModules) {
+        if (scriptImport.url.endsWith(importUrlEnding)) {
+          dom5.setAttribute(scriptImport.astNode, 'type', 'module');
+        }
+      }
 
       edits.push(
           {offsets, replacementText: serializeNode(scriptImport.astNode)});
@@ -723,10 +772,8 @@ export class DocumentConverter {
               'init', jsc.identifier('_template'), templateLiteral));
         }
       } else {
-        console.error(
-            `Internal Error, Class or CallExpression expected, got ${
-                                                                     node.type
-                                                                   }`);
+        console.error(`Internal Error, Class or CallExpression expected, got ${
+            node.type}`);
       }
     }
   }
@@ -786,10 +833,8 @@ export class DocumentConverter {
               'init', jsc.identifier('importPath'), importMetaUrl));
         }
       } else {
-        console.error(
-            `Internal Error, Class or CallExpression expected, got ${
-                                                                     node.type
-                                                                   }`);
+        console.error(`Internal Error, Class or CallExpression expected, got ${
+            node.type}`);
       }
     }
   }
