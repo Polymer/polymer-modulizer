@@ -136,8 +136,9 @@ export class ProjectConverter {
         this.namespacedExports,
         this.urlHandler,
         this.conversionSettings);
-    const newModule = documentConverter.convertToJsModule();
-    this._handleConversionResult(newModule);
+    documentConverter.convertToJsModule().forEach((result) => {
+      this._handleConversionResult(result);
+    });
   }
 
   /**
