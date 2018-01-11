@@ -20,6 +20,10 @@ import * as jsc from 'jscodeshift';
 /**
  * Rewrite references in a program from their original names to the local names
  * based on the new named exports system.
+ *
+ * TODO(fks): This standalone A11ySuite handling could be brought into normal
+ * `collectNamespacedReferences()` logic if we added `A11ySuite()` to the known
+ * export graph.
  */
 export function addA11ySuiteIfUsed(
     program: estree.Program, a11ySuiteUrl: string): boolean {
