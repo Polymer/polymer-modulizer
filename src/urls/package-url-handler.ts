@@ -88,7 +88,8 @@ export class PackageUrlHandler implements UrlHandler {
         !toUrl.startsWith('./node_modules')) {
       return true;
     }
-    if (fromUrl.startsWith('./node_modules') && toUrl.startsWith('./node_modules')) {
+    if (fromUrl.startsWith('./node_modules') &&
+        toUrl.startsWith('./node_modules')) {
       const fromUrlParts = fromUrl.split('/');
       const toUrlParts = toUrl.split('/');
       if (fromUrlParts[2][0] === '@' && toUrlParts[2][0] === '@') {
@@ -118,6 +119,14 @@ export class PackageUrlHandler implements UrlHandler {
       newUrlPieces[1] = depInfo.npm;
     }
     return ('./' + newUrlPieces.join('/')) as ConvertedDocumentUrl;
+  }
+
+  /**
+   * Create a ConvertedDocumentUrl formatted for the current project layout.
+   * Useful when the converted file location is known ahead of time.
+   */
+  createConvertedUrl(partialUrl: string) {
+    return `./node_modules/${partialUrl}` as ConvertedDocumentUrl;
   }
 
   /**

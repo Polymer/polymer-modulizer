@@ -27,6 +27,7 @@ import * as recast from 'recast';
 import {ConversionSettings} from './conversion-settings';
 import {attachCommentsToFirstStatement, canDomModuleBeInlined, collectIdentifierNames, containsWriteToGlobalSettingsObject, createDomNodeInsertStatements, filterClone, findAvailableIdentifier, getCommentsBetween, getMemberPath, getNodePathInProgram, getPathOfAssignmentTo, getSetterName, insertStatementsIntoProgramBody, serializeNode, serializeNodeToTemplateLiteral} from './document-util';
 import {ConversionResult, JsExport} from './js-module';
+import {addA11ySuiteIfUsed} from './passes/add-a11y-suite-if-used';
 import {removeNamespaceInitializers} from './passes/remove-namespace-initializers';
 import {removeUnnecessaryEventListeners} from './passes/remove-unnecessary-waits';
 import {removeWrappingIIFEs} from './passes/remove-wrapping-iife';
@@ -275,7 +276,8 @@ export class DocumentConverter {
     let prevScriptNode: parse5.ASTNode|undefined = undefined;
     for (const script of this.document.getFeatures()) {
       let scriptDocument: Document;
-      if (script.kinds.has('html-script') && this.isInternalNonModuleImport(script as Import)) {
+      if (script.kinds.has('html-script') &&
+          this.isInternalNonModuleImport(script as Import)) {
         scriptDocument = (script as Import).document;
         convertedHtmlScripts.add(script as Import);
       } else if (script.kinds.has('js-document')) {
@@ -313,7 +315,8 @@ export class DocumentConverter {
 
     // Add imports for every non-module <script> tag to just import the file
     // itself.
-    for (const scriptImport of this.document.getFeatures({ kind: 'html-script' })) {
+    for (const scriptImport of this.document.getFeatures(
+             {kind: 'html-script'})) {
       const oldScriptUrl = getDocumentUrl(scriptImport.document);
       const newScriptUrl = this.convertScriptUrl(oldScriptUrl);
       if (convertedHtmlScripts.has(scriptImport)) {
@@ -573,6 +576,10 @@ export class DocumentConverter {
     removeUnnecessaryEventListeners(program);
     removeWrappingIIFEs(program);
     const importedReferences = this.collectNamespacedReferences(program);
+    const wasA11ySuiteAdded = addA11ySuiteIfUsed(
+        program,
+        this.formatImportUrl(this.urlHandler.createConvertedUrl(
+            'wct-browser-legacy/a11ySuite.js')));
     const wereImportsAdded = this.addJsImports(program, importedReferences);
     // Don't convert the HTML.
     // Don't inline templates, they're fine where they are.
@@ -589,7 +596,7 @@ export class DocumentConverter {
 
     this.warnOnDangerousReferences(program);
 
-    if (!wereImportsAdded) {
+    if (!wasA11ySuiteAdded && !wereImportsAdded) {
       return undefined;  // no imports, no reason to convert to a module
     }
 
@@ -1086,6 +1093,7 @@ export class DocumentConverter {
       jsImportDeclarations.push(...getImportDeclarations(
           jsFormattedImportUrl, namedExports, references, usedIdentifiers));
     }
+
     // Prepend JS imports into the program body
     program.body.splice(0, 0, ...jsImportDeclarations);
     // Return true if any imports were added, false otherwise
