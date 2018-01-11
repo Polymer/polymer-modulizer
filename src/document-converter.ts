@@ -320,6 +320,10 @@ export class DocumentConverter {
       const oldScriptUrl = getDocumentUrl(scriptImport.document);
       const newScriptUrl = this.convertScriptUrl(oldScriptUrl);
       if (convertedHtmlScripts.has(scriptImport)) {
+        // NOTE: This deleted script file path *may* === this document's final
+        // converted file path. Because results are written in order, the
+        // final result (this document) has the final say, and any previous
+        // deletions won't overwrite/conflict with the final document.
         results.push({
           originalUrl: oldScriptUrl,
           convertedUrl: newScriptUrl,
