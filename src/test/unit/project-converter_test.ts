@@ -109,7 +109,7 @@ suite('AnalysisConverter', () => {
 
     function assertSources(
         results: Map<string, string|undefined>,
-        expected: {[path: string]: string | undefined}) {
+        expected: {[path: string]: string|undefined}) {
       for (const [expectedPath, expectedContents] of Object.entries(expected)) {
         assert.isTrue(
             results.has(expectedPath),
@@ -2136,20 +2136,22 @@ console.log("foo");
     });
 
 
-    test('External imported scripts do not get inlined into a module', async () => {
-      setSources({
-        'test.html': `
+    test(
+        'External imported scripts do not get inlined into a module',
+        async () => {
+          setSources({
+            'test.html': `
           <script src='../dep/dep.js'></script>
         `,
-        'bower_components/dep/dep.js': 'console.log("foo");'
-      });
+            'bower_components/dep/dep.js': 'console.log("foo");'
+          });
 
-      assertSources(await convert(), {
-        'test.js': `
+          assertSources(await convert(), {
+            'test.js': `
 import '../dep/dep.js';
 `
-      });
-    });
+          });
+        });
 
     testName = `don't treat all values on a namespace as namespaces themselves`;
     test(testName, async () => {
