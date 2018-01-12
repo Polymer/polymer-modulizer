@@ -75,8 +75,8 @@ This table contains the status of every Polymer 3.0 element being run through au
 | iron-test-helpers| ✅ | ❌ | 9 failed tests |
 | iron-validatable-behavior| ✅ | ✅ | | 
 | iron-validator-behavior| ✅ | ✅ | | 
-| marked-element| ✅ | ⚠️ | Timed out |
-| neon-animation| ✅ | ⚠️ | Timed out |
+| marked-element| ✅ | ❌️ | Timed out |
+| neon-animation| ✅ | ❌️ | Timed out |
 | neon-elements| ✅ | ❌ | Error: No test suites were found matching your configuration |
 | paper-badge| ✅ | ❌ | The requested module does not provide an export named 'Settings' |
 | paper-behaviors| ✅ | ❌ | 1 failed tests |
@@ -119,7 +119,7 @@ This table contains the status of every Polymer 3.0 element being run through au
 | paper-ui-elements| ✅ | ⚠️ | (no tests) |
 | polymer| ✅ | ❌ | chai is undefined |
 | platinum-https-redirect| ✅ | ✅ | | 
-| platinum-push-messaging| ✅ | ⚠️ | Timed out |
+| platinum-push-messaging| ✅ | ❌️ | Timed out |
 | platinum-sw| ✅ | ✅ | | 
 | prism-element| ✅ | ⚠️ | (no tests) |
 | promise-polyfill| ✅ | ⚠️ | (no tests) |
