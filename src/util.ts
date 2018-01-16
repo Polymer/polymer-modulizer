@@ -96,3 +96,19 @@ export function logStep(
   const stepInfo = `[${stepNum}/${totalNum}]`;
   console.log(`${chalk.dim(stepInfo)} ${emoji}  ${chalk.magenta(msg)}`);
 }
+
+/**
+ * helper function to read a file
+ */
+export function readFile(...pathPieces: string[]) {
+  const filePath = path.resolve(...pathPieces);
+  return fs.readFileSync(filePath, 'utf-8');
+}
+
+/**
+ * helper function to write a file
+ */
+export function writeFile(text: any, ...pathPieces: string[]) {
+  const filePath = path.resolve(...pathPieces);
+  fs.writeFileSync(filePath, text);
+}

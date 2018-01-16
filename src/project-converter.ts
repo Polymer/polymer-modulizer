@@ -204,4 +204,16 @@ export class ProjectConverter {
 
     return results;
   }
+
+  /**
+   * Updates polymer cli and wct usages to work with js modules
+   */
+  convertTravisYaml(travisYaml: string) {
+    return travisYaml
+        .replace(/polymer\ install.*/g, 'yarn')  // polymer install => yarn
+        .replace(
+            /polymer\ test/g,
+            'polymer test --npm')       // polymer test => polymer test --npm
+        .replace(/wct/g, 'wct --npm');  // wct => wct --npm
+  }
 }

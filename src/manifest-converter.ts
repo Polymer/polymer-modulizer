@@ -14,9 +14,8 @@
 
 'use strict';
 
-import * as fs from 'mz/fs';
-import {EOL} from 'os';
-import * as path from 'path';
+import { EOL } from 'os';
+import { readFile, writeFile } from './util';
 import * as spdxLicenseList from 'spdx-license-list/simple';
 
 interface DependencyMapEntry {
@@ -24,10 +23,10 @@ interface DependencyMapEntry {
   semver: string;
 }
 interface DependencyMap {
-  [bower: string]: DependencyMapEntry|undefined;
+  [bower: string]: DependencyMapEntry | undefined;
 }
 const dependencyMap: DependencyMap =
-    readJson(__dirname, '../dependency-map.json');
+  readJson(__dirname, '../dependency-map.json');
 const warningCache: Set<String> = new Set();
 
 /**
@@ -54,13 +53,13 @@ export function lookupDependencyMapping(bowerPackageName: string) {
   if (!result && !warningCache.has(bowerPackageName)) {
     warningCache.add(bowerPackageName);
     console.warn(
-        `WARN: bower->npm mapping for "${bowerPackageName}" not found`);
+      `WARN: bower->npm mapping for "${bowerPackageName}" not found`);
   }
   return result;
 }
 
 function setNpmDependencyFromBower(
-    obj: any, bowerPackageName: string, useLocal?: Map<string, string>) {
+  obj: any, bowerPackageName: string, useLocal?: Map<string, string>) {
   const depInfo = lookupDependencyMapping(bowerPackageName);
   if (!depInfo) {
     return;
@@ -76,8 +75,7 @@ function setNpmDependencyFromBower(
  * helper function to read and parse JSON.
  */
 export function readJson(...pathPieces: string[]) {
-  const jsonPath = path.resolve(...pathPieces);
-  const jsonContents = fs.readFileSync(jsonPath, 'utf-8');
+  const jsonContents = readFile(...pathPieces);
   return JSON.parse(jsonContents);
 }
 
@@ -85,10 +83,8 @@ export function readJson(...pathPieces: string[]) {
  * helper function to serialize and parse JSON.
  */
 export function writeJson(json: any, ...pathPieces: string[]) {
-  const jsonPath = path.resolve(...pathPieces);
-  const jsonContents =
-      JSON.stringify(json, undefined, 2).split('\n').join(EOL) + EOL;
-  fs.writeFileSync(jsonPath, jsonContents);
+  const jsonContents = JSON.stringify(json, undefined, 2).split('\n').join(EOL) + EOL;
+  writeFile(jsonContents, ...pathPieces);
 }
 
 /**
@@ -100,10 +96,10 @@ export function writeJson(json: any, ...pathPieces: string[]) {
  * useful for testing against other, converted repos.
  */
 export function generatePackageJson(
-    bowerJson: any,
-    npmName: string,
-    npmVersion: string,
-    useLocal?: Map<string, string>) {
+  bowerJson: any,
+  npmName: string,
+  npmVersion: string,
+  useLocal?: Map<string, string>) {
   const packageJson = {
     name: npmName,
     flat: true,
@@ -132,17 +128,17 @@ export function generatePackageJson(
     packageJson.license = 'BSD-3-Clause';
   } else if (!spdxLicenseList.has(bowerJson.license)) {
     console.warn(
-        `"${bowerJson.license}" is not a valid SPDX license. ` +
-        `You can find a list of valid licenses at https://spdx.org/licenses/`);
+      `"${bowerJson.license}" is not a valid SPDX license. ` +
+      `You can find a list of valid licenses at https://spdx.org/licenses/`);
   }
 
   for (const bowerPackageName in bowerJson.dependencies) {
     setNpmDependencyFromBower(
-        packageJson.dependencies, bowerPackageName, useLocal);
+      packageJson.dependencies, bowerPackageName, useLocal);
   }
   for (const bowerPackageName in bowerJson.devDependencies) {
     setNpmDependencyFromBower(
-        packageJson.devDependencies, bowerPackageName, useLocal);
+      packageJson.devDependencies, bowerPackageName, useLocal);
   }
 
   return packageJson;
