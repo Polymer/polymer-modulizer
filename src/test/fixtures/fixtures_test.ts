@@ -15,9 +15,8 @@
 import {assert} from 'chai';
 import chalk from 'chalk';
 import * as diff from 'diff';
-import * as fs from 'mz/fs';
+import * as fs from 'fs-extra';
 import * as path from 'path';
-import * as rimraf from 'rimraf';
 import {exec} from '../../util';
 
 // TODO(fks): Add 'dir-compare' typings.
@@ -118,14 +117,14 @@ suite('Fixtures', () => {
         continue;
       }
 
-      test(`packages/${fixtureBasename}`, async () => {
+      test(`packages/${fixtureBasename}`, async() => {
         const fixtureSourceDir = path.join(fixtureDir, 'source');
         const fixtureExpectedDir = path.join(fixtureDir, 'expected');
         const fixtureResultDir = path.join(fixtureDir, 'generated');
         const fixtureTestConfig = require(path.join(fixtureDir, 'test.js'));
         assert.isOk(fs.statSync(fixtureSourceDir).isDirectory());
         assert.isOk(fs.statSync(fixtureExpectedDir).isDirectory());
-        rimraf.sync(fixtureResultDir);
+        fs.copy(fixtureSourceDir, fixtureResultDir);
 
         // Top-Level Integration Test! Test the CLI interface directly.
         const output = await exec(fixtureSourceDir, 'node', [
