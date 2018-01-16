@@ -16,6 +16,7 @@ import {assert} from 'chai';
 import chalk from 'chalk';
 import * as diff from 'diff';
 import * as fs from 'fs-extra';
+import {EOL} from 'os';
 import * as path from 'path';
 import {exec} from '../../util';
 
@@ -34,11 +35,11 @@ const packageFixturesDir =
  * Pretty-format a full diff patch for console reporting.
  */
 function formatDiffPatch(patch: string) {
-  return patch.split('\n')
+  return patch.split(EOL)
       .slice(4)
       .map(formatDiffLine)
       .filter(Boolean)
-      .join('\n');
+      .join(EOL);
 }
 
 /**
@@ -102,7 +103,7 @@ function createDiffConflictOutput(diffResult: any): string {
         throw new Error('Unexpected diff-entry format: ' + entry);
     }
   });
-  return errorOutputLines.concat(['']).join('\n');
+  return errorOutputLines.concat(['']).join(EOL);
 }
 
 suite('Fixtures', () => {
@@ -115,7 +116,7 @@ suite('Fixtures', () => {
         continue;
       }
 
-      test(`packages/${fixtureBasename}`, async() => {
+      test(`packages/${fixtureBasename}`, async () => {
         const fixtureSourceDir = path.join(fixtureDir, 'source');
         const fixtureExpectedDir = path.join(fixtureDir, 'expected');
         const fixtureResultDir = path.join(fixtureDir, 'generated');
