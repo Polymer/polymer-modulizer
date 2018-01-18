@@ -123,18 +123,15 @@ suite('Fixtures', () => {
         assert.isOk(fs.statSync(fixtureSourceDir).isDirectory());
         assert.isOk(fs.statSync(fixtureExpectedDir).isDirectory());
         await fs.emptyDir(fixtureResultDir);
-        await fs.copy(fixtureSourceDir, fixtureResultDir, {
-          filter: (src) =>
-              !src.includes('bower_components') && !src.includes('node_modules')
-        });
+        await fs.copy(fixtureSourceDir, fixtureResultDir);
 
         // Top-Level Integration Test! Test the CLI interface directly.
-        const output = await exec(fixtureSourceDir, 'node', [
+        const output = await exec(fixtureResultDir, 'node', [
           modulizerBinPath,
           '--out',
-          '../generated/',
+          fixtureResultDir,
           '--force',
-          '--add-import-path'
+          '--add-import-path',
         ].concat(fixtureTestConfig.options || []));
 
         // 1. Check stderr output that no (unexpected) errors were emitted.
@@ -142,8 +139,11 @@ suite('Fixtures', () => {
 
         // 2. Compare the generated output to the expected conversion.
         //    Output the diff & fail if any differences are encountered.
-        const diffResult = dircompare.compareSync(
-            fixtureResultDir, fixtureExpectedDir, {compareSize: true});
+        const diffResult =
+            dircompare.compareSync(fixtureResultDir, fixtureExpectedDir, {
+              compareSize: true,
+              excludeFilter: 'bower_components',
+            });
         if (!diffResult.same) {
           const diffOutput = createDiffConflictOutput(diffResult);
           throw new Error(diffOutput);

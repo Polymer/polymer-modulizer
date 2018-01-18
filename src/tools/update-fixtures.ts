@@ -53,14 +53,11 @@ async function updateFixture(options: UpdateFixtureOptions) {
 
   // We're going to do an in-place conversion.
   await fs.emptyDir(convertedDir);
-  await fs.copy(sourceDir, convertedDir, {
-    filter: (src) =>
-        !src.includes('bower_components') && !src.includes('node_modules')
-  });
+  await fs.copy(sourceDir, convertedDir);
 
   console.log(`Converting...`);
   await convertPackage({
-    inDir: sourceDir,
+    inDir: convertedDir,
     outDir: convertedDir,
     cleanOutDir: false,
     packageName: options.packageName,
