@@ -129,7 +129,7 @@ suite('Fixtures', () => {
         const output = await exec(fixtureResultDir, 'node', [
           modulizerBinPath,
           '--out',
-          fixtureResultDir,
+          '.',
           '--force',
           '--add-import-path',
         ].concat(fixtureTestConfig.options || []));
