@@ -13,15 +13,15 @@
  */
 
 import * as path from 'path';
-import { Analysis, Analyzer, FSUrlLoader, InMemoryOverlayUrlLoader, PackageUrlResolver, ResolvedUrl } from 'polymer-analyzer';
+import {Analysis, Analyzer, FSUrlLoader, InMemoryOverlayUrlLoader, PackageUrlResolver, ResolvedUrl} from 'polymer-analyzer';
 
-import { ConversionSettings, createDefaultConversionSettings, PartialConversionSettings } from './conversion-settings';
-import { generatePackageJson, readJson, writeJson } from './manifest-converter';
-import { ProjectConverter } from './project-converter';
-import { polymerFileOverrides } from './special-casing';
-import { PackageUrlHandler } from './urls/package-url-handler';
-import { PackageType } from './urls/types';
-import { mkdirp, readFile, rimraf, writeFile, writeFileResults } from './util';
+import {ConversionSettings, createDefaultConversionSettings, PartialConversionSettings} from './conversion-settings';
+import {generatePackageJson, readJson, writeJson} from './manifest-converter';
+import {ProjectConverter} from './project-converter';
+import {polymerFileOverrides} from './special-casing';
+import {PackageUrlHandler} from './urls/package-url-handler';
+import {PackageType} from './urls/types';
+import {mkdirp, readFile, rimraf, writeFile, writeFileResults} from './util';
 
 
 /**
@@ -61,12 +61,12 @@ async function setupOutDir(outDir: string, clean = false) {
  * current package's bower.json maifest to the "includes" set.
  */
 function getConversionSettings(
-  analyzer: Analyzer,
-  analysis: Analysis,
-  options: PackageConversionSettings,
-  bowerJson: any) {
+    analyzer: Analyzer,
+    analysis: Analysis,
+    options: PackageConversionSettings,
+    bowerJson: any) {
   const conversionSettings =
-    createDefaultConversionSettings(analyzer, analysis, options);
+      createDefaultConversionSettings(analyzer, analysis, options);
   let bowerMainFiles = (bowerJson.main) || [];
   if (!Array.isArray(bowerMainFiles)) {
     bowerMainFiles = [bowerMainFiles];
@@ -81,14 +81,14 @@ function getConversionSettings(
  * Get the relevant documents from a package, to be converted.
  */
 export function getPackageDocuments(
-  urlHandler: PackageUrlHandler,
-  analysis: Analysis,
-  conversionSettings: ConversionSettings) {
-  const htmlDocuments = [...analysis.getFeatures({ kind: 'html-document' })];
+    urlHandler: PackageUrlHandler,
+    analysis: Analysis,
+    conversionSettings: ConversionSettings) {
+  const htmlDocuments = [...analysis.getFeatures({kind: 'html-document'})];
   return htmlDocuments.filter((d) => {
     const documentUrl = urlHandler.getDocumentUrl(d);
     return PackageUrlHandler.isUrlInternalToPackage(documentUrl) &&
-      !conversionSettings.excludes.has(documentUrl);
+        !conversionSettings.excludes.has(documentUrl);
   });
 }
 
@@ -98,12 +98,11 @@ export function getPackageDocuments(
 function configureAnalyzer(options: PackageConversionSettings) {
   const urlResolver = new PackageUrlResolver();
   const urlLoader =
-    new InMemoryOverlayUrlLoader(new FSUrlLoader(options.inDir));
+      new InMemoryOverlayUrlLoader(new FSUrlLoader(options.inDir));
   for (const [url, contents] of polymerFileOverrides) {
     urlLoader.urlContentsMap.set(urlResolver.resolve(url)!, contents);
     urlLoader.urlContentsMap.set(
-      urlResolver.resolve(`../polymer/${url}` as ResolvedUrl)!,
-      contents);
+        urlResolver.resolve(`../polymer/${url}` as ResolvedUrl)!, contents);
   }
   return new Analyzer({
     urlLoader,
@@ -128,14 +127,14 @@ export default async function convert(options: PackageConversionSettings) {
 
   // Create the url handler & converter.
   const urlHandler =
-    new PackageUrlHandler(analyzer, options.packageName, options.packageType);
+      new PackageUrlHandler(analyzer, options.packageName, options.packageType);
   const conversionSettings =
-    getConversionSettings(analyzer, analysis, options, bowerJson);
+      getConversionSettings(analyzer, analysis, options, bowerJson);
   const converter = new ProjectConverter(urlHandler, conversionSettings);
 
   // Gather all relevent package documents, and run the converter on them!
   for (const document of getPackageDocuments(
-    urlHandler, analysis, conversionSettings)) {
+           urlHandler, analysis, conversionSettings)) {
     converter.convertDocument(document);
   }
 
@@ -154,6 +153,7 @@ export default async function convert(options: PackageConversionSettings) {
     travisYaml = converter.convertTravisYaml(travisYaml);
     writeFile(travisYaml, outDir, '.travis.yml');
   } catch (err) {
+    // do nothing
   }
 
   // Delete files that were explicitly requested to be deleted.
@@ -164,10 +164,10 @@ export default async function convert(options: PackageConversionSettings) {
   // Generate a new package.json, and write it to disk.
   try {
     const packageJson =
-      generatePackageJson(bowerJson, npmPackageName, npmPackageVersion);
+        generatePackageJson(bowerJson, npmPackageName, npmPackageVersion);
     writeJson(packageJson, outDir, 'package.json');
   } catch (err) {
     console.log(
-      `error in bower.json -> package.json conversion (${err.message})`);
+        `error in bower.json -> package.json conversion (${err.message})`);
   }
 }
