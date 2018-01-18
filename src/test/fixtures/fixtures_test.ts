@@ -106,9 +106,7 @@ function createDiffConflictOutput(diffResult: any): string {
 }
 
 suite('Fixtures', () => {
-
   suite('Packages', function() {
-
     this.timeout(60000);
 
     for (const fixtureBasename of fs.readdirSync(packageFixturesDir)) {
@@ -117,14 +115,18 @@ suite('Fixtures', () => {
         continue;
       }
 
-      test(`packages/${fixtureBasename}`, async() => {
+      test(`packages/${fixtureBasename}`, async () => {
         const fixtureSourceDir = path.join(fixtureDir, 'source');
         const fixtureExpectedDir = path.join(fixtureDir, 'expected');
         const fixtureResultDir = path.join(fixtureDir, 'generated');
         const fixtureTestConfig = require(path.join(fixtureDir, 'test.js'));
         assert.isOk(fs.statSync(fixtureSourceDir).isDirectory());
         assert.isOk(fs.statSync(fixtureExpectedDir).isDirectory());
-        fs.copy(fixtureSourceDir, fixtureResultDir);
+        await fs.emptyDir(fixtureResultDir);
+        await fs.copy(fixtureSourceDir, fixtureResultDir, {
+          filter: (src) =>
+              !src.includes('bower_components') && !src.includes('node_modules')
+        });
 
         // Top-Level Integration Test! Test the CLI interface directly.
         const output = await exec(fixtureSourceDir, 'node', [
@@ -151,7 +153,5 @@ suite('Fixtures', () => {
         assert.equal(output.stdout, (fixtureTestConfig.stdout || ''));
       });
     }
-
   });
-
 });

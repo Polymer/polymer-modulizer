@@ -52,7 +52,11 @@ async function updateFixture(options: UpdateFixtureOptions) {
   await exec('bower install', {cwd: sourceDir});
 
   // We're going to do an in-place conversion.
-  await fs.copy(sourceDir, convertedDir);
+  await fs.emptyDir(convertedDir);
+  await fs.copy(sourceDir, convertedDir, {
+    filter: (src) =>
+        !src.includes('bower_components') && !src.includes('node_modules')
+  });
 
   console.log(`Converting...`);
   await convertPackage({
@@ -85,7 +89,7 @@ async function overridePolymer(sourceDir: string) {
   }
 }
 
-(async() => {
+(async () => {
   let exitCode = 0;
 
   await Promise.all([
