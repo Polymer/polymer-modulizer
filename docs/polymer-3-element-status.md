@@ -21,6 +21,7 @@ This table contains the status of every Polymer 3.0 element being run through au
 | app-media| ✅ | ❌ | The requested module does not provide an export named 'Settings' |
 | app-pouchdb| ❌ | ❌ |  |
 | app-route| ✅ | ✅ | |
+| app-storage| ✅ | ❌ | 3 failed tests |
 | font-roboto| ✅ | ❌ | No test suites were found |
 | font-roboto-local| ✅ | ❌ | No test suites were found |
 | gold-cc-cvc-input| ✅ | ❌ | Failed to execute 'setAttribute' on 'Element': 'class' is not a valid attribute name. |
@@ -106,6 +107,6 @@ This table contains the status of every Polymer 3.0 element being run through au
 | polymer| ✅ | ❌ | chai is undefined |
 | promise-polyfill| ✅ | ❌ | No test suites were found |
 | platinum-sw| ✅ | ✅ | |
-| test-fixture|  |  | |
+| test-fixture| ✅ | ❌ | Cannot read property \'import\' of null\n |
 
 *\*Note: `npm install` is currently being used for testing instead of the planned `yarn install --flat` due to a yarn bug in multi-repo conversion & testing. See https://github.com/Polymer/polymer-modulizer/issues/254 for more info.*
