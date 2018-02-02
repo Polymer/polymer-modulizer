@@ -185,9 +185,9 @@ export function createDefaultConversionSettings(
               (imp) =>
                   analyzer.urlResolver.relative(imp.url) as string | undefined)
           .filter(
-              (url) => !!url &&
-                  (!(url.startsWith('bower_components') ||
-                     url.startsWith('node_modules'))));
+              (url) => url !== undefined &&
+                  !url.startsWith('bower_components') &&
+                  !url.startsWith('node_modules'));
   const includes = new Set(importedFiles as IterableX<string>);
 
   // Configure "referenceExcludes":

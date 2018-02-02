@@ -60,6 +60,8 @@ export class PackageUrlHandler implements UrlHandler {
   getDocumentUrl(document: Document): OriginalDocumentUrl {
     const relativeUrl =
         this.analyzer.urlResolver.relative(document.url) as string;
+    // If the analyzer URL is outside the current directory, it actually exists
+    // in the child bower_components/ directory.
     if (relativeUrl.startsWith('../')) {
       return 'bower_components/' + relativeUrl.substring(3) as
           OriginalDocumentUrl;
