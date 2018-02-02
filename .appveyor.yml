@@ -17,7 +17,7 @@ build: off
 install:
   # Get the latest stable version of Node.js or io.js
   - ps: Install-Product node $env:nodejs_version
-  # Get npm 3
+  # Get latest npm
   - npm install -g npm
   # install modules. Use --force to workaround permissions issues on Windows
   - npm install --force
