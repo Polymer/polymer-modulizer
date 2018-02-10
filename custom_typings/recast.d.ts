@@ -1,5 +1,5 @@
 declare module 'recast' {
-    
+
   import * as estree from 'estree';
 
   export interface File {
@@ -15,5 +15,5 @@ declare module 'recast' {
 
   export function parse(source: string): File;
 
-  export function print(node: estree.Node, options?: Options): {code: string};
+  export function print(node: estree.Node, options?: Options): { code: string };
 }

@@ -56,9 +56,9 @@ export interface Field {
   default?: any;
 }
 
-type TypeDefSingle = Def|Or|string|StringConstructor|NumberConstructor|
-    BooleanConstructor|RegExpConstructor|null;
-export type TypeDef = TypeDefSingle|TypeDefSingle[];
+type TypeDefSingle = Def | Or | string | StringConstructor | NumberConstructor |
+  BooleanConstructor | RegExpConstructor | null;
+export type TypeDef = TypeDefSingle | TypeDefSingle[];
 
 export function typeString(type: TypeDef) {
   let isArray = false;
@@ -108,14 +108,14 @@ class TypeApi {
 
   // Arrow function to support tear-offs
   def =
-      (name: string) => {
-        let def = this.types.get(name);
-        if (def === undefined) {
-          def = new Def(name);
-          this.types.set(name, def);
-        }
-        return def;
+    (name: string) => {
+      let def = this.types.get(name);
+      if (def === undefined) {
+        def = new Def(name);
+        this.types.set(name, def);
       }
+      return def;
+    }
 
   or(..._defs: TypeDef[]) {
     return new Or(_defs);

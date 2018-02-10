@@ -12,7 +12,7 @@
  * http://polymer.github.io/PATENTS.txt
  */
 
-import {ConvertedDocumentFilePath, ConvertedDocumentUrl, OriginalDocumentUrl} from './urls/types';
+import { ConvertedDocumentFilePath, ConvertedDocumentUrl, OriginalDocumentUrl } from './urls/types';
 
 
 export interface HtmlFile {
@@ -48,7 +48,7 @@ export interface ConversionResult {
    * regardless of the value of `deleteOriginal`. This is useful in cases where
    * there original is an HTML file that only loads an external script.
    */
-  readonly output: HtmlFile|JsModule|undefined;
+  readonly output: HtmlFile | JsModule | undefined;
 }
 
 export class JsExport {

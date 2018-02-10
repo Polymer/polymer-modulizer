@@ -14,33 +14,33 @@
 
 import chalk from 'chalk';
 import * as path from 'path';
-import {run, WorkspaceRepo} from 'polymer-workspaces';
+import { run, WorkspaceRepo } from 'polymer-workspaces';
 
-import {ConversionResultsMap, GIT_STAGING_BRANCH_NAME, WorkspaceConversionSettings} from './convert-workspace';
-import {generatePackageJson, localDependenciesBranch, readJson, writeJson} from './manifest-converter';
-import {lookupNpmPackageName} from './urls/workspace-url-handler';
-import {exec, logRepoError, logStep} from './util';
+import { ConversionResultsMap, GIT_STAGING_BRANCH_NAME, WorkspaceConversionSettings } from './convert-workspace';
+import { generatePackageJson, localDependenciesBranch, readJson, writeJson } from './manifest-converter';
+import { lookupNpmPackageName } from './urls/workspace-url-handler';
+import { exec, logRepoError, logStep } from './util';
 
 /**
  * Configuration options required for workspace testing. Same as conversion
  * settings.
  */
-interface WorkspaceTestSettings extends WorkspaceConversionSettings {}
+interface WorkspaceTestSettings extends WorkspaceConversionSettings { }
 
 /**
  * Setup the workspace repos for testing. Be sure to call restoreRepos() after
  * testing is complete.
  */
 async function setupRepos(
-    reposUnderTest: WorkspaceRepo[],
-    localConversionMap: ConversionResultsMap,
-    options: WorkspaceTestSettings) {
+  reposUnderTest: WorkspaceRepo[],
+  localConversionMap: ConversionResultsMap,
+  options: WorkspaceTestSettings) {
   return run(reposUnderTest, async (repo) => {
     await exec(repo.dir, 'git', ['checkout', '-B', localDependenciesBranch]);
     writeTestingPackageJson(repo, localConversionMap, options.packageVersion);
     await exec(
-        repo.dir, 'git', ['commit', '-am', 'testing commit', '--allow-empty']);
-  }, {concurrency: 10});
+      repo.dir, 'git', ['commit', '-am', 'testing commit', '--allow-empty']);
+  }, { concurrency: 10 });
 }
 
 /**
@@ -75,7 +75,7 @@ async function restoreRepos(reposUnderTest: WorkspaceRepo[]) {
   return run(reposUnderTest, async (repo) => {
     await repo.git.destroyAllUncommittedChangesAndFiles();
     await repo.git.checkout(GIT_STAGING_BRANCH_NAME);
-  }, {concurrency: 10});
+  }, { concurrency: 10 });
 }
 
 /**
@@ -85,39 +85,39 @@ async function restoreRepos(reposUnderTest: WorkspaceRepo[]) {
  * workspace.
  */
 function writeTestingPackageJson(
-    repo: WorkspaceRepo,
-    localConversionMap: Map<string, string>,
-    newPackageVersion: string) {
+  repo: WorkspaceRepo,
+  localConversionMap: Map<string, string>,
+  newPackageVersion: string) {
   const bowerPackageName = path.basename(repo.dir);
   const bowerJsonPath = path.join(repo.dir, 'bower.json');
   const bowerJson = readJson(bowerJsonPath);
   const npmPackageName =
-      lookupNpmPackageName(bowerJsonPath) || bowerPackageName;
+    lookupNpmPackageName(bowerJsonPath) || bowerPackageName;
   const packageJson = generatePackageJson(
-      bowerJson, npmPackageName, newPackageVersion, localConversionMap);
+    bowerJson, npmPackageName, newPackageVersion, localConversionMap);
   writeJson(packageJson, repo.dir, 'package.json');
 }
 
 export async function testWorkspace(
-    localConversionMap: Map<string, string>, options: WorkspaceTestSettings) {
+  localConversionMap: Map<string, string>, options: WorkspaceTestSettings) {
   const allRepos = options.reposToConvert;
 
   logStep(1, 4, '🔧', `Preparing Repos...`);
   const setupRepoResults =
-      await setupRepos(allRepos, localConversionMap, options);
+    await setupRepos(allRepos, localConversionMap, options);
   setupRepoResults.failures.forEach(logRepoError);
 
   logStep(2, 4, '🔧', `Running Tests...`);
   const runResults =
-      await run([...setupRepoResults.successes.keys()], async (repo) => {
-        try {
-          await installNpmDependencies(repo);
-          return await testRepo(repo);
-        } catch (err) {
-          logRepoError(err, repo);
-          throw err;
-        }
-      }, {concurrency: 1});
+    await run([...setupRepoResults.successes.keys()], async (repo) => {
+      try {
+        await installNpmDependencies(repo);
+        return await testRepo(repo);
+      } catch (err) {
+        logRepoError(err, repo);
+        throw err;
+      }
+    }, { concurrency: 1 });
 
   logStep(3, 4, '🔧', `Restoring Repos...`);
   const restoreResults = await restoreRepos(allRepos);
@@ -128,24 +128,24 @@ export async function testWorkspace(
 }
 
 export async function testWorkspaceInstallOnly(
-    localConversionMap: Map<string, string>, options: WorkspaceTestSettings) {
+  localConversionMap: Map<string, string>, options: WorkspaceTestSettings) {
   const allRepos = options.reposToConvert;
 
   logStep(1, 4, '🔧', `Preparing Repos...`);
   const setupRepoResults =
-      await setupRepos(allRepos, localConversionMap, options);
+    await setupRepos(allRepos, localConversionMap, options);
   setupRepoResults.failures.forEach(logRepoError);
 
   logStep(2, 4, '🔧', `Installing Dependencies...`);
   const runResults =
-      await run([...setupRepoResults.successes.keys()], async (repo) => {
-        try {
-          return await installNpmDependencies(repo);
-        } catch (err) {
-          logRepoError(err, repo);
-          throw err;
-        }
-      }, {concurrency: 1});
+    await run([...setupRepoResults.successes.keys()], async (repo) => {
+      try {
+        return await installNpmDependencies(repo);
+      } catch (err) {
+        logRepoError(err, repo);
+        throw err;
+      }
+    }, { concurrency: 1 });
 
   logStep(3, 4, '🔧', `Restoring Repos...`);
   const restoreResults = await restoreRepos(allRepos);

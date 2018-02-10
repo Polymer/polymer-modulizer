@@ -12,8 +12,8 @@ declare module 'command-line-args' {
   }
 
   function commandLineArgs(
-      options: commandLineArgs.OptionDefinition[],
-      argv?: string[]): {[name: string]: any};
+    options: commandLineArgs.OptionDefinition[],
+    argv?: string[]): { [name: string]: any };
 
   export = commandLineArgs;
 }

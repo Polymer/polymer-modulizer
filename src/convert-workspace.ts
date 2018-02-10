@@ -13,15 +13,15 @@
  */
 
 import * as path from 'path';
-import {Analyzer, FSUrlLoader, InMemoryOverlayUrlLoader, PackageUrlResolver, ResolvedUrl} from 'polymer-analyzer';
-import {run, WorkspaceRepo} from 'polymer-workspaces';
+import { Analyzer, FSUrlLoader, InMemoryOverlayUrlLoader, PackageUrlResolver, ResolvedUrl } from 'polymer-analyzer';
+import { run, WorkspaceRepo } from 'polymer-workspaces';
 
-import {createDefaultConversionSettings, PartialConversionSettings} from './conversion-settings';
-import {generatePackageJson, readJson, writeJson} from './manifest-converter';
-import {ProjectConverter} from './project-converter';
-import {polymerFileOverrides} from './special-casing';
-import {lookupNpmPackageName, WorkspaceUrlHandler} from './urls/workspace-url-handler';
-import {exec, logRepoError, rimraf, writeFileResults} from './util';
+import { createDefaultConversionSettings, PartialConversionSettings } from './conversion-settings';
+import { generatePackageJson, readJson, writeJson } from './manifest-converter';
+import { ProjectConverter } from './project-converter';
+import { polymerFileOverrides } from './special-casing';
+import { lookupNpmPackageName, WorkspaceUrlHandler } from './urls/workspace-url-handler';
+import { exec, logRepoError, rimraf, writeFileResults } from './util';
 
 /**
  * Configuration options required for workspace conversions. Contains
@@ -44,9 +44,9 @@ function writePackageJson(repo: WorkspaceRepo, packageVersion: string) {
   const bowerJsonPath = path.join(repo.dir, 'bower.json');
   const bowerJson = readJson(bowerJsonPath);
   const npmPackageName =
-      lookupNpmPackageName(bowerJsonPath) || bowerPackageName;
+    lookupNpmPackageName(bowerJsonPath) || bowerPackageName;
   const packageJson =
-      generatePackageJson(bowerJson, npmPackageName, packageVersion);
+    generatePackageJson(bowerJson, npmPackageName, packageVersion);
   writeJson(packageJson, repo.dir, 'package.json');
 }
 
@@ -55,7 +55,7 @@ function writePackageJson(repo: WorkspaceRepo, packageVersion: string) {
  */
 function configureAnalyzer(options: WorkspaceConversionSettings) {
   const workspaceDir = options.workspaceDir;
-  const urlResolver = new PackageUrlResolver({packageDir: workspaceDir});
+  const urlResolver = new PackageUrlResolver({ packageDir: workspaceDir });
   const urlLoader = new InMemoryOverlayUrlLoader(new FSUrlLoader(workspaceDir));
   for (const [url, contents] of polymerFileOverrides) {
     urlLoader.urlContentsMap.set(urlResolver.resolve(`polymer/${url}` as ResolvedUrl)!, contents);
@@ -77,12 +77,12 @@ export type ConversionResultsMap = Map<string, string>;
  * Returns a map of all packages converted, keyed by npm package name.
  */
 export default async function convert(options: WorkspaceConversionSettings):
-    Promise<ConversionResultsMap> {
+  Promise<ConversionResultsMap> {
   const analyzer = configureAnalyzer(options);
   const analysis = await analyzer.analyzePackage();
-  const htmlDocuments = [...analysis.getFeatures({kind: 'html-document'})];
+  const htmlDocuments = [...analysis.getFeatures({ kind: 'html-document' })];
   const conversionSettings =
-      createDefaultConversionSettings(analyzer, analysis, options);
+    createDefaultConversionSettings(analyzer, analysis, options);
   const urlHandler = new WorkspaceUrlHandler(analyzer, options.workspaceDir);
   const converter = new ProjectConverter(urlHandler, conversionSettings);
   const convertedPackageResults: ConversionResultsMap = new Map();
@@ -98,7 +98,7 @@ export default async function convert(options: WorkspaceConversionSettings):
     for (const document of htmlDocuments) {
       const documentUrl = urlHandler.getDocumentUrl(document);
       if (!documentUrl.startsWith(repoDirName) ||
-          conversionSettings.excludes.has(documentUrl)) {
+        conversionSettings.excludes.has(documentUrl)) {
         continue;
       }
       converter.convertDocument(document);

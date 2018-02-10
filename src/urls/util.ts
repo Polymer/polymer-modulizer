@@ -12,9 +12,9 @@
  * http://polymer.github.io/PATENTS.txt
  */
 
-import {posix as path} from 'path';
+import { posix as path } from 'path';
 
-import {ConvertedDocumentFilePath, ConvertedDocumentUrl, OriginalDocumentUrl} from './types';
+import { ConvertedDocumentFilePath, ConvertedDocumentUrl, OriginalDocumentUrl } from './types';
 
 /**
  * Return true if url is formatted correctly as a OriginalDocumentUrl.
@@ -37,7 +37,7 @@ export function replaceHtmlExtensionIfFound(url: string): string {
  * being converted to a JS module.
  */
 export function getJsModuleConvertedFilePath(originalUrl: OriginalDocumentUrl):
-    ConvertedDocumentFilePath {
+  ConvertedDocumentFilePath {
   return replaceHtmlExtensionIfFound(originalUrl) as ConvertedDocumentFilePath;
 }
 
@@ -47,7 +47,7 @@ export function getJsModuleConvertedFilePath(originalUrl: OriginalDocumentUrl):
  * since HTML documents should keep their current html file extension).
  */
 export function getHtmlDocumentConvertedFilePath(
-    originalUrl: OriginalDocumentUrl): ConvertedDocumentFilePath {
+  originalUrl: OriginalDocumentUrl): ConvertedDocumentFilePath {
   return originalUrl as string as ConvertedDocumentFilePath;
 }
 
@@ -56,12 +56,12 @@ export function getHtmlDocumentConvertedFilePath(
  * formatting and relative/absolute urls.
  */
 export function getRelativeUrl(
-    fromUrl: ConvertedDocumentUrl, toUrl: ConvertedDocumentUrl): string {
+  fromUrl: ConvertedDocumentUrl, toUrl: ConvertedDocumentUrl): string {
   // Error: Expects two package-root-relative URLs to compute a relative path
   if (!fromUrl.startsWith('./') || !toUrl.startsWith('./')) {
     throw new Error(
-        `paths relative to package root expected (actual: ` +
-        `from="${fromUrl}", to="${toUrl}")`);
+      `paths relative to package root expected (actual: ` +
+      `from="${fromUrl}", to="${toUrl}")`);
   }
   let moduleJsUrl = path.relative(path.dirname(fromUrl), toUrl);
   // Correct URL format to add './' preface if none exists

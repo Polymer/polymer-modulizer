@@ -13,7 +13,7 @@
  */
 
 import * as astTypes from 'ast-types';
-import {NodePath} from 'ast-types';
+import { NodePath } from 'ast-types';
 import * as estree from 'estree';
 
 /**
@@ -37,8 +37,8 @@ export function rewriteToplevelThis(program: estree.Program) {
     visitLiteral(path: NodePath<estree.SimpleLiteral>) {
       // A sloppy way of detecting if the script is intended to be strict mode.
       if (path.node.value === 'use strict' && path.parent &&
-          path.parent.node.type === 'ExpressionStatement' &&
-          path.parent.parent && path.parent.parent.node.type === 'Program') {
+        path.parent.node.type === 'ExpressionStatement' &&
+        path.parent.parent && path.parent.parent.node.type === 'Program') {
         isStrictMode = true;
       }
       return false;
@@ -49,7 +49,7 @@ export function rewriteToplevelThis(program: estree.Program) {
     // strict mode.
     visitThisExpression(path: NodePath<estree.ThisExpression>) {
       if (!isStrictMode) {
-        path.replace({type: 'Identifier', name: 'window'});
+        path.replace({ type: 'Identifier', name: 'window' });
       }
       return false;
     }

@@ -1,5 +1,5 @@
 declare module 'resolve' {
-  interface ResolveOpts {}
+  interface ResolveOpts { }
 
   interface ResolveCb {
     function(err: Error, res: string): void;

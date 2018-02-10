@@ -13,10 +13,10 @@
  */
 
 import * as astTypes from 'ast-types';
-import {NodePath} from 'ast-types';
+import { NodePath } from 'ast-types';
 import * as estree from 'estree';
 
-import {getMemberPath} from '../document-util';
+import { getMemberPath } from '../document-util';
 
 
 /**
@@ -33,7 +33,7 @@ import {getMemberPath} from '../document-util';
  * foo();
  */
 export function rewriteReferencesToNamespaceMembers(
-    program: estree.Program, namespaceNames: ReadonlySet<string>) {
+  program: estree.Program, namespaceNames: ReadonlySet<string>) {
   astTypes.visit(program, {
     visitMemberExpression(path: NodePath<estree.MemberExpression>) {
       const memberPath = getMemberPath(path.node);

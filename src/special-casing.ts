@@ -1,4 +1,4 @@
-import {ResolvedUrl} from 'polymer-analyzer';
+import { ResolvedUrl } from 'polymer-analyzer';
 
 /**
  * @license

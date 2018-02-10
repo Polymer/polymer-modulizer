@@ -17,14 +17,14 @@
  * A URL path to a document, pre-conversion. Always relative to the current
  * project layout (package, workspace, etc).
  */
-export type OriginalDocumentUrl = string&{_OriginalDocumentUrl: never};
+export type OriginalDocumentUrl = string & { _OriginalDocumentUrl: never };
 
 /**
  * A URL path to a document, post-conversion. Uses npm naming for all URLs
  * containing package names. Always relative to the current project layout
  * (package, workspace, etc).
  */
-export type ConvertedDocumentUrl = string&{_ConvertedDocumentUrl: never};
+export type ConvertedDocumentUrl = string & { _ConvertedDocumentUrl: never };
 
 /**
  * A file path to where a document will be written, post-conversion. Unlike
@@ -33,7 +33,7 @@ export type ConvertedDocumentUrl = string&{_ConvertedDocumentUrl: never};
  * to the original, analyzed repo.
  */
 export type ConvertedDocumentFilePath =
-    string&{_ConvertedDocumentFilePath: never};
+  string & { _ConvertedDocumentFilePath: never };
 
 /**
  * A valid "package type", informing how the converter formats implicit URLs.
@@ -41,4 +41,4 @@ export type ConvertedDocumentFilePath =
  * TODO(fks) 11-06-2017: Replace "package type" concept with more intelligent
  * URL formatting.
  */
-export type PackageType = 'element'|'application';
+export type PackageType = 'element' | 'application';

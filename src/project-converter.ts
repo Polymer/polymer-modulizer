@@ -12,13 +12,13 @@
  * http://polymer.github.io/PATENTS.txt
  */
 
-import {Document} from 'polymer-analyzer';
+import { Document } from 'polymer-analyzer';
 
-import {ConversionSettings} from './conversion-settings';
-import {DocumentConverter} from './document-converter';
-import {ConversionResult, JsExport} from './js-module';
-import {ConvertedDocumentFilePath, OriginalDocumentUrl} from './urls/types';
-import {UrlHandler} from './urls/url-handler';
+import { ConversionSettings } from './conversion-settings';
+import { DocumentConverter } from './document-converter';
+import { ConversionResult, JsExport } from './js-module';
+import { ConvertedDocumentFilePath, OriginalDocumentUrl } from './urls/types';
+import { UrlHandler } from './urls/url-handler';
 
 // These files were already ES6 modules, so don't write our conversions.
 // Can't be handled in `excludes` because we want to preserve imports of.
@@ -70,14 +70,14 @@ export class ProjectConverter {
    */
   convertDocument(document: Document) {
     console.assert(
-        document.kinds.has('html-document'),
-        `convertDocument() must be called with an HTML document, but got ${
-            document.kinds}`);
+      document.kinds.has('html-document'),
+      `convertDocument() must be called with an HTML document, but got ${
+      document.kinds}`);
     try {
       const documentUrl = this.urlHandler.getDocumentUrl(document);
       this.conversionSettings.includes.has(documentUrl) ?
-          this.convertDocumentToJs(document, new Set()) :
-          this.convertDocumentToHtml(document, new Set());
+        this.convertDocumentToJs(document, new Set()) :
+        this.convertDocumentToHtml(document, new Set());
     } catch (e) {
       console.error(`Error in ${document.url}`, e);
     }
@@ -90,7 +90,7 @@ export class ProjectConverter {
   private _shouldConvertDocument(document: Document): boolean {
     const documentUrl = this.urlHandler.getDocumentUrl(document);
     return !this.conversionResults.has(documentUrl) &&
-        !this.conversionSettings.excludes.has(documentUrl);
+      !this.conversionSettings.excludes.has(documentUrl);
   }
 
   /**
@@ -98,7 +98,7 @@ export class ProjectConverter {
    * process so that it can read this document's dependencies' exports.
    */
   private _convertDependencies(
-      document: Document, visited: Set<OriginalDocumentUrl>) {
+    document: Document, visited: Set<OriginalDocumentUrl>) {
     for (const htmlImport of DocumentConverter.getAllHtmlImports(document)) {
       // Ignore excluded or already-converted documents before checking for
       // cyclical dependencies below.
@@ -108,11 +108,11 @@ export class ProjectConverter {
       // Warn if a cyclical dependency is found.
       if (visited.has(this.urlHandler.getDocumentUrl(htmlImport.document))) {
         console.warn(
-            `Cycle in dependency graph found where ` +
-            `${this.urlHandler.getDocumentUrl(document)} imports ${
-                this.urlHandler.getDocumentUrl(htmlImport.document)}.\n` +
-            `    Modulizer does not yet support rewriting references among ` +
-            `cyclic dependencies.`);
+          `Cycle in dependency graph found where ` +
+          `${this.urlHandler.getDocumentUrl(document)} imports ${
+          this.urlHandler.getDocumentUrl(htmlImport.document)}.\n` +
+          `    Modulizer does not yet support rewriting references among ` +
+          `cyclic dependencies.`);
         continue;
       }
       // Run a full conversion on the dependency document and its dependencies.
@@ -131,10 +131,10 @@ export class ProjectConverter {
     visited.add(this.urlHandler.getDocumentUrl(document));
     this._convertDependencies(document, visited);
     const documentConverter = new DocumentConverter(
-        document,
-        this.namespacedExports,
-        this.urlHandler,
-        this.conversionSettings);
+      document,
+      this.namespacedExports,
+      this.urlHandler,
+      this.conversionSettings);
     documentConverter.convertToJsModule().forEach((result) => {
       this._handleConversionResult(result);
     });
@@ -152,10 +152,10 @@ export class ProjectConverter {
     visited.add(this.urlHandler.getDocumentUrl(document));
     this._convertDependencies(document, visited);
     const documentConverter = new DocumentConverter(
-        document,
-        this.namespacedExports,
-        this.urlHandler,
-        this.conversionSettings);
+      document,
+      this.namespacedExports,
+      this.urlHandler,
+      this.conversionSettings);
     const newModule = documentConverter.convertAsToplevelHtmlDocument();
     this._handleConversionResult(newModule);
   }
@@ -167,11 +167,11 @@ export class ProjectConverter {
   private _handleConversionResult(newModule: ConversionResult): void {
     this.conversionResults.set(newModule.originalUrl, newModule);
     if (newModule.output !== undefined &&
-        newModule.output.type === 'js-module') {
+      newModule.output.type === 'js-module') {
       for (const expr of newModule.output.exportedNamespaceMembers) {
         this.namespacedExports.set(
-            expr.oldNamespacedName,
-            new JsExport(newModule.convertedUrl, expr.es6ExportName));
+          expr.oldNamespacedName,
+          new JsExport(newModule.convertedUrl, expr.es6ExportName));
       }
     }
   }
@@ -181,8 +181,8 @@ export class ProjectConverter {
    * handles out some broken edge-cases (ex: shadycss) and sets empty map
    * entries for files to be deleted.
    */
-  getResults(): Map<ConvertedDocumentFilePath, string|undefined> {
-    const results = new Map<ConvertedDocumentFilePath, string|undefined>();
+  getResults(): Map<ConvertedDocumentFilePath, string | undefined> {
+    const results = new Map<ConvertedDocumentFilePath, string | undefined>();
 
     for (const convertedModule of this.conversionResults.values()) {
       // TODO(fks): This is hacky, ProjectConverter isn't supposed to know about
@@ -193,12 +193,12 @@ export class ProjectConverter {
       }
       if (convertedModule.deleteOriginal) {
         results.set(
-            convertedModule.originalUrl as string as ConvertedDocumentFilePath,
-            undefined);
+          convertedModule.originalUrl as string as ConvertedDocumentFilePath,
+          undefined);
       }
       if (convertedModule.output !== undefined) {
         results.set(
-            convertedModule.convertedFilePath, convertedModule.output.source);
+          convertedModule.convertedFilePath, convertedModule.output.source);
       }
     }
 

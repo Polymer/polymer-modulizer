@@ -14,13 +14,13 @@
 
 import chalk from 'chalk';
 import * as inquirer from 'inquirer';
-import {commitChanges, pushChangesToGithub, startNewBranch, WorkspaceRepo} from 'polymer-workspaces';
-import {logRepoError} from './util';
+import { commitChanges, pushChangesToGithub, startNewBranch, WorkspaceRepo } from 'polymer-workspaces';
+import { logRepoError } from './util';
 
 export default async function run(reposToConvert: WorkspaceRepo[]) {
   console.log(
-      chalk.dim('[1/5] ') + chalk.magenta(`Setting up push to GitHub...`));
-  const {commitMessage, branchName, forcePush} = (await inquirer.prompt([
+    chalk.dim('[1/5] ') + chalk.magenta(`Setting up push to GitHub...`));
+  const { commitMessage, branchName, forcePush } = (await inquirer.prompt([
     {
       type: 'input',
       name: 'branchName',
@@ -32,7 +32,7 @@ export default async function run(reposToConvert: WorkspaceRepo[]) {
       name: 'forcePush',
       message: (args) => {
         return `force push? (WARNING: This will overwrite any existing "${
-            args.branchName}" branch on GitHub`;
+          args.branchName}" branch on GitHub`;
       },
       default: false,
     },
@@ -54,12 +54,12 @@ export default async function run(reposToConvert: WorkspaceRepo[]) {
   console.log('Ready to push:');
   for (const repo of reposToConvert) {
     console.log(`  - ${repo.github.fullName}  ${
-        chalk.dim(repo.github.ref || repo.github.defaultBranch)} -> ${
-        chalk.cyan(branchName)}`);
+      chalk.dim(repo.github.ref || repo.github.defaultBranch)} -> ${
+      chalk.cyan(branchName)}`);
   }
   console.log('');
 
-  const {confirmPush} = (await inquirer.prompt([{
+  const { confirmPush } = (await inquirer.prompt([{
     type: 'confirm',
     name: 'confirmPush',
     message: 'start?',
@@ -71,7 +71,7 @@ export default async function run(reposToConvert: WorkspaceRepo[]) {
 
   console.log(chalk.dim('[4/5] ') + chalk.magenta(`Pushing to GitHub...`));
   const publishResults =
-      await pushChangesToGithub(reposToConvert, branchName, forcePush);
+    await pushChangesToGithub(reposToConvert, branchName, forcePush);
   publishResults.successes.forEach((_result, repo) => {
     console.log(`  - ${chalk.cyan(repo.dir)}: success!`);
   });

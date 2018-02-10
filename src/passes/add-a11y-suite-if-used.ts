@@ -13,7 +13,7 @@
  */
 
 import * as astTypes from 'ast-types';
-import {NodePath} from 'ast-types';
+import { NodePath } from 'ast-types';
 import * as estree from 'estree';
 import * as jsc from 'jscodeshift';
 
@@ -26,7 +26,7 @@ import * as jsc from 'jscodeshift';
  * export graph.
  */
 export function addA11ySuiteIfUsed(
-    program: estree.Program, a11ySuiteUrl: string): boolean {
+  program: estree.Program, a11ySuiteUrl: string): boolean {
   let isFound = false;
   astTypes.visit(program, {
     visitCallExpression(path: NodePath<estree.CallExpression>) {
@@ -45,7 +45,7 @@ export function addA11ySuiteIfUsed(
   }
 
   program.body.unshift(jsc.importDeclaration(
-      [jsc.importSpecifier(jsc.identifier('a11ySuite'))],
-      jsc.literal(a11ySuiteUrl)));
+    [jsc.importSpecifier(jsc.identifier('a11ySuite'))],
+    jsc.literal(a11ySuiteUrl)));
   return true;
 }

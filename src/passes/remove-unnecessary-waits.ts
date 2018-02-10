@@ -14,26 +14,26 @@
 
 import * as estree from 'estree';
 
-import {getMemberName, getTopLevelStatements} from '../document-util';
+import { getMemberName, getTopLevelStatements } from '../document-util';
 
 /**
  * Get a reference to the callback in a
  * `document.addEventListener("WebComponentsReady", ...)` call expression.
  */
 function getWebComponentsReadyCallback(
-    memberName: string|undefined,
-    callExpression: estree.CallExpression): estree.Node|undefined {
+  memberName: string | undefined,
+  callExpression: estree.CallExpression): estree.Node | undefined {
   const args = callExpression.arguments;
   if (args.length !== 2) {
     return;
   }
   if (!(memberName === 'addEventListener' ||
-        memberName === 'document.addEventListener')) {
+    memberName === 'document.addEventListener')) {
     return;
   }
   const [eventName, callback] = args;
   if (eventName.type !== 'Literal' ||
-      eventName.value !== 'WebComponentsReady') {
+    eventName.value !== 'WebComponentsReady') {
     return;
   }
   return callback;
@@ -44,8 +44,8 @@ function getWebComponentsReadyCallback(
  * `document.addEventListener("HTMLImports.whenReady", ...)` call expression.
  */
 function getHtmlImportsReadyCallback(
-    memberName: string|undefined,
-    callExpression: estree.CallExpression): estree.Node|undefined {
+  memberName: string | undefined,
+  callExpression: estree.CallExpression): estree.Node | undefined {
   const args = callExpression.arguments;
   if (args.length !== 1) {
     return;
@@ -66,7 +66,7 @@ export function removeUnnecessaryEventListeners(program: estree.Program) {
   for (const nodePath of getTopLevelStatements(program)) {
     const statement = nodePath.node;
     if (statement.type !== 'ExpressionStatement' ||
-        statement.expression.type !== 'CallExpression') {
+      statement.expression.type !== 'CallExpression') {
       continue;
     }
     let memberName = getMemberName(statement.expression.callee);
@@ -74,17 +74,17 @@ export function removeUnnecessaryEventListeners(program: estree.Program) {
       memberName = statement.expression.callee.name;
     }
     const callback =
-        getWebComponentsReadyCallback(memberName, statement.expression) ||
-        getHtmlImportsReadyCallback(memberName, statement.expression);
+      getWebComponentsReadyCallback(memberName, statement.expression) ||
+      getHtmlImportsReadyCallback(memberName, statement.expression);
     if (!callback) {
       continue;
     }
     if ((callback.type !== 'FunctionExpression' &&
-         callback.type !== 'ArrowFunctionExpression')) {
+      callback.type !== 'ArrowFunctionExpression')) {
       continue;
     }
     if (callback.body.type !== 'BlockStatement' || callback.async ||
-        callback.generator || callback.params.length > 0) {
+      callback.generator || callback.params.length > 0) {
       return;
     }
     for (const statement of callback.body.body) {

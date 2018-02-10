@@ -15,14 +15,14 @@
 import * as fs from 'fs';
 import * as inquirer from 'inquirer';
 import * as path from 'path';
-import {Workspace} from 'polymer-workspaces';
+import { Workspace } from 'polymer-workspaces';
 
-import {CliOptions} from '../cli';
+import { CliOptions } from '../cli';
 import convertWorkspace from '../convert-workspace';
 import npmPublishWorkspace from '../publish-workspace';
 import githubPushWorkspace from '../push-workspace';
-import {testWorkspace, testWorkspaceInstallOnly} from '../test-workspace';
-import {logStep} from '../util';
+import { testWorkspace, testWorkspaceInstallOnly } from '../test-workspace';
+import { logStep } from '../util';
 
 const githubTokenMessage = `
 You need to create a github token and place it in a file named 'github-token'.
@@ -55,7 +55,7 @@ enum PostConversionStep {
  * Steps should be run in the order returned.
  */
 function postConversionStepsFromCliOptions(options: CliOptions):
-    PostConversionStep[] {
+  PostConversionStep[] {
   const steps = [];
   if (options.install === true) {
     steps.push(PostConversionStep.TestInstallOnly);
@@ -77,7 +77,7 @@ function postConversionStepsFromCliOptions(options: CliOptions):
  * in the github-token file in working folder.  If that doesn't exist either,
  * we message to the user that we need a token and exit the process.
  */
-function loadGitHubToken(): string|null {
+function loadGitHubToken(): string | null {
   // TODO(usergenic): Maybe support GITHUB_TOKEN as an environment variable,
   // since this would be a better solution for Travis deployments etc.
   const githubFilename = 'github-token';
@@ -118,7 +118,7 @@ export default async function run(options: CliOptions) {
     verbose: true,
   });
 
-  const {workspaceRepos: reposToConvert} = await workspace.init();
+  const { workspaceRepos: reposToConvert } = await workspace.init();
 
   await workspace.installBowerDependencies();
 
@@ -141,12 +141,12 @@ export default async function run(options: CliOptions) {
     // Pull off a "to-do" post-conversion step if any were provided from the
     // command line, otherwise prompt the user for one.
     const stepSelection = todoConversionSteps.shift() ||
-        (await inquirer.prompt([{
-          type: 'list',
-          name: 'post-conversion-step',
-          message: 'What do you want to do now?',
-          choices: Object.values(PostConversionStep),
-        }]))['post-conversion-step'] as string;
+      (await inquirer.prompt([{
+        type: 'list',
+        name: 'post-conversion-step',
+        message: 'What do you want to do now?',
+        choices: Object.values(PostConversionStep),
+      }]))['post-conversion-step'] as string;
     switch (stepSelection) {
       case PostConversionStep.Test:
         await testWorkspace(convertedPackages, {

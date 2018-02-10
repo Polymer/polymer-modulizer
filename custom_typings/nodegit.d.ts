@@ -6,8 +6,8 @@ declare module 'nodegit' {
   }
   export class Branch {
     static create(
-        repo: Repository, branchName: string, commit: Commit,
-        force: boolean): Promise<Reference>;
+      repo: Repository, branchName: string, commit: Commit,
+      force: boolean): Promise<Reference>;
   }
 
   interface CertificateCheckCallback {
@@ -29,24 +29,24 @@ declare module 'nodegit' {
   }
   export class Clone {
     static clone(url: string, local_path: string, options?: CloneOptions):
-        Promise<Repository>;
+      Promise<Repository>;
   }
   export class Repository {
     static open(path: string): Promise<Repository>;
     createCommitOnHead(
-        filesToAdd: string[], author: Signature, committer: Signature,
-        message: string): Promise<Oid>;
+      filesToAdd: string[], author: Signature, committer: Signature,
+      message: string): Promise<Oid>;
     getHeadCommit(): Promise<Commit>;
     setHead(refname: string): Promise<Number>;
     getBranch(refname: string): Promise<Reference>;
     getBranchCommit(branch: string): Promise<Commit>;
-    checkoutBranch(branch: string|Reference): Promise<void>;
+    checkoutBranch(branch: string | Reference): Promise<void>;
     getRemote(remote: string): Promise<Remote>;
     fetch(remote: string, fetchOpts: FetchOptions): Promise<void>;
     fetchAll(fetchOpts: FetchOptions): Promise<void>;
     defaultSignature(): Signature;
     setHeadDetached(commitish: Oid, a: any, b: any): Number;
-    getReferenceCommit(name: string|Reference): Promise<Commit>;
+    getReferenceCommit(name: string | Reference): Promise<Commit>;
     checkoutRef(ref: Reference): Promise<void>;
     path(): string;
     workdir(): string;
@@ -62,18 +62,18 @@ declare module 'nodegit' {
   export class Remote {
     push(refSpecs: string[], options: PushOptions): Promise<number>;
   }
-  export class Oid {}
-  export class Tree {}
+  export class Oid { }
+  export class Tree { }
   export class Commit { id(): string; }
   export class Reference { static list(repo: Repository): Promise<any>; }
 
   export class Tag {
     static list(repo: Repository): Promise<string[]>;
-    static lookup(repo: Repository, id: string|Oid|Tag): Tag;
+    static lookup(repo: Repository, id: string | Oid | Tag): Tag;
     targetId(): Oid;
   }
 
-  type TreeIsh = Oid|Tree|Commit|Reference;
+  type TreeIsh = Oid | Tree | Commit | Reference;
 
   export interface CheckoutOptions { checkoutStrategy: Number; }
 

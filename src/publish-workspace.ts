@@ -14,16 +14,16 @@
 
 import chalk from 'chalk';
 import * as inquirer from 'inquirer';
-import {publishPackagesToNpm, WorkspaceRepo} from 'polymer-workspaces';
-import {logRepoError} from './util';
+import { publishPackagesToNpm, WorkspaceRepo } from 'polymer-workspaces';
+import { logRepoError } from './util';
 
 export default async function run(reposToConvert: WorkspaceRepo[]) {
   console.log(
-      chalk.dim('[1/3] ') + chalk.magenta(`Setting up publish to npm...`));
+    chalk.dim('[1/3] ') + chalk.magenta(`Setting up publish to npm...`));
 
   const whoAmI = await reposToConvert[0].npm.whoami();
   console.log(`npm whoami: ${whoAmI}`);
-  const {publishTag} = await inquirer.prompt([
+  const { publishTag } = await inquirer.prompt([
     {
       type: 'input',
       name: 'publishTag',
@@ -37,11 +37,11 @@ export default async function run(reposToConvert: WorkspaceRepo[]) {
   for (const repo of reposToConvert) {
     const packageInfo = await repo.npm.getPackageManifest();
     console.log(`  - ${chalk.cyan(publishTag)}: ${packageInfo.name}${
-        chalk.dim('@')}${packageInfo.version}`);
+      chalk.dim('@')}${packageInfo.version}`);
   }
   console.log('');
 
-  const {confirmPublish} = (await inquirer.prompt([{
+  const { confirmPublish } = (await inquirer.prompt([{
     type: 'confirm',
     name: 'confirmPublish',
     message: 'start?',

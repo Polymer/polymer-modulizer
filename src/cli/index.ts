@@ -13,7 +13,7 @@
  */
 
 import * as commandLineArgs from 'command-line-args';
-import {NpmImportStyle} from '../conversion-settings';
+import { NpmImportStyle } from '../conversion-settings';
 
 import runPackageCommand from './command-package';
 import runWorkspaceCommand from './command-workspace';
@@ -25,8 +25,8 @@ const optionDefinitions: commandLineArgs.OptionDefinition[] = [
     type: String,
     multiple: true,
     description:
-        'Repositories to convert.  (This is the default option, so the ' +
-        '--repo/-r switch itself is not required.)',
+      'Repositories to convert.  (This is the default option, so the ' +
+      '--repo/-r switch itself is not required.)',
     defaultOption: true
   },
   {
@@ -35,15 +35,15 @@ const optionDefinitions: commandLineArgs.OptionDefinition[] = [
     type: String,
     defaultValue: 'modulizer_workspace',
     description:
-        'Override the default path "modulizer_workspace" where the repositories ' +
-        'will be cloned to.'
+      'Override the default path "modulizer_workspace" where the repositories ' +
+      'will be cloned to.'
   },
   {
     name: 'github-token',
     alias: 'g',
     type: String,
     description: 'Provide github token via command-line flag instead of ' +
-        '"github-token" file.'
+      '"github-token" file.'
   },
   {
     name: 'help',
@@ -61,13 +61,13 @@ const optionDefinitions: commandLineArgs.OptionDefinition[] = [
     defaultValue: 'modulizer_out',
     description: 'The directory to write converted files to.'
   },
-  {name: 'in', type: String, description: 'The directory to convert.'},
+  { name: 'in', type: String, description: 'The directory to convert.' },
   {
     name: 'namespace',
     type: String,
     description: 'Namespace name(s) to use to detect exports. ' +
-        'Namespaces documented in the code with @namespace will be ' +
-        'automatically detected.',
+      'Namespaces documented in the code with @namespace will be ' +
+      'automatically detected.',
     multiple: true
   },
   {
@@ -82,9 +82,9 @@ const optionDefinitions: commandLineArgs.OptionDefinition[] = [
     type: String,
     multiple: true,
     description:
-        'Root file(s) to include in the conversion. Automatically includes' +
-        ' files listed in the bower.json main field, and any file that ' +
-        'is HTML imported.',
+      'Root file(s) to include in the conversion. Automatically includes' +
+      ' files listed in the bower.json main field, and any file that ' +
+      'is HTML imported.',
     defaultValue: []
   },
   {
@@ -92,8 +92,8 @@ const optionDefinitions: commandLineArgs.OptionDefinition[] = [
     type: String,
     multiple: true,
     description:
-        'After conversion, delete all files that match any of these glob ' +
-        'patterns.',
+      'After conversion, delete all files that match any of these glob ' +
+      'patterns.',
     defaultValue: []
   },
   {
@@ -111,22 +111,22 @@ const optionDefinitions: commandLineArgs.OptionDefinition[] = [
     type: Boolean,
     defaultValue: false,
     description: 'If given, clear the existing build/workspace folder ' +
-        +'before beginning.'
+      +'before beginning.'
   },
   {
     name: 'force',
     type: Boolean,
     defaultValue: false,
     description:
-        `If given, may overwrite or delete files when converting the given ` +
-        `input directory.`,
+      `If given, may overwrite or delete files when converting the given ` +
+      `input directory.`,
   },
   {
     name: 'install',
     type: Boolean,
     defaultValue: false,
     description:
-        `If given, installs dependencies in all repos after workspace conversion.`,
+      `If given, installs dependencies in all repos after workspace conversion.`,
   },
   {
     name: 'test',
@@ -139,29 +139,29 @@ const optionDefinitions: commandLineArgs.OptionDefinition[] = [
     type: Boolean,
     defaultValue: false,
     description:
-        `Push changes to GitHub after conversion (will prompt to confirm).`,
+      `Push changes to GitHub after conversion (will prompt to confirm).`,
   },
   {
     name: 'publish',
     type: Boolean,
     defaultValue: false,
     description:
-        `Publish changes to npm after conversion (will prompt to confirm).`,
+      `Publish changes to npm after conversion (will prompt to confirm).`,
   },
   {
     name: 'import-style',
     type: String,
     defaultValue: 'path',
     description:
-        `[name|path] The desired format for npm package import URLs/specifiers. ` +
-        `Defaults to "path".`,
+      `[name|path] The desired format for npm package import URLs/specifiers. ` +
+      `Defaults to "path".`,
   },
   {
     name: 'add-import-path',
     type: Boolean,
     defaultValue: false,
     description: `Whether to add a static importPath property to elements. ` +
-        `Defaults to false`,
+      `Defaults to false`,
   },
 ];
 
@@ -227,8 +227,8 @@ installation.
   const importStyle = options['import-style'];
   if (importStyle !== 'name' && importStyle !== 'path') {
     throw new Error(
-        `import-style "${importStyle}" not supported. ` +
-        `Supported styles: "name", "path".`);
+      `import-style "${importStyle}" not supported. ` +
+      `Supported styles: "name", "path".`);
   }
 
   await runPackageCommand(options);
