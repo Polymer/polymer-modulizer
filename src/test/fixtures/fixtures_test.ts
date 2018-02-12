@@ -12,13 +12,13 @@
  * http://polymer.github.io/PATENTS.txt
  */
 
-import {assert} from 'chai';
+import { assert } from 'chai';
 import chalk from 'chalk';
 import * as diff from 'diff';
 import * as fs from 'fs-extra';
-import {EOL} from 'os';
+import { EOL } from 'os';
 import * as path from 'path';
-import {exec} from '../../util';
+import { exec } from '../../util';
 
 // TODO(fks): Add 'dir-compare' typings.
 const dircompare = require('dir-compare');
@@ -28,7 +28,7 @@ require('source-map-support').install();
 
 const modulizerBinPath = path.resolve(__dirname, '../../../bin/modulizer.js');
 const packageFixturesDir =
-    path.resolve(__dirname, '../../../fixtures/packages');
+  path.resolve(__dirname, '../../../fixtures/packages');
 
 
 /**
@@ -36,10 +36,10 @@ const packageFixturesDir =
  */
 function formatDiffPatch(patch: string) {
   return patch.split(EOL)
-      .slice(4)
-      .map(formatDiffLine)
-      .filter(Boolean)
-      .join(EOL);
+    .slice(4)
+    .map(formatDiffLine)
+    .filter(Boolean)
+    .join(EOL);
 }
 
 /**
@@ -71,31 +71,31 @@ function formatDiffLine(line: string) {
  */
 function createDiffConflictOutput(diffResult: any): string {
   const errorOutputLines = ['Converted fixture does not match expected:', ''];
-  diffResult.diffSet.forEach(function(entry: any) {
+  diffResult.diffSet.forEach(function (entry: any) {
     switch (entry.state) {
       case 'equal':
         return;
       case 'left':
         const expectedFileRelPath =
-            path.join(entry.relativePath || '/', entry.name1);
+          path.join(entry.relativePath || '/', entry.name1);
         errorOutputLines.push((chalk.bold.green(' + ' + expectedFileRelPath)));
         return;
       case 'right':
         const actualFileRelPath =
-            path.join(entry.relativePath || '/', entry.name2);
+          path.join(entry.relativePath || '/', entry.name2);
         errorOutputLines.push((chalk.bold.red(' - ' + actualFileRelPath)));
         return;
       case 'distinct':
         const diffedFileRelPath =
-            path.join(entry.relativePath || '/', entry.name1);
+          path.join(entry.relativePath || '/', entry.name1);
         const expectedFilePath = path.join(entry.path1, entry.name1);
         const actualFilePath = path.join(entry.path2, entry.name2);
         const patch = diff.createPatch(
-            'string',
-            fs.readFileSync(expectedFilePath, 'utf8'),
-            fs.readFileSync(actualFilePath, 'utf8'),
-            'expected',
-            'converted');
+          'string',
+          fs.readFileSync(expectedFilePath, 'utf8'),
+          fs.readFileSync(actualFilePath, 'utf8'),
+          'expected',
+          'converted');
         errorOutputLines.push((chalk.bold.red('<> ' + diffedFileRelPath)));
         errorOutputLines.push(formatDiffPatch(patch));
         return;
@@ -107,7 +107,7 @@ function createDiffConflictOutput(diffResult: any): string {
 }
 
 suite('Fixtures', () => {
-  suite('Packages', function() {
+  suite('Packages', function () {
     this.timeout(60000);
 
     for (const fixtureBasename of fs.readdirSync(packageFixturesDir)) {
@@ -141,10 +141,10 @@ suite('Fixtures', () => {
         // 2. Compare the generated output to the expected conversion.
         //    Output the diff & fail if any differences are encountered.
         const diffResult =
-            dircompare.compareSync(fixtureResultDir, fixtureExpectedDir, {
-              compareSize: true,
-              excludeFilter: 'bower_components',
-            });
+          dircompare.compareSync(fixtureResultDir, fixtureExpectedDir, {
+            compareSize: true,
+            excludeFilter: 'bower_components',
+          });
         if (!diffResult.same) {
           const diffOutput = createDiffConflictOutput(diffResult);
           throw new Error(diffOutput);

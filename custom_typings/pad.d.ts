@@ -3,6 +3,6 @@ declare module 'pad' {
     strip: boolean;
   }
   function pad(s: string, padding: number, options?: Options): string;
-  namespace pad {}
+  namespace pad { }
   export = pad;
 }

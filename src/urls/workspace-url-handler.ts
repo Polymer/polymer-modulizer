@@ -13,14 +13,14 @@
  */
 
 import * as path from 'path';
-import {Analyzer, Document} from 'polymer-analyzer';
+import { Analyzer, Document } from 'polymer-analyzer';
 
-import {lookupDependencyMapping} from '../manifest-converter';
-import {readJson} from '../manifest-converter';
+import { lookupDependencyMapping } from '../manifest-converter';
+import { readJson } from '../manifest-converter';
 
-import {ConvertedDocumentUrl, OriginalDocumentUrl, PackageType} from './types';
-import {UrlHandler} from './url-handler';
-import {getRelativeUrl} from './util';
+import { ConvertedDocumentUrl, OriginalDocumentUrl, PackageType } from './types';
+import { UrlHandler } from './url-handler';
+import { getRelativeUrl } from './util';
 
 /**
  * Given a bower.json file (path to be read from) look-up the corresponding
@@ -30,7 +30,7 @@ import {getRelativeUrl} from './util';
  * TODO(fks) 11-06-2017: Failed/bad lookups can cause serious conversion errors,
  * should a failed lookup throw instead of warn?
  */
-export function lookupNpmPackageName(bowerJsonPath: string): string|undefined {
+export function lookupNpmPackageName(bowerJsonPath: string): string | undefined {
   let bowerPackageName: string;
   // Lookup the official package name via `bower.json`.
   try {
@@ -38,8 +38,8 @@ export function lookupNpmPackageName(bowerJsonPath: string): string|undefined {
     bowerPackageName = bowerJson.name as string;
   } catch (err) {
     console.warn(
-        `WARNING: "${bowerJsonPath}" not found / could not be read` +
-        `(${err.message})`);
+      `WARNING: "${bowerJsonPath}" not found / could not be read` +
+      `(${err.message})`);
     return;
   }
   // Check our dependency map for the corresponding package name on npm.
@@ -68,7 +68,7 @@ export class WorkspaceUrlHandler implements UrlHandler {
    */
   getDocumentUrl(document: Document): OriginalDocumentUrl {
     return this.analyzer.urlResolver.relative(document.url) as string as
-        OriginalDocumentUrl;
+      OriginalDocumentUrl;
   }
 
   /**
@@ -99,7 +99,7 @@ export class WorkspaceUrlHandler implements UrlHandler {
   _getPackageNameForUrl(url: OriginalDocumentUrl) {
     const packageDirName = url.split('/')[0];
     const bowerPath =
-        path.join(this.workspaceDir, packageDirName, 'bower.json');
+      path.join(this.workspaceDir, packageDirName, 'bower.json');
     return lookupNpmPackageName(bowerPath) || packageDirName;
   }
 
@@ -119,7 +119,7 @@ export class WorkspaceUrlHandler implements UrlHandler {
     const toUrlParts = toUrl.split('/');
     if (fromUrlParts[1][0] === '@' && toUrlParts[1][0] === '@') {
       return fromUrlParts[1] === toUrlParts[1] &&
-          fromUrlParts[2] === toUrlParts[2];
+        fromUrlParts[2] === toUrlParts[2];
     } else {
       return fromUrlParts[1] === toUrlParts[1];
     }
@@ -150,7 +150,7 @@ export class WorkspaceUrlHandler implements UrlHandler {
    * Get the formatted relative import URL between two ConvertedDocumentUrls.
    */
   getPathImportUrl(fromUrl: ConvertedDocumentUrl, toUrl: ConvertedDocumentUrl):
-      string {
+    string {
     return getRelativeUrl(fromUrl, toUrl);
   }
 

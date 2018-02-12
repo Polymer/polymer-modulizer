@@ -16,7 +16,7 @@
 require('source-map-support').install();
 
 import * as path from 'path';
-import {exec} from 'mz/child_process';
+import { exec } from 'mz/child_process';
 import * as fs from 'fs-extra';
 
 import convertPackage from '../convert-package';
@@ -32,7 +32,7 @@ interface UpdateFixtureOptions {
 
 async function updateFixture(options: UpdateFixtureOptions) {
   const fixturesDir =
-      path.resolve(__dirname, '../../fixtures/packages/', options.folder);
+    path.resolve(__dirname, '../../fixtures/packages/', options.folder);
   const sourceDir = path.join(fixturesDir, 'source');
   const convertedDir = path.join(fixturesDir, 'expected');
   const branch = options.branch || 'master';
@@ -42,15 +42,15 @@ async function updateFixture(options: UpdateFixtureOptions) {
   await fs.remove(sourceDir);
 
   await exec(
-      `git clone ${options.repoUrl} ${sourceDir} --branch=${branch} --depth=1`,
-      {cwd: fixturesDir});
+    `git clone ${options.repoUrl} ${sourceDir} --branch=${branch} --depth=1`,
+    { cwd: fixturesDir });
   await fs.remove(path.join(sourceDir, '.git'));
   await fs.remove(path.join(sourceDir, '.github'));
   await fs.remove(path.join(sourceDir, '.gitignore'));
 
   await overridePolymer(sourceDir);
 
-  await exec('bower install', {cwd: sourceDir});
+  await exec('bower install', { cwd: sourceDir });
 
   // We're going to do an in-place conversion.
   await fs.emptyDir(convertedDir);
@@ -84,7 +84,7 @@ async function overridePolymer(sourceDir: string) {
     bowerJson.resolutions = bowerJson.resolutions || {};
     bowerJson.resolutions.polymer = 'master';
     await fs.writeFile(
-        bowerJsonFilename, JSON.stringify(bowerJson, null, 2), 'utf-8');
+      bowerJsonFilename, JSON.stringify(bowerJson, null, 2), 'utf-8');
   }
 }
 

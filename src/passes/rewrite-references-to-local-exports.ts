@@ -13,27 +13,27 @@
  */
 
 import * as astTypes from 'ast-types';
-import {NodePath} from 'ast-types';
+import { NodePath } from 'ast-types';
 import * as estree from 'estree';
-import {Iterable as IterableX} from 'ix';
+import { Iterable as IterableX } from 'ix';
 import * as jsc from 'jscodeshift';
 
-import {getMemberName} from '../document-util';
-import {NamespaceMemberToExport} from '../js-module';
+import { getMemberName } from '../document-util';
+import { NamespaceMemberToExport } from '../js-module';
 
 /**
  * Rewrite references in a program from their original names to the local names
  * based on the new named exports system.
  */
 export function rewriteReferencesToLocalExports(
-    program: estree.Program,
-    exportMigrationRecords: Iterable<NamespaceMemberToExport>) {
-  const rewriteMap = new Map<string|undefined, string>(
-      IterableX.from(exportMigrationRecords)
-          .filter((m) => m.es6ExportName !== '*')
-          .map(
-              (m) => [m.oldNamespacedName,
-                      m.es6ExportName] as [string, string]));
+  program: estree.Program,
+  exportMigrationRecords: Iterable<NamespaceMemberToExport>) {
+  const rewriteMap = new Map<string | undefined, string>(
+    IterableX.from(exportMigrationRecords)
+      .filter((m) => m.es6ExportName !== '*')
+      .map(
+        (m) => [m.oldNamespacedName,
+        m.es6ExportName] as [string, string]));
   astTypes.visit(program, {
     visitMemberExpression(path: NodePath<estree.MemberExpression>) {
       const memberName = getMemberName(path.node);

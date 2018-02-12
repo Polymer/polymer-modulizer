@@ -13,35 +13,35 @@
  */
 
 import * as astTypes from 'ast-types';
-import {NodePath} from 'ast-types';
+import { NodePath } from 'ast-types';
 import * as dom5 from 'dom5';
 import * as estree from 'estree';
-import {Identifier, Program} from 'estree';
-import {Iterable as IterableX} from 'ix';
+import { Identifier, Program } from 'estree';
+import { Iterable as IterableX } from 'ix';
 import * as jsc from 'jscodeshift';
-import {EOL} from 'os';
+import { EOL } from 'os';
 import * as parse5 from 'parse5';
 import * as path from 'path';
-import {Document, Import, isPositionInsideRange, ParsedHtmlDocument, Severity, Warning} from 'polymer-analyzer';
+import { Document, Import, isPositionInsideRange, ParsedHtmlDocument, Severity, Warning } from 'polymer-analyzer';
 import * as recast from 'recast';
 
-import {ConversionSettings} from './conversion-settings';
-import {attachCommentsToFirstStatement, canDomModuleBeInlined, collectIdentifierNames, containsWriteToGlobalSettingsObject, createDomNodeInsertStatements, filterClone, findAvailableIdentifier, getCommentsBetween, getMemberPath, getNodePathInProgram, getPathOfAssignmentTo, getSetterName, insertStatementsIntoProgramBody, serializeNode, serializeNodeToTemplateLiteral} from './document-util';
-import {ConversionResult, JsExport} from './js-module';
-import {addA11ySuiteIfUsed} from './passes/add-a11y-suite-if-used';
-import {removeNamespaceInitializers} from './passes/remove-namespace-initializers';
-import {removeUnnecessaryEventListeners} from './passes/remove-unnecessary-waits';
-import {removeWrappingIIFEs} from './passes/remove-wrapping-iife';
-import {rewriteExcludedReferences} from './passes/rewrite-excluded-references';
-import {rewriteNamespacesAsExports} from './passes/rewrite-namespace-exports';
-import {rewriteNamespacesThisReferences} from './passes/rewrite-namespace-this-references';
-import {rewriteReferencesToLocalExports} from './passes/rewrite-references-to-local-exports';
-import {rewriteReferencesToNamespaceMembers} from './passes/rewrite-references-to-namespace-members';
-import {rewriteToplevelThis} from './passes/rewrite-toplevel-this';
-import {ConvertedDocumentUrl, OriginalDocumentUrl} from './urls/types';
-import {UrlHandler} from './urls/url-handler';
-import {isOriginalDocumentUrlFormat} from './urls/util';
-import {getHtmlDocumentConvertedFilePath, getJsModuleConvertedFilePath, getModuleId, replaceHtmlExtensionIfFound} from './urls/util';
+import { ConversionSettings } from './conversion-settings';
+import { attachCommentsToFirstStatement, canDomModuleBeInlined, collectIdentifierNames, containsWriteToGlobalSettingsObject, createDomNodeInsertStatements, filterClone, findAvailableIdentifier, getCommentsBetween, getMemberPath, getNodePathInProgram, getPathOfAssignmentTo, getSetterName, insertStatementsIntoProgramBody, serializeNode, serializeNodeToTemplateLiteral } from './document-util';
+import { ConversionResult, JsExport } from './js-module';
+import { addA11ySuiteIfUsed } from './passes/add-a11y-suite-if-used';
+import { removeNamespaceInitializers } from './passes/remove-namespace-initializers';
+import { removeUnnecessaryEventListeners } from './passes/remove-unnecessary-waits';
+import { removeWrappingIIFEs } from './passes/remove-wrapping-iife';
+import { rewriteExcludedReferences } from './passes/rewrite-excluded-references';
+import { rewriteNamespacesAsExports } from './passes/rewrite-namespace-exports';
+import { rewriteNamespacesThisReferences } from './passes/rewrite-namespace-this-references';
+import { rewriteReferencesToLocalExports } from './passes/rewrite-references-to-local-exports';
+import { rewriteReferencesToNamespaceMembers } from './passes/rewrite-references-to-namespace-members';
+import { rewriteToplevelThis } from './passes/rewrite-toplevel-this';
+import { ConvertedDocumentUrl, OriginalDocumentUrl } from './urls/types';
+import { UrlHandler } from './urls/url-handler';
+import { isOriginalDocumentUrlFormat } from './urls/util';
+import { getHtmlDocumentConvertedFilePath, getJsModuleConvertedFilePath, getModuleId, replaceHtmlExtensionIfFound } from './urls/util';
 
 /**
  * Keep a map of dangerous references to check for. Output the related warning
@@ -58,14 +58,14 @@ const dangerousReferences = new Map<string, string>([
  * Keep a set of elements to ignore when Recreating HTML contents by adding
  * code to the top of a program.
  */
-const generatedElementBlacklist = new Set<string|undefined>([
+const generatedElementBlacklist = new Set<string | undefined>([
   'base',
   'link',
   'meta',
   'script',
 ]);
 
-const legacyJavascriptTypes: ReadonlySet<string|null> = new Set([
+const legacyJavascriptTypes: ReadonlySet<string | null> = new Set([
   // lol
   // https://dev.w3.org/html5/spec-preview/the-script-element.html#scriptingLanguages
   null,
@@ -134,10 +134,10 @@ interface Edit {
  * import entire namespace) to a set of ImportDeclaration objects.
  */
 function getImportDeclarations(
-    specifierUrl: string,
-    namedImports: Iterable<JsExport>,
-    importReferences: ReadonlySet<ImportReference> = new Set(),
-    usedIdentifiers: Set<string> = new Set()): estree.ImportDeclaration[] {
+  specifierUrl: string,
+  namedImports: Iterable<JsExport>,
+  importReferences: ReadonlySet<ImportReference> = new Set(),
+  usedIdentifiers: Set<string> = new Set()): estree.ImportDeclaration[] {
   // A map from imports (as `JsExport`s) to their assigned specifier names.
   const assignedNames = new Map<JsExport, string>();
   // Find an unused identifier and mark it as used.
@@ -150,27 +150,27 @@ function getImportDeclarations(
 
   const namedImportsArray = [...namedImports];
   const namedSpecifiers =
-      namedImportsArray.filter((import_) => import_.name !== '*')
-          .map((import_) => {
-            const name = import_.name;
-            const alias = assignAlias(import_, import_.name);
+    namedImportsArray.filter((import_) => import_.name !== '*')
+      .map((import_) => {
+        const name = import_.name;
+        const alias = assignAlias(import_, import_.name);
 
-            if (alias === name) {
-              return jsc.importSpecifier(jsc.identifier(name));
-            } else {
-              return jsc.importSpecifier(
-                  jsc.identifier(name), jsc.identifier(alias));
-            }
-          });
+        if (alias === name) {
+          return jsc.importSpecifier(jsc.identifier(name));
+        } else {
+          return jsc.importSpecifier(
+            jsc.identifier(name), jsc.identifier(alias));
+        }
+      });
 
   const importDeclarations: estree.ImportDeclaration[] = [];
 
   // If a module namespace was referenced, create a new namespace import
   const namespaceImports =
-      namedImportsArray.filter((import_) => import_.name === '*');
+    namedImportsArray.filter((import_) => import_.name === '*');
   if (namespaceImports.length > 1) {
     throw new Error(
-        `More than one namespace import was given for '${specifierUrl}'.`);
+      `More than one namespace import was given for '${specifierUrl}'.`);
   }
 
   const namespaceImport = namespaceImports[0];
@@ -178,8 +178,8 @@ function getImportDeclarations(
     const alias = assignAlias(namespaceImport, getModuleId(specifierUrl));
 
     importDeclarations.push(jsc.importDeclaration(
-        [jsc.importNamespaceSpecifier(jsc.identifier(alias))],
-        jsc.literal(specifierUrl)));
+      [jsc.importNamespaceSpecifier(jsc.identifier(alias))],
+      jsc.literal(specifierUrl)));
   }
 
   // If any named imports were referenced, create a new import for all named
@@ -187,16 +187,16 @@ function getImportDeclarations(
   // either, then still add an empty importDeclaration to trigger the load.
   if (namedSpecifiers.length > 0 || namespaceImport === undefined) {
     importDeclarations.push(
-        jsc.importDeclaration(namedSpecifiers, jsc.literal(specifierUrl)));
+      jsc.importDeclaration(namedSpecifiers, jsc.literal(specifierUrl)));
   }
 
   // Replace all references to all imports with the assigned name for each
   // import.
-  for (const {target, path} of importReferences) {
+  for (const { target, path } of importReferences) {
     const assignedName = assignedNames.get(target);
     if (!assignedName) {
       throw new Error(
-          `The import '${target.name}' was not assigned an identifier.`);
+        `The import '${target.name}' was not assigned an identifier.`);
     }
 
     path.replace(jsc.identifier(assignedName));
@@ -220,8 +220,8 @@ export class DocumentConverter {
 
   private readonly _claimedDomModules = new Set<parse5.ASTNode>();
   constructor(
-      document: Document, namespacedExports: Map<string, JsExport>,
-      urlHandler: UrlHandler, conversionSettings: ConversionSettings) {
+    document: Document, namespacedExports: Map<string, JsExport>,
+    urlHandler: UrlHandler, conversionSettings: ConversionSettings) {
     this.namespacedExports = namespacedExports;
     this.conversionSettings = conversionSettings;
     this.urlHandler = urlHandler;
@@ -236,7 +236,7 @@ export class DocumentConverter {
    * it is up to the caller to filter out any unneccesary/excluded documents.
    */
   static getAllHtmlImports(document: Document): Import[] {
-    return [...document.getFeatures({kind: 'html-import'})];
+    return [...document.getFeatures({ kind: 'html-import' })];
   }
 
   /**
@@ -247,19 +247,19 @@ export class DocumentConverter {
    */
   private getHtmlImports() {
     return DocumentConverter.getAllHtmlImports(this.document)
-        .filter((f: Import) => {
-          const documentUrl = this.urlHandler.getDocumentUrl(f.document);
-          return !this.conversionSettings.excludes.has(documentUrl);
-        });
+      .filter((f: Import) => {
+        const documentUrl = this.urlHandler.getDocumentUrl(f.document);
+        return !this.conversionSettings.excludes.has(documentUrl);
+      });
   }
 
   private isInternalNonModuleImport(scriptImport: Import): boolean {
     const oldScriptUrl = this.urlHandler.getDocumentUrl(scriptImport.document);
     const newScriptUrl = this.convertScriptUrl(oldScriptUrl);
     const isModuleImport =
-        dom5.getAttribute(scriptImport.astNode, 'type') === 'module';
+      dom5.getAttribute(scriptImport.astNode, 'type') === 'module';
     const isInternalImport =
-        this.urlHandler.isImportInternal(this.convertedUrl, newScriptUrl);
+      this.urlHandler.isImportInternal(this.convertedUrl, newScriptUrl);
     return isInternalImport && !isModuleImport;
   }
 
@@ -276,11 +276,11 @@ export class DocumentConverter {
 
     const combinedToplevelStatements = [];
     const convertedHtmlScripts = new Set<Import>();
-    let prevScriptNode: parse5.ASTNode|undefined = undefined;
+    let prevScriptNode: parse5.ASTNode | undefined = undefined;
     for (const script of this.document.getFeatures()) {
       let scriptDocument: Document;
       if (script.kinds.has('html-script') &&
-          this.isInternalNonModuleImport(script as Import)) {
+        this.isInternalNonModuleImport(script as Import)) {
         scriptDocument = (script as Import).document;
         convertedHtmlScripts.add(script as Import);
       } else if (script.kinds.has('js-document')) {
@@ -289,7 +289,7 @@ export class DocumentConverter {
         continue;
       }
       const scriptProgram =
-          recast.parse(scriptDocument.parsedDocument.contents).program;
+        recast.parse(scriptDocument.parsedDocument.contents).program;
       rewriteToplevelThis(scriptProgram);
       // We need to inline templates on a per-script basis, otherwise we run
       // into trouble matching up analyzer AST nodes with our own.
@@ -298,17 +298,17 @@ export class DocumentConverter {
         this.addImportPathsToElements(scriptProgram, scriptDocument);
       }
       const comments: string[] = getCommentsBetween(
-          this.document.parsedDocument.ast, prevScriptNode, script.astNode);
+        this.document.parsedDocument.ast, prevScriptNode, script.astNode);
       const statements =
-          attachCommentsToFirstStatement(comments, scriptProgram.body);
+        attachCommentsToFirstStatement(comments, scriptProgram.body);
       combinedToplevelStatements.push(...statements);
       prevScriptNode = script.astNode;
     }
 
     const trailingComments = getCommentsBetween(
-        this.document.parsedDocument.ast, prevScriptNode, undefined);
+      this.document.parsedDocument.ast, prevScriptNode, undefined);
     const maybeCommentStatement =
-        attachCommentsToFirstStatement(trailingComments, []);
+      attachCommentsToFirstStatement(trailingComments, []);
     combinedToplevelStatements.push(...maybeCommentStatement);
     const program = jsc.program(combinedToplevelStatements);
     removeUnnecessaryEventListeners(program);
@@ -319,9 +319,9 @@ export class DocumentConverter {
     // Add imports for every non-module <script> tag to just import the file
     // itself.
     for (const scriptImport of this.document.getFeatures(
-             {kind: 'html-script'})) {
+      { kind: 'html-script' })) {
       const oldScriptUrl =
-          this.urlHandler.getDocumentUrl(scriptImport.document);
+        this.urlHandler.getDocumentUrl(scriptImport.document);
       const newScriptUrl = this.convertScriptUrl(oldScriptUrl);
       if (convertedHtmlScripts.has(scriptImport)) {
         // NOTE: This deleted script file path *may* === this document's final
@@ -343,11 +343,11 @@ export class DocumentConverter {
     this.insertCodeToGenerateHtmlElements(program);
 
     removeNamespaceInitializers(program, this.conversionSettings.namespaces);
-    const {localNamespaceNames, namespaceNames, exportMigrationRecords} =
-        rewriteNamespacesAsExports(
-            program, this.document, this.conversionSettings.namespaces);
+    const { localNamespaceNames, namespaceNames, exportMigrationRecords } =
+      rewriteNamespacesAsExports(
+        program, this.document, this.conversionSettings.namespaces);
     const allNamespaceNames =
-        new Set([...localNamespaceNames, ...namespaceNames]);
+      new Set([...localNamespaceNames, ...namespaceNames]);
     rewriteNamespacesThisReferences(program, namespaceNames);
     rewriteExcludedReferences(program, this.conversionSettings);
     rewriteReferencesToLocalExports(program, exportMigrationRecords);
@@ -356,7 +356,7 @@ export class DocumentConverter {
     this.warnOnDangerousReferences(program);
 
     const outputProgram =
-        recast.print(program, {quote: 'single', wrapColumn: 80, tabWidth: 2});
+      recast.print(program, { quote: 'single', wrapColumn: 80, tabWidth: 2 });
 
     results.push({
       originalUrl: this.originalUrl,
@@ -378,14 +378,14 @@ export class DocumentConverter {
     const p = dom5.predicates;
 
     const edits: Array<Edit> = [];
-    for (const script of this.document.getFeatures({kind: 'js-document'})) {
+    for (const script of this.document.getFeatures({ kind: 'js-document' })) {
       if (!script.astNode ||
-          !isLegacyJavaScriptTag(script.astNode.node as parse5.ASTNode)) {
+        !isLegacyJavaScriptTag(script.astNode.node as parse5.ASTNode)) {
         continue;  // ignore unknown script tags and preexisting modules
       }
       const astNode = script.astNode.node as parse5.ASTNode;
       const sourceRange =
-          script.astNode ? htmlDocument.sourceRangeForNode(astNode) : undefined;
+        script.astNode ? htmlDocument.sourceRangeForNode(astNode) : undefined;
       if (!sourceRange) {
         continue;  // nothing we can do about scripts without known positions
       }
@@ -399,32 +399,32 @@ export class DocumentConverter {
       }
 
       const newScriptTag =
-          parse5.treeAdapters.default.createElement('script', '', []);
+        parse5.treeAdapters.default.createElement('script', '', []);
       dom5.setAttribute(newScriptTag, 'type', 'module');
       dom5.setTextContent(
-          newScriptTag,
-          EOL +
-              recast
-                  .print(
-                      program, {quote: 'single', wrapColumn: 80, tabWidth: 2})
-                  .code +
-              EOL);
+        newScriptTag,
+        EOL +
+        recast
+          .print(
+            program, { quote: 'single', wrapColumn: 80, tabWidth: 2 })
+          .code +
+        EOL);
       const replacementText = serializeNode(newScriptTag);
-      edits.push({offsets, replacementText});
+      edits.push({ offsets, replacementText });
     }
 
     const demoSnippetTemplates = dom5.nodeWalkAll(
-        htmlDocument.ast,
-        p.AND(
-            p.hasTagName('template'),
-            p.parentMatches(p.hasTagName('demo-snippet'))));
+      htmlDocument.ast,
+      p.AND(
+        p.hasTagName('template'),
+        p.parentMatches(p.hasTagName('demo-snippet'))));
     const scriptsToConvert = [];
     for (const demoSnippetTemplate of demoSnippetTemplates) {
       scriptsToConvert.push(...dom5.nodeWalkAll(
-          demoSnippetTemplate,
-          p.hasTagName('script'),
-          [],
-          dom5.childNodesIncludeTemplate));
+        demoSnippetTemplate,
+        p.hasTagName('script'),
+        [],
+        dom5.childNodesIncludeTemplate));
     }
 
     for (const astNode of scriptsToConvert) {
@@ -432,7 +432,7 @@ export class DocumentConverter {
         continue;
       }
       const sourceRange =
-          astNode ? htmlDocument.sourceRangeForNode(astNode) : undefined;
+        astNode ? htmlDocument.sourceRangeForNode(astNode) : undefined;
       if (!sourceRange) {
         continue;  // nothing we can do about scripts without known positions
       }
@@ -446,18 +446,18 @@ export class DocumentConverter {
       }
 
       const newScriptTag =
-          parse5.treeAdapters.default.createElement('script', '', []);
+        parse5.treeAdapters.default.createElement('script', '', []);
       dom5.setAttribute(newScriptTag, 'type', 'module');
       dom5.setTextContent(
-          newScriptTag,
-          EOL +
-              recast
-                  .print(
-                      program, {quote: 'single', wrapColumn: 80, tabWidth: 2})
-                  .code +
-              EOL);
+        newScriptTag,
+        EOL +
+        recast
+          .print(
+            program, { quote: 'single', wrapColumn: 80, tabWidth: 2 })
+          .code +
+        EOL);
       const replacementText = serializeNode(newScriptTag);
-      edits.push({offsets, replacementText});
+      edits.push({ offsets, replacementText });
     }
 
     for (const htmlImport of this.getHtmlImports()) {
@@ -468,19 +468,19 @@ export class DocumentConverter {
       const offsets = htmlDocument.sourceRangeToOffsets(htmlImport.sourceRange);
 
       const htmlDocumentUrl =
-          this.urlHandler.getDocumentUrl(htmlImport.document);
+        this.urlHandler.getDocumentUrl(htmlImport.document);
       const importedJsDocumentUrl = this.convertDocumentUrl(htmlDocumentUrl);
       const importUrl =
-          this.formatImportUrl(importedJsDocumentUrl, htmlImport.originalUrl);
+        this.formatImportUrl(importedJsDocumentUrl, htmlImport.originalUrl);
       const scriptTag = parse5.parseFragment(`<script type="module"></script>`)
-                            .childNodes![0];
+        .childNodes![0];
       dom5.setAttribute(scriptTag, 'src', importUrl);
       const replacementText = serializeNode(scriptTag);
-      edits.push({offsets, replacementText});
+      edits.push({ offsets, replacementText });
     }
 
     for (const scriptImport of this.document.getFeatures(
-             {kind: 'html-script'})) {
+      { kind: 'html-script' })) {
       // ignore fake script imports injected by various hacks in the
       // analyzer
       if (!scriptImport.sourceRange || !scriptImport.astNode) {
@@ -488,16 +488,16 @@ export class DocumentConverter {
       }
       if (!dom5.predicates.hasTagName('script')(scriptImport.astNode)) {
         throw new Error(
-            `Expected an 'html-script' kinded feature to ` +
-            `have a script tag for an AST node.`);
+          `Expected an 'html-script' kinded feature to ` +
+          `have a script tag for an AST node.`);
       }
       const offsets = htmlDocument.sourceRangeToOffsets(
-          htmlDocument.sourceRangeForNode(scriptImport.astNode)!);
+        htmlDocument.sourceRangeForNode(scriptImport.astNode)!);
 
       const convertedUrl = this.convertDocumentUrl(
-          this.urlHandler.getDocumentUrl(scriptImport.document));
+        this.urlHandler.getDocumentUrl(scriptImport.document));
       const formattedUrl =
-          this.formatImportUrl(convertedUrl, scriptImport.originalUrl);
+        this.formatImportUrl(convertedUrl, scriptImport.originalUrl);
       dom5.setAttribute(scriptImport.astNode, 'src', formattedUrl);
 
       // Temporary: Check if imported script is a known module.
@@ -509,7 +509,7 @@ export class DocumentConverter {
       }
 
       edits.push(
-          {offsets, replacementText: serializeNode(scriptImport.astNode)});
+        { offsets, replacementText: serializeNode(scriptImport.astNode) });
     }
 
     // We need to ensure that custom styles are inserted into the document
@@ -519,22 +519,22 @@ export class DocumentConverter {
     // those styles, ensuring that we also preserve the relative order of
     // styles.
     const hasIncludedStyle = p.AND(
-        p.hasTagName('style'),
-        p.OR(
-            p.hasAttrValue('is', 'custom-style'),
-            p.parentMatches(p.hasTagName('custom-style'))),
-        p.hasAttr('include'));
+      p.hasTagName('style'),
+      p.OR(
+        p.hasAttrValue('is', 'custom-style'),
+        p.parentMatches(p.hasTagName('custom-style'))),
+      p.hasAttr('include'));
 
     if (dom5.nodeWalk(htmlDocument.ast, hasIncludedStyle)) {
       edits.push(...this.convertStylesToScriptsThatInsertThem(htmlDocument));
     }
 
     // Apply edits from bottom to top, so that the offsets stay valid.
-    edits.sort(({offsets: [startA]}, {offsets: [startB]}) => startB - startA);
+    edits.sort(({ offsets: [startA] }, { offsets: [startB] }) => startB - startA);
     let contents = this.document.parsedDocument.contents;
-    for (const {offsets: [start, end], replacementText} of edits) {
+    for (const { offsets: [start, end], replacementText } of edits) {
       contents =
-          contents.slice(0, start) + replacementText + contents.slice(end);
+        contents.slice(0, start) + replacementText + contents.slice(end);
     }
 
     return {
@@ -554,16 +554,16 @@ export class DocumentConverter {
    */
   private get _isWrapperHTMLDocument() {
     const allFeatures = Array.from(this.document.getFeatures())
-                            .filter(
-                                (f) =>
-                                    !(f.kinds.has('html-document') &&
-                                      (f as Document).isInline === false));
+      .filter(
+        (f) =>
+          !(f.kinds.has('html-document') &&
+            (f as Document).isInline === false));
     if (allFeatures.length === 1) {
       const f = allFeatures[0];
       if (f.kinds.has('html-script')) {
         const sciprtImport = f as Import;
         const oldScriptUrl =
-            this.urlHandler.getDocumentUrl(sciprtImport.document);
+          this.urlHandler.getDocumentUrl(sciprtImport.document);
         const newScriptUrl = this.convertScriptUrl(oldScriptUrl);
         return newScriptUrl === this.convertedUrl;
       }
@@ -588,18 +588,18 @@ export class DocumentConverter {
     removeWrappingIIFEs(program);
     const importedReferences = this.collectNamespacedReferences(program);
     const wasA11ySuiteAdded = addA11ySuiteIfUsed(
-        program,
-        this.formatImportUrl(this.urlHandler.createConvertedUrl(
-            'wct-browser-legacy/a11ySuite.js')));
+      program,
+      this.formatImportUrl(this.urlHandler.createConvertedUrl(
+        'wct-browser-legacy/a11ySuite.js')));
     const wereImportsAdded = this.addJsImports(program, importedReferences);
     // Don't convert the HTML.
     // Don't inline templates, they're fine where they are.
 
-    const {localNamespaceNames, namespaceNames, exportMigrationRecords} =
-        rewriteNamespacesAsExports(
-            program, this.document, this.conversionSettings.namespaces);
+    const { localNamespaceNames, namespaceNames, exportMigrationRecords } =
+      rewriteNamespacesAsExports(
+        program, this.document, this.conversionSettings.namespaces);
     const allNamespaceNames =
-        new Set([...localNamespaceNames, ...namespaceNames]);
+      new Set([...localNamespaceNames, ...namespaceNames]);
     rewriteNamespacesThisReferences(program, namespaceNames);
     rewriteExcludedReferences(program, this.conversionSettings);
     rewriteReferencesToLocalExports(program, exportMigrationRecords);
@@ -615,8 +615,8 @@ export class DocumentConverter {
   }
 
   private *
-      convertStylesToScriptsThatInsertThem(htmlDocument: ParsedHtmlDocument):
-          Iterable<Edit> {
+    convertStylesToScriptsThatInsertThem(htmlDocument: ParsedHtmlDocument):
+    Iterable<Edit> {
     const p = dom5.predicates;
     const head = dom5.nodeWalk(htmlDocument.ast, p.hasTagName('head'));
     const body = dom5.nodeWalk(htmlDocument.ast, p.hasTagName('body'));
@@ -626,12 +626,12 @@ export class DocumentConverter {
 
     const tagsToInsertImperatively = [
       ...dom5.nodeWalkAll(
-          head,
-          p.OR(
-              p.hasTagName('custom-style'),
-              p.AND(
-                  p.hasTagName('style'),
-                  p.NOT(p.parentMatches(p.hasTagName('custom-style')))))),
+        head,
+        p.OR(
+          p.hasTagName('custom-style'),
+          p.AND(
+            p.hasTagName('style'),
+            p.NOT(p.parentMatches(p.hasTagName('custom-style')))))),
     ];
 
     const apology = `<!-- FIXME(polymer-modulizer):
@@ -646,24 +646,24 @@ export class DocumentConverter {
     let first = true;
     for (const tag of tagsToInsertImperatively) {
       const offsets = htmlDocument.sourceRangeToOffsets(
-          htmlDocument.sourceRangeForNode(tag)!);
+        htmlDocument.sourceRangeForNode(tag)!);
       const scriptTag = parse5.parseFragment(`<script type="module"></script>`)
-                            .childNodes![0];
+        .childNodes![0];
       const program = jsc.program(createDomNodeInsertStatements([tag]));
       dom5.setTextContent(
-          scriptTag,
-          EOL +
-              recast
-                  .print(
-                      program, {quote: 'single', wrapColumn: 80, tabWidth: 2})
-                  .code +
-              EOL);
+        scriptTag,
+        EOL +
+        recast
+          .print(
+            program, { quote: 'single', wrapColumn: 80, tabWidth: 2 })
+          .code +
+        EOL);
       let replacementText = serializeNode(scriptTag);
       if (first) {
         replacementText = apology + replacementText;
         first = false;
       }
-      yield {offsets, replacementText};
+      yield { offsets, replacementText };
     }
 
     for (const bodyNode of body.childNodes || []) {
@@ -671,25 +671,25 @@ export class DocumentConverter {
         continue;
       }
       const offsets = htmlDocument.sourceRangeToOffsets(
-          htmlDocument.sourceRangeForNode(bodyNode)!);
+        htmlDocument.sourceRangeForNode(bodyNode)!);
       const scriptTag = parse5.parseFragment(`<script type="module"></script>`)
-                            .childNodes![0];
+        .childNodes![0];
       const program =
-          jsc.program(createDomNodeInsertStatements([bodyNode], true));
+        jsc.program(createDomNodeInsertStatements([bodyNode], true));
       dom5.setTextContent(
-          scriptTag,
-          EOL +
-              recast
-                  .print(
-                      program, {quote: 'single', wrapColumn: 80, tabWidth: 2})
-                  .code +
-              EOL);
+        scriptTag,
+        EOL +
+        recast
+          .print(
+            program, { quote: 'single', wrapColumn: 80, tabWidth: 2 })
+          .code +
+        EOL);
       let replacementText = serializeNode(scriptTag);
       if (first) {
         replacementText = apology + replacementText;
         first = false;
       }
-      yield {offsets, replacementText};
+      yield { offsets, replacementText };
     }
   }
 
@@ -708,15 +708,15 @@ export class DocumentConverter {
     const body = htmlElement!.childNodes!.find((n) => n.tagName === 'body')!;
     const elements = [
       ...head.childNodes!.filter(
-          (n: parse5.ASTNode) => n.tagName !== undefined),
+        (n: parse5.ASTNode) => n.tagName !== undefined),
       ...body.childNodes!.filter((n: parse5.ASTNode) => n.tagName !== undefined)
     ];
 
     const genericElements = filterClone(
-        elements,
-        (e) =>
-            !(generatedElementBlacklist.has(e.tagName) ||
-              this._claimedDomModules.has(e)));
+      elements,
+      (e) =>
+        !(generatedElementBlacklist.has(e.tagName) ||
+          this._claimedDomModules.has(e)));
 
     if (genericElements.length === 0) {
       return;
@@ -730,15 +730,15 @@ export class DocumentConverter {
    * templates as strings as part of the javascript element declaration.
    */
   private inlineTemplates(program: Program, scriptDocument: Document) {
-    const elements = scriptDocument.getFeatures({'kind': 'polymer-element'});
+    const elements = scriptDocument.getFeatures({ 'kind': 'polymer-element' });
 
     for (const element of elements) {
       // This is an analyzer wart. There's no way to avoid getting features
       // from the containing document when querying an inline document. Filed
       // as https://github.com/Polymer/polymer-analyzer/issues/712
       if (element.sourceRange === undefined ||
-          !isPositionInsideRange(
-              element.sourceRange.start, scriptDocument.sourceRange)) {
+        !isPositionInsideRange(
+          element.sourceRange.start, scriptDocument.sourceRange)) {
         continue;
       }
       const domModule = element.domModule;
@@ -759,21 +759,21 @@ export class DocumentConverter {
       // polymer.html and polymer-element.html and, crucially, template
       // inlining happens before rewriting references.
       const templateLiteral = jsc.taggedTemplateExpression(
-          jsc.memberExpression(
-              jsc.identifier('Polymer'), jsc.identifier('html')),
-          serializeNodeToTemplateLiteral(
-              parse5.treeAdapters.default.getTemplateContent(template)));
+        jsc.memberExpression(
+          jsc.identifier('Polymer'), jsc.identifier('html')),
+        serializeNodeToTemplateLiteral(
+          parse5.treeAdapters.default.getTemplateContent(template)));
       const nodePath = getNodePathInProgram(program, element.astNode);
 
       if (nodePath === undefined) {
         console.warn(
-            new Warning({
-              code: 'not-found',
-              message: `Can't find recast node for element ${element.tagName}`,
-              parsedDocument: this.document.parsedDocument,
-              severity: Severity.WARNING,
-              sourceRange: element.sourceRange!
-            }).toString());
+          new Warning({
+            code: 'not-found',
+            message: `Can't find recast node for element ${element.tagName}`,
+            parsedDocument: this.document.parsedDocument,
+            severity: Severity.WARNING,
+            sourceRange: element.sourceRange!
+          }).toString());
         continue;
       }
 
@@ -781,25 +781,25 @@ export class DocumentConverter {
       if (node.type === 'ClassDeclaration' || node.type === 'ClassExpression') {
         // A Polymer 2.0 class-based element
         node.body.body.splice(
-            0,
-            0,
-            jsc.methodDefinition(
-                'get',
-                jsc.identifier('template'),
-                jsc.functionExpression(
-                    null, [], jsc.blockStatement([jsc.returnStatement(
-                                  templateLiteral)])),
-                true));
+          0,
+          0,
+          jsc.methodDefinition(
+            'get',
+            jsc.identifier('template'),
+            jsc.functionExpression(
+              null, [], jsc.blockStatement([jsc.returnStatement(
+                templateLiteral)])),
+            true));
       } else if (node.type === 'CallExpression') {
         // A Polymer hybrid/legacy factory function element
         const arg = node.arguments[0];
         if (arg && arg.type === 'ObjectExpression') {
           arg.properties.unshift(jsc.property(
-              'init', jsc.identifier('_template'), templateLiteral));
+            'init', jsc.identifier('_template'), templateLiteral));
         }
       } else {
         console.error(`Internal Error, Class or CallExpression expected, got ${
-            node.type}`);
+          node.type}`);
       }
     }
   }
@@ -808,15 +808,15 @@ export class DocumentConverter {
    * Adds a static importPath property to Polymer elements.
    */
   private addImportPathsToElements(program: Program, scriptDocument: Document) {
-    const elements = scriptDocument.getFeatures({'kind': 'polymer-element'});
+    const elements = scriptDocument.getFeatures({ 'kind': 'polymer-element' });
 
     for (const element of elements) {
       // This is an analyzer wart. There's no way to avoid getting features
       // from the containing document when querying an inline document. Filed
       // as https://github.com/Polymer/polymer-analyzer/issues/712
       if (element.sourceRange === undefined ||
-          !isPositionInsideRange(
-              element.sourceRange.start, scriptDocument.sourceRange)) {
+        !isPositionInsideRange(
+          element.sourceRange.start, scriptDocument.sourceRange)) {
         continue;
       }
 
@@ -824,43 +824,43 @@ export class DocumentConverter {
 
       if (nodePath === undefined) {
         console.warn(
-            new Warning({
-              code: 'not-found',
-              message: `Can't find recast node for element ${element.tagName}`,
-              parsedDocument: this.document.parsedDocument,
-              severity: Severity.WARNING,
-              sourceRange: element.sourceRange!
-            }).toString());
+          new Warning({
+            code: 'not-found',
+            message: `Can't find recast node for element ${element.tagName}`,
+            parsedDocument: this.document.parsedDocument,
+            severity: Severity.WARNING,
+            sourceRange: element.sourceRange!
+          }).toString());
         continue;
       }
 
       const importMetaUrl = jsc.memberExpression(
-          jsc.memberExpression(
-              jsc.identifier('import'), jsc.identifier('meta')),
-          jsc.identifier('url'));
+        jsc.memberExpression(
+          jsc.identifier('import'), jsc.identifier('meta')),
+        jsc.identifier('url'));
 
       const node = nodePath.node;
       if (node.type === 'ClassDeclaration' || node.type === 'ClassExpression') {
         // A Polymer 2.0 class-based element
         const getter = jsc.methodDefinition(
-            'get',
-            jsc.identifier('importPath'),
-            jsc.functionExpression(
-                null,
-                [],
-                jsc.blockStatement([jsc.returnStatement(importMetaUrl)])),
-            true);
+          'get',
+          jsc.identifier('importPath'),
+          jsc.functionExpression(
+            null,
+            [],
+            jsc.blockStatement([jsc.returnStatement(importMetaUrl)])),
+          true);
         node.body.body.splice(0, 0, getter);
       } else if (node.type === 'CallExpression') {
         // A Polymer hybrid/legacy factory function element
         const arg = node.arguments[0];
         if (arg && arg.type === 'ObjectExpression') {
           arg.properties.unshift(jsc.property(
-              'init', jsc.identifier('importPath'), importMetaUrl));
+            'init', jsc.identifier('importPath'), importMetaUrl));
         }
       } else {
         console.error(`Internal Error, Class or CallExpression expected, got ${
-            node.type}`);
+          node.type}`);
       }
     }
   }
@@ -873,11 +873,11 @@ export class DocumentConverter {
    * import.
    */
   private collectNamespacedReferences(program: Program):
-      Map<ConvertedDocumentUrl, Set<ImportReference>> {
+    Map<ConvertedDocumentUrl, Set<ImportReference>> {
     const namespacedExports = this.namespacedExports;
     const conversionSettings = this.conversionSettings;
     const importedReferences =
-        new Map<ConvertedDocumentUrl, Set<ImportReference>>();
+      new Map<ConvertedDocumentUrl, Set<ImportReference>>();
 
     /**
      * Add the given JsExport and referencing NodePath to this.module's
@@ -889,7 +889,7 @@ export class DocumentConverter {
         moduleImportedNames = new Set<ImportReference>();
         importedReferences.set(target.url, moduleImportedNames);
       }
-      moduleImportedNames.add({target, path});
+      moduleImportedNames.add({ target, path });
     };
 
     astTypes.visit(program, {
@@ -897,7 +897,7 @@ export class DocumentConverter {
         const memberName = path.node.name;
         const isNamespace = conversionSettings.namespaces.has(memberName);
         const parentIsMemberExpression =
-            (path.parent && getMemberPath(path.parent.node)) !== undefined;
+          (path.parent && getMemberPath(path.parent.node)) !== undefined;
         if (!isNamespace || parentIsMemberExpression) {
           return false;
         }
@@ -926,10 +926,10 @@ export class DocumentConverter {
             return;
           }
           const [callPath] = assignmentPath.replace(jsc.callExpression(
-              jsc.identifier(setterName), [assignmentPath.node.right]));
+            jsc.identifier(setterName), [assignmentPath.node.right]));
           if (!callPath) {
             throw new Error(
-                'Failed to replace a namespace object property set with a setter function call.');
+              'Failed to replace a namespace object property set with a setter function call.');
           }
           addToImportedReferences(exportOfMember, callPath.get('callee')!);
           return false;
@@ -978,12 +978,12 @@ export class DocumentConverter {
    * as needed in the path, and change any .html extension to .js.
    */
   private convertDocumentUrl(htmlUrl: OriginalDocumentUrl):
-      ConvertedDocumentUrl {
+    ConvertedDocumentUrl {
     // TODO(fks): This can be removed later if type-checking htmlUrl is enough
     if (!isOriginalDocumentUrlFormat(htmlUrl)) {
       throw new Error(
-          `convertDocumentUrl() expects an OriginalDocumentUrl string` +
-          `from the analyzer, but got "${htmlUrl}"`);
+        `convertDocumentUrl() expects an OriginalDocumentUrl string` +
+        `from the analyzer, but got "${htmlUrl}"`);
     }
     // Use the layout-specific UrlHandler to convert the URL.
     let jsUrl: string = this.urlHandler.convertUrl(htmlUrl);
@@ -991,12 +991,12 @@ export class DocumentConverter {
     // ES6 modules.
     if (jsUrl.endsWith('shadycss/apply-shim.html')) {
       jsUrl = jsUrl.replace(
-          'shadycss/apply-shim.html', 'shadycss/entrypoints/apply-shim.js');
+        'shadycss/apply-shim.html', 'shadycss/entrypoints/apply-shim.js');
     }
     if (jsUrl.endsWith('shadycss/custom-style-interface.html')) {
       jsUrl = jsUrl.replace(
-          'shadycss/custom-style-interface.html',
-          'shadycss/entrypoints/custom-style-interface.js');
+        'shadycss/custom-style-interface.html',
+        'shadycss/entrypoints/custom-style-interface.js');
     }
     // Convert any ".html" URLs to point to their new ".js" module equivilent
     jsUrl = replaceHtmlExtensionIfFound(jsUrl);
@@ -1013,8 +1013,8 @@ export class DocumentConverter {
     // TODO(fks): This can be removed later if type-checking htmlUrl is enough
     if (!isOriginalDocumentUrlFormat(oldUrl)) {
       throw new Error(
-          `convertDocumentUrl() expects an OriginalDocumentUrl string` +
-          `from the analyzer, but got "${oldUrl}"`);
+        `convertDocumentUrl() expects an OriginalDocumentUrl string` +
+        `from the analyzer, but got "${oldUrl}"`);
     }
     // Use the layout-specific UrlHandler to convert the URL.
     return this.urlHandler.convertUrl(oldUrl);
@@ -1029,7 +1029,7 @@ export class DocumentConverter {
    * TODO(fks): Make this run on Windows/Non-Unix systems (#236)
    */
   private formatImportUrl(
-      toUrl: ConvertedDocumentUrl, originalHtmlImportUrl?: string): string {
+    toUrl: ConvertedDocumentUrl, originalHtmlImportUrl?: string): string {
     // Return an absolute URL path if the original HTML import was absolute.
     // TODO(fks) 11-06-2017: Still return true absolute paths when using
     // bare/named imports?
@@ -1054,10 +1054,10 @@ export class DocumentConverter {
    * the imports in this.module.importedReferences.
    */
   private addJsImports(
-      program: Program,
-      importedReferences:
-          ReadonlyMap<ConvertedDocumentUrl, ReadonlySet<ImportReference>>):
-      boolean {
+    program: Program,
+    importedReferences:
+      ReadonlyMap<ConvertedDocumentUrl, ReadonlySet<ImportReference>>):
+    boolean {
     // Collect Identifier nodes within trees that will be completely replaced
     // with an import reference.
     const ignoredIdentifiers: Set<Identifier> = new Set();
@@ -1078,16 +1078,16 @@ export class DocumentConverter {
     const jsImportDeclarations = [];
     for (const htmlImport of this.getHtmlImports()) {
       const importedJsDocumentUrl = this.convertDocumentUrl(
-          this.urlHandler.getDocumentUrl(htmlImport.document));
+        this.urlHandler.getDocumentUrl(htmlImport.document));
 
       const references = importedReferences.get(importedJsDocumentUrl);
       const namedExports =
-          new Set(IterableX.from(references || []).map((ref) => ref.target));
+        new Set(IterableX.from(references || []).map((ref) => ref.target));
 
       const jsFormattedImportUrl =
-          this.formatImportUrl(importedJsDocumentUrl, htmlImport.originalUrl);
+        this.formatImportUrl(importedJsDocumentUrl, htmlImport.originalUrl);
       jsImportDeclarations.push(...getImportDeclarations(
-          jsFormattedImportUrl, namedExports, references, usedIdentifiers));
+        jsFormattedImportUrl, namedExports, references, usedIdentifiers));
 
       jsExplicitImports.add(importedJsDocumentUrl);
     }
@@ -1099,10 +1099,10 @@ export class DocumentConverter {
 
       const references = importedReferences.get(jsImplicitImportUrl);
       const namedExports =
-          new Set(IterableX.from(references || []).map((ref) => ref.target));
+        new Set(IterableX.from(references || []).map((ref) => ref.target));
       const jsFormattedImportUrl = this.formatImportUrl(jsImplicitImportUrl);
       jsImportDeclarations.push(...getImportDeclarations(
-          jsFormattedImportUrl, namedExports, references, usedIdentifiers));
+        jsFormattedImportUrl, namedExports, references, usedIdentifiers));
     }
 
     // Prepend JS imports into the program body

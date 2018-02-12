@@ -14,7 +14,7 @@
 
 require('source-map-support').install();
 
-import {Type, typeString, Field, Def, nullable} from './lib/types';
+import { Type, typeString, Field, Def, nullable } from './lib/types';
 
 const fork = {
   use(o: any) {
@@ -26,7 +26,7 @@ function leadingLowerCase(s: string) {
   return s[0].toLowerCase() + s.substring(1);
 }
 
-function getField(type: Def, name: string): Field|undefined {
+function getField(type: Def, name: string): Field | undefined {
   let field = type._fields.get(name);
 
   if (field === undefined && type._bases) {
@@ -81,7 +81,7 @@ const builders = types.filter((t) => t._build != null).map((t) => {
       return '';
     }
     const optional = i > lastRequiredIndex &&
-        (field.default !== null || nullable(field.type));
+      (field.default !== null || nullable(field.type));
     i++;
     const name = getName(field.name);
     return `${name}${optional ? '?' : ''}: ${typeString(field.type)}`;

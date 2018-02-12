@@ -13,7 +13,7 @@
  */
 
 import * as astTypes from 'ast-types';
-import {NodePath} from 'ast-types';
+import { NodePath } from 'ast-types';
 import * as estree from 'estree';
 import * as jsc from 'jscodeshift';
 
@@ -22,7 +22,7 @@ import * as jsc from 'jscodeshift';
  * within a single BlockStatement. Don't traverse deeper into new scopes.
  */
 function rewriteSingleScopeThisReferences(
-    blockStatement: estree.BlockStatement, namespaceReference: string) {
+  blockStatement: estree.BlockStatement, namespaceReference: string) {
   astTypes.visit(blockStatement, {
     visitThisExpression(path: NodePath<estree.ThisExpression>) {
       path.replace(jsc.identifier(namespaceReference));
@@ -58,26 +58,26 @@ function rewriteSingleScopeThisReferences(
  * been created, but before all namespace references are corrected.
  */
 function rewriteNamespaceThisReferences(
-    program: estree.Program, namespaceName: string) {
+  program: estree.Program, namespaceName: string) {
   astTypes.visit(program, {
     visitExportNamedDeclaration:
-        (path: NodePath<estree.ExportNamedDeclaration>) => {
-          if (path.node.declaration &&
-              path.node.declaration.type === 'FunctionDeclaration') {
-            rewriteSingleScopeThisReferences(
-                path.node.declaration.body, namespaceName);
-          }
-          return false;
-        },
+      (path: NodePath<estree.ExportNamedDeclaration>) => {
+        if (path.node.declaration &&
+          path.node.declaration.type === 'FunctionDeclaration') {
+          rewriteSingleScopeThisReferences(
+            path.node.declaration.body, namespaceName);
+        }
+        return false;
+      },
     visitExportDefaultDeclaration:
-        (path: NodePath<estree.ExportDefaultDeclaration>) => {
-          if (path.node.declaration &&
-              path.node.declaration.type === 'FunctionDeclaration') {
-            rewriteSingleScopeThisReferences(
-                path.node.declaration.body, namespaceName);
-          }
-          return false;
-        },
+      (path: NodePath<estree.ExportDefaultDeclaration>) => {
+        if (path.node.declaration &&
+          path.node.declaration.type === 'FunctionDeclaration') {
+          rewriteSingleScopeThisReferences(
+            path.node.declaration.body, namespaceName);
+        }
+        return false;
+      },
   });
 }
 
@@ -93,7 +93,7 @@ function rewriteNamespaceThisReferences(
  * been created, but before all namespace references are corrected.
  */
 export function rewriteNamespacesThisReferences(
-    program: estree.Program, namespaceNames: Set<string>) {
+  program: estree.Program, namespaceNames: Set<string>) {
   for (const namespaceName of namespaceNames) {
     rewriteNamespaceThisReferences(program, namespaceName);
   }

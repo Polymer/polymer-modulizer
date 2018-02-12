@@ -12,18 +12,18 @@
  * http://polymer.github.io/PATENTS.txt
  */
 
-import {assert} from 'chai';
+import { assert } from 'chai';
 import * as esprima from 'esprima';
 import * as estree from 'estree';
-import {EOL} from 'os';
-import {Analyzer, InMemoryOverlayUrlLoader} from 'polymer-analyzer';
+import { EOL } from 'os';
+import { Analyzer, InMemoryOverlayUrlLoader } from 'polymer-analyzer';
 
-import {createDefaultConversionSettings, PartialConversionSettings} from '../../conversion-settings';
-import {getPackageDocuments} from '../../convert-package';
-import {getMemberPath} from '../../document-util';
-import {ProjectConverter} from '../../project-converter';
-import {PackageUrlHandler} from '../../urls/package-url-handler';
-import {PackageType} from '../../urls/types';
+import { createDefaultConversionSettings, PartialConversionSettings } from '../../conversion-settings';
+import { getPackageDocuments } from '../../convert-package';
+import { getMemberPath } from '../../document-util';
+import { ProjectConverter } from '../../project-converter';
+import { PackageUrlHandler } from '../../urls/package-url-handler';
+import { PackageType } from '../../urls/types';
 
 /*
 A few conventions in these tests:
@@ -43,7 +43,7 @@ suite('AnalysisConverter', () => {
 
     setup(() => {
       urlLoader = new InMemoryOverlayUrlLoader();
-      analyzer = new Analyzer({urlLoader: urlLoader});
+      analyzer = new Analyzer({ urlLoader: urlLoader });
     });
 
     function interceptWarnings() {
@@ -69,7 +69,7 @@ suite('AnalysisConverter', () => {
     }
 
     async function convert(
-        partialOptions: Partial<TestConversionOptions> = {}) {
+      partialOptions: Partial<TestConversionOptions> = {}) {
       // Extract options & settings /w defaults.
       const packageName = partialOptions.packageName || 'some-package';
       const packageType = partialOptions.packageType || 'element';
@@ -85,60 +85,60 @@ suite('AnalysisConverter', () => {
       const analysis = await analyzer.analyze(allTestUrls);
       // Setup ConversionSettings, set "test.html" as default entrypoint.
       const conversionSettings =
-          createDefaultConversionSettings(analyzer, analysis, partialSettings);
+        createDefaultConversionSettings(analyzer, analysis, partialSettings);
       conversionSettings.includes.add('test.html');
       // Setup ProjectConverter, use PackageUrlHandler for easy setup.
       const urlHandler =
-          new PackageUrlHandler(analyzer, packageName, packageType);
+        new PackageUrlHandler(analyzer, packageName, packageType);
       const converter =
-          await new ProjectConverter(urlHandler, conversionSettings);
+        await new ProjectConverter(urlHandler, conversionSettings);
       // Gather all relevent package documents, and run the converter!
       const stopIntercepting = interceptWarnings();
       for (const doc of getPackageDocuments(
-               urlHandler, analysis, conversionSettings)) {
+        urlHandler, analysis, conversionSettings)) {
         converter.convertDocument(doc);
       }
       // Assert warnings matched expected.
       const warnings = stopIntercepting();
       assert.deepEqual(
-          warnings,
-          expectedWarnings,
-          'console.warn() and console.error() calls differ from expected.');
+        warnings,
+        expectedWarnings,
+        'console.warn() and console.error() calls differ from expected.');
       // Return results for assertion.
       return converter.getResults();
     }
 
     function assertSources(
-        results: Map<string, string|undefined>,
-        expected: {[path: string]: string|undefined}) {
+      results: Map<string, string | undefined>,
+      expected: { [path: string]: string | undefined }) {
       for (const [expectedPath, expectedContents] of Object.entries(expected)) {
         assert.isTrue(
-            results.has(expectedPath),
-            `No output named ${expectedPath} was generated. ` +
-                `Generated outputs: ${[...results.keys()].join(', ')}`);
+          results.has(expectedPath),
+          `No output named ${expectedPath} was generated. ` +
+          `Generated outputs: ${[...results.keys()].join(', ')}`);
         const actualContents = results.get(expectedPath);
         if (actualContents === undefined) {
           assert.deepEqual(
-              actualContents,
-              expectedContents,
-              `${expectedPath} was unexpectedly deleted! ` +
-                  `Generated outputs: ${[...results.keys()].join(', ')}`);
+            actualContents,
+            expectedContents,
+            `${expectedPath} was unexpectedly deleted! ` +
+            `Generated outputs: ${[...results.keys()].join(', ')}`);
         } else if (expectedContents === undefined) {
           assert.deepEqual(
-              actualContents,
-              expectedContents,
-              `${expectedPath} should have been deleted. ` +
-                  `Generated outputs: ${[...results.keys()].join(', ')}`);
+            actualContents,
+            expectedContents,
+            `${expectedPath} should have been deleted. ` +
+            `Generated outputs: ${[...results.keys()].join(', ')}`);
         } else {
           assert.deepEqual(
-              '\n' + actualContents.split(EOL).join('\n'),
-              expectedContents,
-              `Content of ${expectedPath} is wrong`);
+            '\n' + actualContents.split(EOL).join('\n'),
+            expectedContents,
+            `Content of ${expectedPath} is wrong`);
         }
       }
     }
 
-    function setSources(sources: {[filename: string]: string}) {
+    function setSources(sources: { [filename: string]: string }) {
       for (const [filename, source] of Object.entries(sources)) {
         urlLoader.urlContentsMap.set(analyzer.resolveUrl(filename)!, source);
       }
@@ -157,7 +157,7 @@ suite('AnalysisConverter', () => {
       const expectedWarnings = [
         `WARN: bower->npm mapping for "dep" not found`,
       ];
-      assertSources(await convert({expectedWarnings}), {
+      assertSources(await convert({ expectedWarnings }), {
         'test.js': `
 import './dep.js';
 import '../dep/dep.js';
@@ -194,32 +194,32 @@ import '../../@polymer/app-route/app-route.js';
     });
 
     test(
-        'converts dependency imports for an element with a scoped package name',
-        async () => {
-          setSources({
-            'test.html': `
+      'converts dependency imports for an element with a scoped package name',
+      async () => {
+        setSources({
+          'test.html': `
           <link rel="import" href="./nested/test.html">
           <link rel="import" href="../app-storage/app-storage.html">
           <script></script>
         `,
-            'nested/test.html': `
+          'nested/test.html': `
           <link rel="import" href="../../app-route/app-route.html">
           <script></script>
         `,
-            'bower_components/app-route/app-route.html': `<h1>Hi</h1>`,
-            'bower_components/app-storage/app-storage.html': `<h1>Hi</h1>`,
-          });
-          assertSources(
-              await convert({packageName: '@some-scope/some-package'}), {
-                'test.js': `
+          'bower_components/app-route/app-route.html': `<h1>Hi</h1>`,
+          'bower_components/app-storage/app-storage.html': `<h1>Hi</h1>`,
+        });
+        assertSources(
+          await convert({ packageName: '@some-scope/some-package' }), {
+            'test.js': `
 import './nested/test.js';
 import '../../@polymer/app-storage/app-storage.js';
 `,
-                'nested/test.js': `
+            'nested/test.js': `
 import '../../../@polymer/app-route/app-route.js';
 `
-              });
-        });
+          });
+      });
 
     test('converts dependency imports for an npm application', async () => {
       setSources({
@@ -237,7 +237,7 @@ import '../../../@polymer/app-route/app-route.js';
         'bower_components/app-route/app-route.html': `<h1>Hi</h1>`,
         'bower_components/app-storage/app-storage.html': `<h1>Hi</h1>`,
       });
-      assertSources(await convert({packageType: 'application'}), {
+      assertSources(await convert({ packageType: 'application' }), {
         'test.js': `
 import './nested/test.js';
 import './node_modules/@polymer/app-storage/app-storage.js';
@@ -251,35 +251,35 @@ import '/node_modules/@polymer/app-route/app-route.js';
     });
 
     test(
-        'converts dependency imports for an npm application with a scoped package name',
-        async () => {
-          setSources({
-            'test.html': `
+      'converts dependency imports for an npm application with a scoped package name',
+      async () => {
+        setSources({
+          'test.html': `
           <link rel="import" href="./nested/test.html">
           <link rel="import" href="./bower_components/app-storage/app-storage.html">
           <link rel="import" href="/bower_components/app-route/app-route.html">
           <script></script>
         `,
-            'nested/test.html': `
+          'nested/test.html': `
           <link rel="import" href="../bower_components/app-storage/app-storage.html">
           <link rel="import" href="/bower_components/app-route/app-route.html">
           <script></script>
         `,
-            'bower_components/app-route/app-route.html': `<h1>Hi</h1>`,
-            'bower_components/app-storage/app-storage.html': `<h1>Hi</h1>`,
-          });
-          assertSources(await convert({packageType: 'application'}), {
-            'test.js': `
+          'bower_components/app-route/app-route.html': `<h1>Hi</h1>`,
+          'bower_components/app-storage/app-storage.html': `<h1>Hi</h1>`,
+        });
+        assertSources(await convert({ packageType: 'application' }), {
+          'test.js': `
 import './nested/test.js';
 import './node_modules/@polymer/app-storage/app-storage.js';
 import '/node_modules/@polymer/app-route/app-route.js';
 `,
-            'nested/test.js': `
+          'nested/test.js': `
 import '../node_modules/@polymer/app-storage/app-storage.js';
 import '/node_modules/@polymer/app-route/app-route.js';
 `,
-          });
         });
+      });
 
     test('converts imports to .js without scripts', async () => {
       setSources({
@@ -641,10 +641,10 @@ export function arrowFn() {
 
 
     test(
-        'exports a namespace object and fixes local references to its properties',
-        async () => {
-          setSources({
-            'test.html': `
+      'exports a namespace object and fixes local references to its properties',
+      async () => {
+        setSources({
+          'test.html': `
           <script>
             (function() {
               'use strict';
@@ -662,9 +662,9 @@ export function arrowFn() {
               };
             })();
           </script>`,
-          });
-          assertSources(await convert(), {
-            'test.js': `
+        });
+        assertSources(await convert(), {
+          'test.js': `
 export function meth() {}
 
 export function polymerReferenceFn() {
@@ -675,8 +675,8 @@ export function thisReferenceFn() {
   return meth();
 }
 `
-          });
         });
+      });
 
     test('exports a mutable reference if set via mutableExports', async () => {
       setSources({
@@ -746,7 +746,7 @@ export const subFn = function() {
     });
 
     let testName =
-        'exports a namespace function and fixes references to its properties';
+      'exports a namespace function and fixes references to its properties';
     test(testName, async () => {
       setSources({
         'test.html': `
@@ -1005,16 +1005,16 @@ export const isDeep = isPath;
         `,
       });
       assertSources(
-          await convert({
-            namespaces: ['Polymer'],
-            excludes: ['exclude.html'],
-          }),
-          {
-            'test.js': `
+        await convert({
+          namespaces: ['Polymer'],
+          excludes: ['exclude.html'],
+        }),
+        {
+          'test.js': `
 import { Element } from './dep.js';
 class MyElement extends Element {}
 `
-          });
+        });
     });
 
     test('excludes excluded references', async () => {
@@ -1026,15 +1026,15 @@ class MyElement extends Element {}
         `,
       });
       assertSources(
-          await convert({
-            namespaces: ['Polymer'],
-            referenceExcludes: ['Polymer.DomModule']
-          }),
-          {
-            'test.js': `
+        await convert({
+          namespaces: ['Polymer'],
+          referenceExcludes: ['Polymer.DomModule']
+        }),
+        {
+          'test.js': `
 if (undefined) {}
 `
-          });
+        });
     });
 
     test('handles excluded exported references', async () => {
@@ -1046,15 +1046,15 @@ if (undefined) {}
         `,
       });
       assertSources(
-          await convert({
-            namespaces: ['Polymer'],
-            referenceExcludes: ['Polymer.Settings'],
-          }),
-          {
-            'test.js': `
+        await convert({
+          namespaces: ['Polymer'],
+          referenceExcludes: ['Polymer.Settings'],
+        }),
+        {
+          'test.js': `
 export { settings as Settings };
 `
-          });
+        });
     });
 
     test.skip('handles excluded local namespace references', async () => {
@@ -1078,19 +1078,19 @@ export { settings as Settings };
         `,
       });
       assertSources(
-          await convert({
-            namespaces: ['Polymer'],
-            referenceExcludes: ['Polymer.rootPath'],
-          }),
-          {
-            'test.js': `
+        await convert({
+          namespaces: ['Polymer'],
+          referenceExcludes: ['Polymer.rootPath'],
+        }),
+        {
+          'test.js': `
 let rootPath;
 export { rootPath };
 export const setRootPath = function(path) {
   rootPath = path;
 };
 `
-          });
+        });
     });
 
     test('inlines templates into class-based Polymer elements', async () => {
@@ -1216,11 +1216,11 @@ Polymer({
 `,
       });
       assertSources(
-          await convert({
-            addImportPath: true,
-          }),
-          {
-            'test.js': `
+        await convert({
+          addImportPath: true,
+        }),
+        {
+          'test.js': `
 /**
  * @customElement
  * @polymer
@@ -1231,7 +1231,7 @@ class TestElement extends Polymer.Element {
   }
 }
 `
-          });
+        });
     });
 
     test('adds importPath to class-based Polymer elements', async () => {
@@ -1245,16 +1245,16 @@ class TestElement extends Polymer.Element {
       });
 
       assertSources(
-          await convert({
-            addImportPath: true,
-          }),
-          {
-            'test.js': `
+        await convert({
+          addImportPath: true,
+        }),
+        {
+          'test.js': `
 Polymer({
   importPath: import.meta.url
 });
 `
-          });
+        });
     });
 
     test('converts arbitrary elements', async () => {
@@ -1293,7 +1293,7 @@ document.head.appendChild($_documentContainer);
         `,
         'qux.html': `<script>Foo.qux = 'lol';</script>`
       });
-      assertSources(await convert({namespaces: ['Foo', 'Baz']}), {
+      assertSources(await convert({ namespaces: ['Foo', 'Baz'] }), {
         'test.js': `
 import { qux } from './qux.js';
 export const bar = 10;
@@ -1319,16 +1319,16 @@ export { qux as zug };
         `
       });
       assertSources(
-          await convert({namespaces: [/* No explicit namespaces! */]}), {
-            'test.js': `
+        await convert({ namespaces: [/* No explicit namespaces! */] }), {
+          'test.js': `
 import { Element as Element$0 } from './polymer.js';
 class Element extends Element$0 {}
 `,
 
-            'polymer.js': `
+          'polymer.js': `
 export const Element = class Element {};
 `
-          });
+        });
     });
 
     test('converts declared nested namespaces', async () => {
@@ -1350,16 +1350,16 @@ export const Element = class Element {};
         `
       });
       assertSources(
-          await convert({namespaces: [/* No explicit namespaces! */]}), {
-            'test.js': `
+        await convert({ namespaces: [/* No explicit namespaces! */] }), {
+          'test.js': `
 import { Element as Element$0 } from './ns.js';
 class Element extends Element$0 {}
 `,
 
-            'ns.js': `
+          'ns.js': `
 export const Element = class Element {};
 `
-          });
+        });
     });
 
     test('converts unimported html to use script type=module', async () => {
@@ -1666,7 +1666,7 @@ console.log(ShadyCSS.flush());
     });
 
     testName = `handles inline scripts that write to global configuration ` +
-        `properties`;
+      `properties`;
     test(testName, async () => {
       setSources({
         'index.html': `
@@ -1711,7 +1711,7 @@ console.log(ShadyDOM.flush());
     });
 
     testName =
-        `finds the right element declaration to associate the template with`;
+      `finds the right element declaration to associate the template with`;
     test(testName, async () => {
       setSources({
         'test.html': `
@@ -1847,7 +1847,7 @@ setBaz(foo + 10 * (10 ** 10));
         `
       });
       let expectedWarnings = [`WARN: bower->npm mapping for "foo" not found`];
-      assertSources(await convert({packageName: 'polymer', expectedWarnings}), {
+      assertSources(await convert({ packageName: 'polymer', expectedWarnings }), {
         'index.html': `
 
           <script src="../foo/foo.js"></script>
@@ -1856,12 +1856,12 @@ setBaz(foo + 10 * (10 ** 10));
       // Warnings are memoized, duplicates are not expected
       expectedWarnings = [];
       assertSources(
-          await convert({packageName: '@polymer/polymer', expectedWarnings}), {
-            'index.html': `
+        await convert({ packageName: '@polymer/polymer', expectedWarnings }), {
+          'index.html': `
 
           <script src="../../foo/foo.js"></script>
         `,
-          });
+        });
     });
 
     test(`remove WebComponentsReady`, async () => {
@@ -1889,7 +1889,7 @@ setBaz(foo + 10 * (10 ** 10));
         `,
       });
 
-      assertSources(await convert({packageName: 'polymer'}), {
+      assertSources(await convert({ packageName: 'polymer' }), {
         'test.js': `
 class XFoo extends HTMLElement {
   connectedCallback() {
@@ -1920,7 +1920,7 @@ Polymer({
         `,
       });
 
-      assertSources(await convert({packageName: 'polymer'}), {
+      assertSources(await convert({ packageName: 'polymer' }), {
         'test.js': `
 const $_documentContainer = document.createElement('div');
 $_documentContainer.setAttribute('style', 'display: none;');
@@ -1931,8 +1931,8 @@ $_documentContainer.innerHTML = \`<dom-module>
               <script>foo&lt;/script>
             </template>
 ` +
-            '            ' +
-            `
+          '            ' +
+          `
           </dom-module>\`;
 
 document.head.appendChild($_documentContainer);
@@ -1941,7 +1941,7 @@ document.head.appendChild($_documentContainer);
     });
 
     testName =
-        'Import aliases do not conflict with local identifiers or other imports.';
+      'Import aliases do not conflict with local identifiers or other imports.';
     test(testName, async () => {
       setSources({
         'NS1-foo.html': `
@@ -1978,7 +1978,7 @@ document.head.appendChild($_documentContainer);
             </script>
           `,
       });
-      assertSources(await convert({namespaces: ['NS1', 'NS2', 'NS3']}), {
+      assertSources(await convert({ namespaces: ['NS1', 'NS2', 'NS3'] }), {
         'test.js': `
 import { foo as foo$0 } from './NS1-foo.js';
 import { foo as foo$3 } from './NS2-foo.js';
@@ -2026,7 +2026,7 @@ console.log(foo$4);
       });
     });
     testName = 'when there is a style import, ' +
-        'all inline styles and body elements are converted to imperative scripts';
+      'all inline styles and body elements are converted to imperative scripts';
     test(testName, async () => {
       setSources({
         'index.html': `
@@ -2140,21 +2140,21 @@ console.log("foo");
 
 
     test(
-        'External imported scripts do not get inlined into a module',
-        async () => {
-          setSources({
-            'test.html': `
+      'External imported scripts do not get inlined into a module',
+      async () => {
+        setSources({
+          'test.html': `
           <script src='../dep/dep.js'></script>
         `,
-            'bower_components/dep/dep.js': 'console.log("foo");'
-          });
+          'bower_components/dep/dep.js': 'console.log("foo");'
+        });
 
-          assertSources(await convert(), {
-            'test.js': `
+        assertSources(await convert(), {
+          'test.js': `
 import '../dep/dep.js';
 `
-          });
         });
+      });
 
     testName = `don't treat all values on a namespace as namespaces themselves`;
     test(testName, async () => {
@@ -2216,10 +2216,10 @@ export const foo = 10;
         `,
       });
       const expectedWarnings =
-          ['Cycle in dependency graph found where b.html imports a.html.\n' +
-           '    Modulizer does not yet support rewriting references among ' +
-           'cyclic dependencies.'];
-      assertSources(await convert({expectedWarnings}), {
+        ['Cycle in dependency graph found where b.html imports a.html.\n' +
+          '    Modulizer does not yet support rewriting references among ' +
+          'cyclic dependencies.'];
+      assertSources(await convert({ expectedWarnings }), {
         'a.js': `
 import './b.js';
 export const foo = 5;
@@ -2256,10 +2256,10 @@ export const bar = 20;
       });
 
       const expectedWarnings =
-          ['Cycle in dependency graph found where b.html imports a.html.\n' +
-           '    Modulizer does not yet support rewriting references among ' +
-           'cyclic dependencies.'];
-      assertSources(await convert({expectedWarnings}), {
+        ['Cycle in dependency graph found where b.html imports a.html.\n' +
+          '    Modulizer does not yet support rewriting references among ' +
+          'cyclic dependencies.'];
+      assertSources(await convert({ expectedWarnings }), {
         'a.js': `
 import { bar } from './b.js';
 
@@ -2542,7 +2542,7 @@ console.log('second script');
 
     suite('regression tests', () => {
       testName = `propagate templates for scripts consisting ` +
-          `only of an element definition`;
+        `only of an element definition`;
       test(testName, async () => {
         setSources({
           'test.html': `

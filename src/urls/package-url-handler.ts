@@ -12,13 +12,13 @@
  * http://polymer.github.io/PATENTS.txt
  */
 
-import {Analyzer, Document} from 'polymer-analyzer';
+import { Analyzer, Document } from 'polymer-analyzer';
 
-import {lookupDependencyMapping} from '../manifest-converter';
+import { lookupDependencyMapping } from '../manifest-converter';
 
-import {ConvertedDocumentFilePath, ConvertedDocumentUrl, OriginalDocumentUrl, PackageType} from './types';
-import {UrlHandler} from './url-handler';
-import {getRelativeUrl} from './util';
+import { ConvertedDocumentFilePath, ConvertedDocumentUrl, OriginalDocumentUrl, PackageType } from './types';
+import { UrlHandler } from './url-handler';
+import { getRelativeUrl } from './util';
 
 
 /**
@@ -36,17 +36,17 @@ export class PackageUrlHandler implements UrlHandler {
    * Helper function to check if a file URL is internal to the main package
    * being converted (vs. a dependency).
    */
-  static isUrlInternalToPackage(url: ConvertedDocumentUrl|OriginalDocumentUrl|
-                                ConvertedDocumentFilePath) {
+  static isUrlInternalToPackage(url: ConvertedDocumentUrl | OriginalDocumentUrl |
+    ConvertedDocumentFilePath) {
     // OriginalDocumentUrl will always be format `bower_components/*`
     // ConvertedDocument[Url|FilePath] will always be format `./node_modules/*`
     return !url.startsWith('bower_components/') &&
-        !url.startsWith('./node_modules/');
+      !url.startsWith('./node_modules/');
   }
 
   constructor(
-      analyzer: Analyzer, packageName: string,
-      packageType: PackageType = 'element') {
+    analyzer: Analyzer, packageName: string,
+    packageType: PackageType = 'element') {
     this.analyzer = analyzer;
     this.packageName = packageName;
     this.packageType = packageType;
@@ -59,12 +59,12 @@ export class PackageUrlHandler implements UrlHandler {
    */
   getDocumentUrl(document: Document): OriginalDocumentUrl {
     const relativeUrl =
-        this.analyzer.urlResolver.relative(document.url) as string;
+      this.analyzer.urlResolver.relative(document.url) as string;
     // If the analyzer URL is outside the current directory, it actually exists
     // in the child bower_components/ directory.
     if (relativeUrl.startsWith('../')) {
       return 'bower_components/' + relativeUrl.substring(3) as
-          OriginalDocumentUrl;
+        OriginalDocumentUrl;
     } else {
       return relativeUrl as OriginalDocumentUrl;
     }
@@ -109,16 +109,16 @@ export class PackageUrlHandler implements UrlHandler {
    */
   isImportInternal(fromUrl: ConvertedDocumentUrl, toUrl: ConvertedDocumentUrl) {
     if (!fromUrl.startsWith('./node_modules') &&
-        !toUrl.startsWith('./node_modules')) {
+      !toUrl.startsWith('./node_modules')) {
       return true;
     }
     if (fromUrl.startsWith('./node_modules') &&
-        toUrl.startsWith('./node_modules')) {
+      toUrl.startsWith('./node_modules')) {
       const fromUrlParts = fromUrl.split('/');
       const toUrlParts = toUrl.split('/');
       if (fromUrlParts[2][0] === '@' && toUrlParts[2][0] === '@') {
         return fromUrlParts[2] === toUrlParts[2] &&
-            fromUrlParts[3] === toUrlParts[3];
+          fromUrlParts[3] === toUrlParts[3];
       } else {
         return fromUrlParts[2] === toUrlParts[2];
       }
@@ -157,13 +157,13 @@ export class PackageUrlHandler implements UrlHandler {
    * Get the formatted relative import URL between two ConvertedDocumentUrls.
    */
   getPathImportUrl(fromUrl: ConvertedDocumentUrl, toUrl: ConvertedDocumentUrl):
-      string {
+    string {
     const isPackageNameScoped = this.packageName.startsWith('@');
     const isPackageTypeElement = this.packageType === 'element';
     const isImportFromLocalFile =
-        PackageUrlHandler.isUrlInternalToPackage(fromUrl);
+      PackageUrlHandler.isUrlInternalToPackage(fromUrl);
     const isImportToExternalFile =
-        !PackageUrlHandler.isUrlInternalToPackage(toUrl);
+      !PackageUrlHandler.isUrlInternalToPackage(toUrl);
     let importUrl = getRelativeUrl(fromUrl, toUrl);
 
     // If the import is from the current project:

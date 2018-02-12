@@ -14,22 +14,22 @@
 
 import * as astTypes from 'ast-types';
 import * as estree from 'estree';
-import {getMemberOrIdentifierName} from '../document-util';
+import { getMemberOrIdentifierName } from '../document-util';
 
 /**
  * Detect certain types of expressions that we deem noops when looking for
  * namespace initializers. For example, `var namespace = window.namespace`.
  */
 function isNoopInitializationValue(
-    expression: estree.Expression, assigningTo: string): boolean {
+  expression: estree.Expression, assigningTo: string): boolean {
   // `foo || bar` is a noop if both `foo` and `bar` are.
   if (expression.type === 'LogicalExpression' && expression.operator === '||') {
     return isNoopInitializationValue(expression.left, assigningTo) &&
-        isNoopInitializationValue(expression.right, assigningTo);
+      isNoopInitializationValue(expression.right, assigningTo);
   }
   // `{}` is the default empty value for a namespace.
   if (expression.type === 'ObjectExpression' &&
-      expression.properties.length === 0) {
+    expression.properties.length === 0) {
     return true;
   }
   // `var namespace = window.namespace` is also a noop initialization
@@ -44,31 +44,31 @@ function isNoopInitializationValue(
  * Remove initializers for a set of namespaces in a program.
  */
 export function removeNamespaceInitializers(
-    program: estree.Program, namespaces: ReadonlySet<string|undefined>) {
+  program: estree.Program, namespaces: ReadonlySet<string | undefined>) {
   const handleAssignment =
-      (path: astTypes.NodePath,
-       left: estree.Node,
-       right: estree.Expression) => {
-        const memberName = getMemberOrIdentifierName(left);
-        if (!namespaces.has(memberName)) {
-          return;
-        }
-        if (isNoopInitializationValue(right, memberName!)) {
-          // Don't emit a noop assignment.
-          path.prune();
-        }
-      };
+    (path: astTypes.NodePath,
+      left: estree.Node,
+      right: estree.Expression) => {
+      const memberName = getMemberOrIdentifierName(left);
+      if (!namespaces.has(memberName)) {
+        return;
+      }
+      if (isNoopInitializationValue(right, memberName!)) {
+        // Don't emit a noop assignment.
+        path.prune();
+      }
+    };
 
   astTypes.visit(program, {
     visitVariableDeclarator(
-        path: astTypes.NodePath<estree.VariableDeclarator>) {
+      path: astTypes.NodePath<estree.VariableDeclarator>) {
       if (path.node.init != null) {
         handleAssignment(path, path.node.id, path.node.init);
       }
       return false;
     },
     visitAssignmentExpression(
-        path: astTypes.NodePath<estree.AssignmentExpression>) {
+      path: astTypes.NodePath<estree.AssignmentExpression>) {
       if (path.node.operator !== '=') {
         return false;
       }

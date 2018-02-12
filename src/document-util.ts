@@ -12,12 +12,12 @@
  * http://polymer.github.io/PATENTS.txt
  */
 import * as astTypes from 'ast-types';
-import {NodePath} from 'ast-types';
+import { NodePath } from 'ast-types';
 import * as dom5 from 'dom5';
 import * as estree from 'estree';
-import {Iterable as IterableX} from 'ix';
+import { Iterable as IterableX } from 'ix';
 import * as jsc from 'jscodeshift';
-import {EOL} from 'os';
+import { EOL } from 'os';
 import * as parse5 from 'parse5';
 
 /**
@@ -57,15 +57,15 @@ export function isSourceLocationEqual(a: estree.Node, b: estree.Node): boolean {
     return false;
   }
   return aLoc.start.column === bLoc.start.column &&
-      aLoc.start.line === bLoc.start.line &&
-      aLoc.end.column === bLoc.end.column && aLoc.end.line === bLoc.end.line;
+    aLoc.start.line === bLoc.start.line &&
+    aLoc.end.column === bLoc.end.column && aLoc.end.line === bLoc.end.line;
 }
 
 /**
  * Serialize a Node to string, wrapped as an estree template literal.
  */
 export function serializeNodeToTemplateLiteral(
-    node: parse5.ASTNode, addNewLines = true) {
+  node: parse5.ASTNode, addNewLines = true) {
   const lines = parse5.serialize(node).split('\n');
 
   // Remove empty / whitespace-only leading lines.
@@ -99,16 +99,16 @@ export function serializeNodeToTemplateLiteral(
     }
   });
 
-  return jsc.templateLiteral([jsc.templateElement({cooked, raw}, true)], []);
+  return jsc.templateLiteral([jsc.templateElement({ cooked, raw }, true)], []);
 }
 
 /**
  * Returns an array of identifiers if an expression is a chain of property
  * access, as used in namespace-style exports.
  */
-export function getMemberPath(expression: estree.Node): string[]|undefined {
+export function getMemberPath(expression: estree.Node): string[] | undefined {
   if (expression.type !== 'MemberExpression' || expression.computed ||
-      expression.property.type !== 'Identifier') {
+    expression.property.type !== 'Identifier') {
     return;
   }
   const property = expression.property.name;
@@ -135,7 +135,7 @@ export function getMemberPath(expression: estree.Node): string[]|undefined {
  * Returns a string of identifiers (dot-seperated) if an expression is a chain
  * of property access, as used in namespace-style exports.
  */
-export function getMemberName(expression: estree.Node): string|undefined {
+export function getMemberName(expression: estree.Node): string | undefined {
   const path = getMemberPath(expression);
   return path ? path.join('.') : path;
 }
@@ -144,8 +144,8 @@ export function getMemberName(expression: estree.Node): string|undefined {
  * Returns an Identifier's name if Node is a simple Identifier. Otherwise,
  * get the full member name.
  */
-export function getMemberOrIdentifierName(expression: estree.Node): string|
-    undefined {
+export function getMemberOrIdentifierName(expression: estree.Node): string |
+  undefined {
   if (expression.type === 'Identifier') {
     return expression.name;
   }
@@ -161,18 +161,18 @@ export function getMemberOrIdentifierName(expression: estree.Node): string|
  * possibly by a different parser, though they output the same format).
  */
 export function getNodePathInProgram(
-    program: estree.Program, node: estree.Node) {
-  let associatedNodePath: NodePath|undefined;
+  program: estree.Program, node: estree.Node) {
+  let associatedNodePath: NodePath | undefined;
 
   astTypes.visit(program, {
     visitNode(path: NodePath<estree.Node>): boolean |
-    undefined {
+      undefined {
       // Traverse first, because we want the most specific node that exactly
       // matches the given node.
       this.traverse(path);
       if (associatedNodePath === undefined &&
-          isSourceLocationEqual(path.node, node) &&
-          path.node.type === node.type) {
+        isSourceLocationEqual(path.node, node) &&
+        path.node.type === node.type) {
         associatedNodePath = path;
         return false;
       }
@@ -229,7 +229,7 @@ export function* getTopLevelStatements(program: estree.Program) {
  *     this.foo = 10;
  */
 export function getPathOfAssignmentTo(path: NodePath):
-    NodePath<estree.AssignmentExpression>|undefined {
+  NodePath<estree.AssignmentExpression> | undefined {
   if (!path.parent) {
     return undefined;
   }
@@ -241,9 +241,9 @@ export function getPathOfAssignmentTo(path: NodePath):
     return undefined;
   }
   if (parentNode.type === 'MemberExpression' &&
-      parentNode.property === path.node &&
-      parentNode.object.type === 'Identifier' &&
-      parentNode.object.name === 'window') {
+    parentNode.property === path.node &&
+    parentNode.object.type === 'Identifier' &&
+    parentNode.object.name === 'window') {
     return getPathOfAssignmentTo(path.parent);
   }
   return undefined;
@@ -259,12 +259,12 @@ export function getPathOfAssignmentTo(path: NodePath):
 export function getSetterName(memberPath: string[]): string {
   const lastSegment = memberPath[memberPath.length - 1];
   memberPath[memberPath.length - 1] =
-      `set${lastSegment.charAt(0).toUpperCase()}${lastSegment.slice(1)}`;
+    `set${lastSegment.charAt(0).toUpperCase()}${lastSegment.slice(1)}`;
   return memberPath.join('.');
 }
 
 export function filterClone(
-    nodes: parse5.ASTNode[], filter: dom5.Predicate): parse5.ASTNode[] {
+  nodes: parse5.ASTNode[], filter: dom5.Predicate): parse5.ASTNode[] {
   const clones = [];
   for (const node of nodes) {
     if (!filter(node)) {
@@ -285,8 +285,8 @@ export function filterClone(
  * contribute to the output set.
  */
 export function collectIdentifierNames(
-    program: estree.Program,
-    ignored: ReadonlySet<estree.Identifier>): Set<string> {
+  program: estree.Program,
+  ignored: ReadonlySet<estree.Identifier>): Set<string> {
   const identifiers = new Set();
   astTypes.visit(program, {
     visitIdentifier(path: NodePath<estree.Identifier>): (boolean | void) {
@@ -319,7 +319,7 @@ export function canDomModuleBeInlined(domModule: parse5.ASTNode) {
     } else if (node.tagName === 'script') {
       // this is fine, scripts are handled elsewhere
     } else if (
-        dom5.isTextNode(node) && dom5.getTextContent(node).trim() === '') {
+      dom5.isTextNode(node) && dom5.getTextContent(node).trim() === '') {
       // empty text nodes are fine
     } else {
       return false;  // anything else, we can't convert it
@@ -372,27 +372,27 @@ function* nodesAfter(node: parse5.ASTNode): Iterable<parse5.ASTNode> {
  * If `until` is given, returns all comments up to `until` in the document.
  */
 export function getCommentsBetween(
-    document: parse5.ASTNode,
-    from: parse5.ASTNode|undefined,
-    until: parse5.ASTNode|undefined): string[] {
+  document: parse5.ASTNode,
+  from: parse5.ASTNode | undefined,
+  until: parse5.ASTNode | undefined): string[] {
   const nodesStart =
-      from === undefined ? nodesInside(document) : nodesAfter(from);
+    from === undefined ? nodesInside(document) : nodesAfter(from);
   const nodesBetween =
-      IterableX.from(nodesStart).takeWhile((node) => node !== until);
+    IterableX.from(nodesStart).takeWhile((node) => node !== until);
   const commentNodesBetween =
-      nodesBetween.filter((node) => dom5.isCommentNode(node));
+    nodesBetween.filter((node) => dom5.isCommentNode(node));
   const commentStringsBetween =
-      commentNodesBetween.map((node) => dom5.getTextContent(node));
+    commentNodesBetween.map((node) => dom5.getTextContent(node));
   const formattedCommentStringsBetween =
-      commentStringsBetween.map((commentText) => {
-        // If it looks like there might be jsdoc in the comment, start the
-        // comment with an extra * so that the js comment looks like a jsdoc
-        // comment.
-        if (/@\w+/.test(commentText)) {
-          return '*' + commentText;
-        }
-        return commentText;
-      });
+    commentStringsBetween.map((commentText) => {
+      // If it looks like there might be jsdoc in the comment, start the
+      // comment with an extra * so that the js comment looks like a jsdoc
+      // comment.
+      if (/@\w+/.test(commentText)) {
+        return '*' + commentText;
+      }
+      return commentText;
+    });
   return Array.from(formattedCommentStringsBetween);
 }
 
@@ -403,8 +403,8 @@ export function getCommentsBetween(
  * If there is no first statement, one will be created.
  */
 export function attachCommentsToFirstStatement(
-    comments: string[],
-    statements: Array<estree.Statement|estree.ModuleDeclaration>) {
+  comments: string[],
+  statements: Array<estree.Statement | estree.ModuleDeclaration>) {
   if (comments.length === 0) {
     return statements;
   }
@@ -415,17 +415,17 @@ export function attachCommentsToFirstStatement(
 
   /** Recast represents comments differently than espree. */
   interface RecastNode {
-    comments?: null|undefined|Array<RecastComment>;
+    comments?: null | undefined | Array<RecastComment>;
   }
 
   interface RecastComment {
-    type: 'Line'|'Block';
+    type: 'Line' | 'Block';
     leading: boolean;
     trailing: boolean;
     value: string;
   }
-  const firstStatement: (estree.Statement|estree.ModuleDeclaration)&RecastNode =
-      statements[0]!;
+  const firstStatement: (estree.Statement | estree.ModuleDeclaration) & RecastNode =
+    statements[0]!;
 
   const recastComments: RecastComment[] = comments.map((comment) => {
     const escapedComment = comment.replace('*/', '*\\/');
@@ -437,7 +437,7 @@ export function attachCommentsToFirstStatement(
     };
   });
   firstStatement.comments =
-      (firstStatement.comments || []).concat(recastComments);
+    (firstStatement.comments || []).concat(recastComments);
 
   return statements;
 }
@@ -451,7 +451,7 @@ export function containsWriteToGlobalSettingsObject(program: estree.Program) {
   // Note that we look for writes to these objects exactly, not to writes to
   // members of these objects.
   const globalSettingsObjects =
-      new Set<string>(['Polymer', 'Polymer.Settings', 'ShadyDOM']);
+    new Set<string>(['Polymer', 'Polymer.Settings', 'ShadyDOM']);
 
   function getNamespacedName(node: estree.Node) {
     if (node.type === 'Identifier') {
@@ -481,7 +481,7 @@ export function containsWriteToGlobalSettingsObject(program: estree.Program) {
  * nodes into JavaScript.
  */
 export function createDomNodeInsertStatements(
-    nodes: parse5.ASTNode[], activeInBody = false): estree.Statement[] {
+  nodes: parse5.ASTNode[], activeInBody = false): estree.Statement[] {
   const varName = `$_documentContainer`;
   const fragment = {
     nodeName: '#document-fragment',
@@ -491,45 +491,45 @@ export function createDomNodeInsertStatements(
   const templateValue = serializeNodeToTemplateLiteral(fragment as any, false);
 
   const createElementDiv = jsc.variableDeclaration(
-      'const',
-      [jsc.variableDeclarator(
-          jsc.identifier(varName),
-          jsc.callExpression(
-              jsc.memberExpression(
-                  jsc.identifier('document'), jsc.identifier('createElement')),
-              [jsc.literal('div')]))]);
+    'const',
+    [jsc.variableDeclarator(
+      jsc.identifier(varName),
+      jsc.callExpression(
+        jsc.memberExpression(
+          jsc.identifier('document'), jsc.identifier('createElement')),
+        [jsc.literal('div')]))]);
   const setDocumentContainerStatement =
-      jsc.expressionStatement(jsc.assignmentExpression(
-          '=',
-          jsc.memberExpression(
-              jsc.identifier(varName), jsc.identifier('innerHTML')),
-          templateValue));
+    jsc.expressionStatement(jsc.assignmentExpression(
+      '=',
+      jsc.memberExpression(
+        jsc.identifier(varName), jsc.identifier('innerHTML')),
+      templateValue));
   if (activeInBody) {
     return [
       createElementDiv,
       setDocumentContainerStatement,
       jsc.expressionStatement(jsc.callExpression(
+        jsc.memberExpression(
           jsc.memberExpression(
-              jsc.memberExpression(
-                  jsc.identifier('document'), jsc.identifier('body')),
-              jsc.identifier('appendChild')),
-          [jsc.identifier(varName)]))
+            jsc.identifier('document'), jsc.identifier('body')),
+          jsc.identifier('appendChild')),
+        [jsc.identifier(varName)]))
     ];
   }
   const setDisplayNoneStatment = jsc.expressionStatement(jsc.callExpression(
-      jsc.memberExpression(
-          jsc.identifier(varName), jsc.identifier('setAttribute')),
-      [jsc.literal('style'), jsc.literal('display: none;')]));
+    jsc.memberExpression(
+      jsc.identifier(varName), jsc.identifier('setAttribute')),
+    [jsc.literal('style'), jsc.literal('display: none;')]));
   return [
     createElementDiv,
     setDisplayNoneStatment,
     setDocumentContainerStatement,
     jsc.expressionStatement(jsc.callExpression(
+      jsc.memberExpression(
         jsc.memberExpression(
-            jsc.memberExpression(
-                jsc.identifier('document'), jsc.identifier('head')),
-            jsc.identifier('appendChild')),
-        [jsc.identifier(varName)]))
+          jsc.identifier('document'), jsc.identifier('head')),
+        jsc.identifier('appendChild')),
+      [jsc.identifier(varName)]))
   ];
 }
 
@@ -539,7 +539,7 @@ export function createDomNodeInsertStatements(
  * exist.
  */
 export function insertStatementsIntoProgramBody(
-    statements: estree.Statement[], program: estree.Program) {
+  statements: estree.Statement[], program: estree.Program) {
   let insertionPoint = 0;
   for (let i = 0; i < program.body.length; i++) {
     const bodyStatement = program.body[i];

@@ -13,15 +13,15 @@
  */
 
 import * as estree from 'estree';
-import {getTopLevelStatements} from '../document-util';
+import { getTopLevelStatements } from '../document-util';
 
 /**
  * Returns true if a statement is the literal "use strict".
  */
 function isUseStrict(statement: estree.Statement) {
   return statement.type === 'ExpressionStatement' &&
-      statement.expression.type === 'Literal' &&
-      statement.expression.value === 'use strict';
+    statement.expression.type === 'Literal' &&
+    statement.expression.value === 'use strict';
 }
 
 /**
@@ -33,16 +33,16 @@ export function removeWrappingIIFEs(program: estree.Program) {
   for (const path of getTopLevelStatements(program)) {
     const statement = path.node;
     if (statement.type !== 'ExpressionStatement' ||
-        statement.expression.type !== 'CallExpression') {
+      statement.expression.type !== 'CallExpression') {
       continue;
     }
     const callee = statement.expression.callee;
     if ((callee.type !== 'FunctionExpression' &&
-         callee.type !== 'ArrowFunctionExpression')) {
+      callee.type !== 'ArrowFunctionExpression')) {
       continue;
     }
     if (callee.body.type !== 'BlockStatement' || callee.async ||
-        callee.generator || callee.params.length > 0) {
+      callee.generator || callee.params.length > 0) {
       continue;
     }
     for (const bodyStatement of callee.body.body) {

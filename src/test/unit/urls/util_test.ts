@@ -12,36 +12,36 @@
  * http://polymer.github.io/PATENTS.txt
  */
 
-import {assert} from 'chai';
+import { assert } from 'chai';
 
-import {ConvertedDocumentUrl} from '../../../urls/types';
-import {getRelativeUrl} from '../../../urls/util';
+import { ConvertedDocumentUrl } from '../../../urls/types';
+import { getRelativeUrl } from '../../../urls/util';
 
 suite('src/url-handler', () => {
   suite('getRelativeUrl()', () => {
     test('handles two root urls relative to the same directory', () => {
       assert.equal(
-          getRelativeUrl(
-              './foo.js' as ConvertedDocumentUrl,
-              './bar.js' as ConvertedDocumentUrl),
-          './bar.js');
+        getRelativeUrl(
+          './foo.js' as ConvertedDocumentUrl,
+          './bar.js' as ConvertedDocumentUrl),
+        './bar.js');
       assert.equal(
-          getRelativeUrl(
-              './foo/foo.js' as ConvertedDocumentUrl,
-              './bar.js' as ConvertedDocumentUrl),
-          '../bar.js');
+        getRelativeUrl(
+          './foo/foo.js' as ConvertedDocumentUrl,
+          './bar.js' as ConvertedDocumentUrl),
+        '../bar.js');
       assert.equal(
-          getRelativeUrl(
-              './foo/foo.js' as ConvertedDocumentUrl,
-              './bar/bar.js' as ConvertedDocumentUrl),
-          '../bar/bar.js');
+        getRelativeUrl(
+          './foo/foo.js' as ConvertedDocumentUrl,
+          './bar/bar.js' as ConvertedDocumentUrl),
+        '../bar/bar.js');
     });
 
     test('explicitly does not handle sibling/parent urls', () => {
       assert.throws(() => {
         getRelativeUrl(
-            '../foo.js' as ConvertedDocumentUrl,
-            './bar.js' as ConvertedDocumentUrl);
+          '../foo.js' as ConvertedDocumentUrl,
+          './bar.js' as ConvertedDocumentUrl);
       }, `paths relative to package root expected (actual: from="../foo.js", to="./bar.js")`);
     });
   });
