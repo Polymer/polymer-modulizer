@@ -463,6 +463,23 @@ console.log('a statement');
       });
     });
 
+    test('removes top-level use-strict', async () => {
+      setSources({
+        'test.html': `
+          <script>
+            'use strict';
+
+            console.log('a statement');
+          </script>
+        `,
+      });
+      assertSources(await convert(), {
+        'test.js': `
+console.log('a statement');
+`
+      });
+    });
+
     test('exports a reference', async () => {
       setSources({
         'test.html': `
@@ -2369,7 +2386,6 @@ class Foo {
 if (window) {
   window;
 }
-'use strict';
 console.log(this);
 `,
       });

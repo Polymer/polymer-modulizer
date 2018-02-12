@@ -102,8 +102,7 @@ function configureAnalyzer(options: PackageConversionSettings) {
   for (const [url, contents] of polymerFileOverrides) {
     urlLoader.urlContentsMap.set(urlResolver.resolve(url)!, contents);
     urlLoader.urlContentsMap.set(
-        urlResolver.resolve(`../polymer/${url}` as ResolvedUrl)!,
-        contents);
+        urlResolver.resolve(`../polymer/${url}` as ResolvedUrl)!, contents);
   }
   return new Analyzer({
     urlLoader,

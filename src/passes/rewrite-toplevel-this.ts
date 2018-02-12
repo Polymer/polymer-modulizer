@@ -40,6 +40,7 @@ export function rewriteToplevelThis(program: estree.Program) {
           path.parent.node.type === 'ExpressionStatement' &&
           path.parent.parent && path.parent.parent.node.type === 'Program') {
         isStrictMode = true;
+        path.prune();
       }
       return false;
     },

@@ -58,7 +58,8 @@ function configureAnalyzer(options: WorkspaceConversionSettings) {
   const urlResolver = new PackageUrlResolver({packageDir: workspaceDir});
   const urlLoader = new InMemoryOverlayUrlLoader(new FSUrlLoader(workspaceDir));
   for (const [url, contents] of polymerFileOverrides) {
-    urlLoader.urlContentsMap.set(urlResolver.resolve(`polymer/${url}` as ResolvedUrl)!, contents);
+    urlLoader.urlContentsMap.set(
+        urlResolver.resolve(`polymer/${url}` as ResolvedUrl)!, contents);
   }
   return new Analyzer({
     urlLoader,
