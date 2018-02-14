@@ -102,8 +102,7 @@ function configureAnalyzer(options: PackageConversionSettings) {
   for (const [url, contents] of polymerFileOverrides) {
     urlLoader.urlContentsMap.set(urlResolver.resolve(url)!, contents);
     urlLoader.urlContentsMap.set(
-        urlResolver.resolve(`../polymer/${url}` as ResolvedUrl)!,
-        contents);
+        urlResolver.resolve(`../polymer/${url}` as ResolvedUrl)!, contents);
   }
   return new Analyzer({
     urlLoader,
@@ -131,13 +130,11 @@ export default async function convert(options: PackageConversionSettings) {
       new PackageUrlHandler(analyzer, options.packageName, options.packageType);
   const conversionSettings =
       getConversionSettings(analyzer, analysis, options, bowerJson);
-  const converter = new ProjectConverter(urlHandler, conversionSettings);
+  const converter =
+      new ProjectConverter(analysis, urlHandler, conversionSettings);
 
-  // Gather all relevent package documents, and run the converter on them!
-  for (const document of getPackageDocuments(
-           urlHandler, analysis, conversionSettings)) {
-    converter.convertDocument(document);
-  }
+  // Convert the package
+  converter.convertPackage(npmPackageName);
 
   // Filter out external results before writing them to disk.
   const results = converter.getResults();
