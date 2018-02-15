@@ -14,7 +14,9 @@
 import chalk from 'chalk';
 import {ExecOptions} from 'child_process';
 import {Iterable as IterableX} from 'ix';
+import * as yaml from 'js-yaml';
 import * as fs from 'mz/fs';
+import {EOL} from 'os';
 import * as path from 'path';
 import {WorkspaceRepo} from 'polymer-workspaces';
 
@@ -25,6 +27,28 @@ import _rimraf = require('rimraf');
 const {promisify} = require('util');
 const {execFile: _execFile} = require('child_process');
 const execFile = promisify(_execFile);
+
+type TravisEnv = {
+  global?: string[];
+  matrix?: string[];
+};
+
+export interface TravisConfig {
+  before_script?: string[];
+  install?: string[];
+  addons?: {
+    firefox?: string|number;
+    chrome?: string | number;
+    sauce_connect?: boolean;
+    apt?: {packages?: string[]; sources?: string[];};
+  };
+  script?: string[];
+  dist?: string;
+  sudo?: 'false'|'required';
+  env?: TravisEnv;
+  node_js?: string|number|string[];
+  cache?: {directories?: string[];};
+}
 
 
 /**
@@ -100,7 +124,7 @@ export function logStep(
 /**
  * helper function to read a file
  */
-export function readFile(...pathPieces: string[]) {
+function readFile(...pathPieces: string[]) {
   const filePath = path.resolve(...pathPieces);
   return fs.readFileSync(filePath, 'utf-8');
 }
@@ -108,7 +132,40 @@ export function readFile(...pathPieces: string[]) {
 /**
  * helper function to write a file
  */
-export function writeFile(text: any, ...pathPieces: string[]) {
+function writeFile(text: any, ...pathPieces: string[]) {
   const filePath = path.resolve(...pathPieces);
   fs.writeFileSync(filePath, text);
+}
+
+/**
+ * helper function to read and parse JSON.
+ */
+export function readJson(...pathPieces: string[]) {
+  const jsonContents = readFile(...pathPieces);
+  return JSON.parse(jsonContents);
+}
+
+/**
+ * helper function to serialize and parse JSON.
+ */
+export function writeJson(jsonObj: any, ...pathPieces: string[]) {
+  const jsonContents =
+      JSON.stringify(jsonObj, undefined, 2).split('\n').join(EOL) + EOL;
+  writeFile(jsonContents, ...pathPieces);
+}
+
+/**
+ * helper function to read and parse YAML.
+ */
+export function readYaml(...pathPieces: string[]) {
+  return yaml.safeLoad(readFile(...pathPieces));
+}
+
+/**
+ * helper function to serialize and parse YAML.
+ */
+export function writeYaml(yamlObj: any, ...pathPieces: string[]) {
+  const yamlContents =
+      yaml.safeDump(yamlObj, {indent: 2}).split('\n').join(EOL) + EOL;
+  writeFile(yamlContents, ...pathPieces);
 }

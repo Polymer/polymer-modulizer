@@ -14,8 +14,7 @@
 
 'use strict';
 
-import {EOL} from 'os';
-import {readFile, writeFile} from './util';
+import {readJson} from './util';
 import * as spdxLicenseList from 'spdx-license-list/simple';
 
 interface DependencyMapEntry {
@@ -69,23 +68,6 @@ function setNpmDependencyFromBower(
   } else {
     obj[depInfo.npm] = depInfo.semver;
   }
-}
-
-/**
- * helper function to read and parse JSON.
- */
-export function readJson(...pathPieces: string[]) {
-  const jsonContents = readFile(...pathPieces);
-  return JSON.parse(jsonContents);
-}
-
-/**
- * helper function to serialize and parse JSON.
- */
-export function writeJson(json: any, ...pathPieces: string[]) {
-  const jsonContents =
-      JSON.stringify(json, undefined, 2).split('\n').join(EOL) + EOL;
-  writeFile(jsonContents, ...pathPieces);
 }
 
 /**

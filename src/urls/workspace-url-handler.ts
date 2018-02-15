@@ -16,7 +16,7 @@ import * as path from 'path';
 import {Analyzer, Document} from 'polymer-analyzer';
 
 import {lookupDependencyMapping} from '../manifest-converter';
-import {readJson} from '../manifest-converter';
+import {readJson} from '../util';
 
 import {ConvertedDocumentUrl, OriginalDocumentUrl, PackageType} from './types';
 import {UrlHandler} from './url-handler';

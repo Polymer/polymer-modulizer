@@ -19,6 +19,7 @@ import {DocumentConverter} from './document-converter';
 import {ConversionResult, JsExport} from './js-module';
 import {ConvertedDocumentFilePath, OriginalDocumentUrl} from './urls/types';
 import {UrlHandler} from './urls/url-handler';
+import {TravisConfig} from './util';
 
 // These files were already ES6 modules, so don't write our conversions.
 // Can't be handled in `excludes` because we want to preserve imports of.
@@ -208,12 +209,33 @@ export class ProjectConverter {
   /**
    * Updates polymer cli and wct usages to work with js modules
    */
-  convertTravisYaml(travisYaml: string) {
-    return travisYaml
-        .replace(/polymer\ install.*/g, 'yarn')  // polymer install => yarn
-        .replace(
-            /polymer\ test/g,
-            'polymer test --npm')       // polymer test => polymer test --npm
-        .replace(/wct/g, 'wct --npm');  // wct => wct --npm
+  convertTravisYaml(travisYaml: TravisConfig): TravisConfig {
+    // polymer install => yarn
+    if (travisYaml.install !== undefined) {
+      travisYaml.install.forEach(this.replaceInstallCmds);
+    }
+    if (travisYaml.before_script !== undefined) {
+      travisYaml.before_script.forEach(this.replaceInstallCmds);
+    }
+    // polymer test => polymer test --npm
+    // wct => wct --npm
+    if (travisYaml.script !== undefined) {
+      travisYaml.script.forEach(this.replaceTestCmds);
+    }
+
+    return travisYaml;
+  }
+
+  private replaceInstallCmds(
+      installCmd: string, index: number, array: string[]) {
+    const updatedCmd = 'yarn';
+    array[index] = installCmd.replace(/polymer\ install.*/g, updatedCmd)
+                       .replace(/bower\ i(nstall)?/g, updatedCmd);
+  }
+
+  private replaceTestCmds(testCmd: string, index: number, array: string[]) {
+    const updatedCmd = '$1 --npm';
+    array[index] = testCmd.replace(/(polymer\ test)/g, updatedCmd)
+                       .replace(/(wct)/g, updatedCmd);
   }
 }

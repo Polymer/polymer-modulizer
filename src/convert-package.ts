@@ -16,12 +16,12 @@ import * as path from 'path';
 import {Analysis, Analyzer, FSUrlLoader, InMemoryOverlayUrlLoader, PackageUrlResolver, ResolvedUrl} from 'polymer-analyzer';
 
 import {ConversionSettings, createDefaultConversionSettings, PartialConversionSettings} from './conversion-settings';
-import {generatePackageJson, readJson, writeJson} from './manifest-converter';
+import {generatePackageJson} from './manifest-converter';
 import {ProjectConverter} from './project-converter';
 import {polymerFileOverrides} from './special-casing';
 import {PackageUrlHandler} from './urls/package-url-handler';
 import {PackageType} from './urls/types';
-import {mkdirp, readFile, rimraf, writeFile, writeFileResults} from './util';
+import {mkdirp, readJson, readYaml, rimraf, writeFileResults, writeJson, writeYaml} from './util';
 
 
 /**
@@ -149,9 +149,9 @@ export default async function convert(options: PackageConversionSettings) {
 
   // Update the travis.yml file if present
   try {
-    let travisYaml = readFile(options.inDir, '.travis.yml');
+    let travisYaml = readYaml(options.inDir, '.travis.yml');
     travisYaml = converter.convertTravisYaml(travisYaml);
-    writeFile(travisYaml, outDir, '.travis.yml');
+    writeYaml(travisYaml, outDir, '.travis.yml');
   } catch (err) {
     // do nothing
   }
