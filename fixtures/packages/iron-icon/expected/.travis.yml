@@ -2,7 +2,7 @@ language: node_js
 sudo: required
 before_script:
   - npm install -g polymer-cli
-  - polymer install --variants
+  - npm i
 env:
   global:
     - secure: >-

@@ -228,7 +228,7 @@ export class ProjectConverter {
 
   private replaceInstallCmds(
       installCmd: string, index: number, array: string[]) {
-    const updatedCmd = 'yarn';
+    const updatedCmd = 'npm i';
     array[index] = installCmd.replace(/polymer\ install.*/g, updatedCmd)
                        .replace(/bower\ i(nstall)?/g, updatedCmd);
   }
