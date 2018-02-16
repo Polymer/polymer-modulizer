@@ -17,11 +17,11 @@ import {Analyzer, FSUrlLoader, InMemoryOverlayUrlLoader, PackageUrlResolver, Res
 import {run, WorkspaceRepo} from 'polymer-workspaces';
 
 import {createDefaultConversionSettings, PartialConversionSettings} from './conversion-settings';
-import {generatePackageJson, readJson, writeJson} from './manifest-converter';
+import {generatePackageJson} from './manifest-converter';
 import {ProjectConverter} from './project-converter';
 import {polymerFileOverrides} from './special-casing';
 import {lookupNpmPackageName, WorkspaceUrlHandler} from './urls/workspace-url-handler';
-import {exec, logRepoError, rimraf, writeFileResults} from './util';
+import {exec, logRepoError, readJson, readYaml, rimraf, writeFileResults, writeJson, writeYaml} from './util';
 
 /**
  * Configuration options required for workspace conversions. Contains
@@ -58,7 +58,8 @@ function configureAnalyzer(options: WorkspaceConversionSettings) {
   const urlResolver = new PackageUrlResolver({packageDir: workspaceDir});
   const urlLoader = new InMemoryOverlayUrlLoader(new FSUrlLoader(workspaceDir));
   for (const [url, contents] of polymerFileOverrides) {
-    urlLoader.urlContentsMap.set(urlResolver.resolve(`polymer/${url}` as ResolvedUrl)!, contents);
+    urlLoader.urlContentsMap.set(
+        urlResolver.resolve(`polymer/${url}` as ResolvedUrl)!, contents);
   }
   return new Analyzer({
     urlLoader,
@@ -117,6 +118,17 @@ export default async function convert(options: WorkspaceConversionSettings):
       await rimraf(path.join(repo.dir, glob));
     }
   }
+
+  // Update the travis.yml file if present for each repo:
+  await run(options.reposToConvert, async (repo) => {
+    try {
+      let travisYaml = readYaml(repo.dir, '.travis.yml');
+      travisYaml = converter.convertTravisYaml(travisYaml);
+      writeYaml(travisYaml, repo.dir, '.travis.yml');
+    } catch (err) {
+      // do nothing
+    }
+  });
 
   // Generate a new package.json for each repo:
   const packageJsonResults = await run(options.reposToConvert, async (repo) => {

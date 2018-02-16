@@ -17,9 +17,9 @@ import * as path from 'path';
 import {run, WorkspaceRepo} from 'polymer-workspaces';
 
 import {ConversionResultsMap, GIT_STAGING_BRANCH_NAME, WorkspaceConversionSettings} from './convert-workspace';
-import {generatePackageJson, localDependenciesBranch, readJson, writeJson} from './manifest-converter';
+import {generatePackageJson, localDependenciesBranch} from './manifest-converter';
 import {lookupNpmPackageName} from './urls/workspace-url-handler';
-import {exec, logRepoError, logStep} from './util';
+import {exec, logRepoError, logStep, readJson, writeJson} from './util';
 
 /**
  * Configuration options required for workspace testing. Same as conversion

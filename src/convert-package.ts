@@ -16,12 +16,12 @@ import * as path from 'path';
 import {Analysis, Analyzer, FSUrlLoader, InMemoryOverlayUrlLoader, PackageUrlResolver, ResolvedUrl} from 'polymer-analyzer';
 
 import {ConversionSettings, createDefaultConversionSettings, PartialConversionSettings} from './conversion-settings';
-import {generatePackageJson, readJson, writeJson} from './manifest-converter';
+import {generatePackageJson} from './manifest-converter';
 import {ProjectConverter} from './project-converter';
 import {polymerFileOverrides} from './special-casing';
 import {PackageUrlHandler} from './urls/package-url-handler';
 import {PackageType} from './urls/types';
-import {mkdirp, rimraf, writeFileResults} from './util';
+import {mkdirp, readJson, readYaml, rimraf, writeFileResults, writeJson, writeYaml} from './util';
 
 
 /**
@@ -102,8 +102,7 @@ function configureAnalyzer(options: PackageConversionSettings) {
   for (const [url, contents] of polymerFileOverrides) {
     urlLoader.urlContentsMap.set(urlResolver.resolve(url)!, contents);
     urlLoader.urlContentsMap.set(
-        urlResolver.resolve(`../polymer/${url}` as ResolvedUrl)!,
-        contents);
+        urlResolver.resolve(`../polymer/${url}` as ResolvedUrl)!, contents);
   }
   return new Analyzer({
     urlLoader,
@@ -147,6 +146,15 @@ export default async function convert(options: PackageConversionSettings) {
     }
   }
   await writeFileResults(outDir, results);
+
+  // Update the travis.yml file if present
+  try {
+    let travisYaml = readYaml(options.inDir, '.travis.yml');
+    travisYaml = converter.convertTravisYaml(travisYaml);
+    writeYaml(travisYaml, outDir, '.travis.yml');
+  } catch (err) {
+    // do nothing
+  }
 
   // Delete files that were explicitly requested to be deleted.
   for (const glob of options.deleteFiles || []) {

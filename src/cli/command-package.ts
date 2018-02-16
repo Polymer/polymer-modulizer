@@ -17,8 +17,7 @@ import * as semver from 'semver';
 
 import {CliOptions} from '../cli';
 import convertPackage from '../convert-package';
-import {readJson} from '../manifest-converter';
-import {exec, logStep} from '../util';
+import {exec, logStep, readJson} from '../util';
 
 export default async function run(options: CliOptions) {
   const inDir = path.resolve(options.in || process.cwd());
