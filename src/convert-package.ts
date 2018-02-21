@@ -12,11 +12,12 @@
  * http://polymer.github.io/PATENTS.txt
  */
 
+import * as fse from 'fs-extra';
 import * as path from 'path';
 import {Analysis, Analyzer, FSUrlLoader, InMemoryOverlayUrlLoader, PackageUrlResolver, ResolvedUrl} from 'polymer-analyzer';
 
 import {ConversionSettings, createDefaultConversionSettings, PartialConversionSettings} from './conversion-settings';
-import {generatePackageJson, readJson, writeJson} from './manifest-converter';
+import {generatePackageJson, writeJson} from './manifest-converter';
 import {ProjectConverter} from './project-converter';
 import {polymerFileOverrides} from './special-casing';
 import {PackageUrlHandler} from './urls/package-url-handler';
@@ -102,8 +103,7 @@ function configureAnalyzer(options: PackageConversionSettings) {
   for (const [url, contents] of polymerFileOverrides) {
     urlLoader.urlContentsMap.set(urlResolver.resolve(url)!, contents);
     urlLoader.urlContentsMap.set(
-        urlResolver.resolve(`../polymer/${url}` as ResolvedUrl)!,
-        contents);
+        urlResolver.resolve(`../polymer/${url}` as ResolvedUrl)!, contents);
   }
   return new Analyzer({
     urlLoader,
@@ -121,7 +121,9 @@ export default async function convert(options: PackageConversionSettings) {
   await setupOutDir(outDir, options.cleanOutDir);
 
   // Configure the analyzer and run an analysis of the package.
-  const bowerJson = readJson(options.inDir, 'bower.json');
+  const bowerJson =
+      await fse.readJSON(path.join(options.inDir, 'bower.json')) as
+      Partial<BowerConfig>;
   const analyzer = configureAnalyzer(options);
   const analysis = await analyzer.analyzePackage();
   await setupOutDir(options.outDir, !!options.cleanOutDir);
@@ -153,11 +155,21 @@ export default async function convert(options: PackageConversionSettings) {
     await rimraf(path.join(outDir, glob));
   }
 
+  const packageJsonPath = path.join(options.inDir, 'package.json');
+  let existingPackageJson: Partial<YarnConfig>|undefined;
+  if (await fse.pathExists(packageJsonPath)) {
+    existingPackageJson = await fse.readJSON(packageJsonPath);
+  }
+
   // Generate a new package.json, and write it to disk.
   try {
-    const packageJson =
-        generatePackageJson(bowerJson, npmPackageName, npmPackageVersion);
-    writeJson(packageJson, outDir, 'package.json');
+    const packageJson = generatePackageJson(
+        bowerJson,
+        npmPackageName,
+        npmPackageVersion,
+        undefined,
+        existingPackageJson);
+    writeJson(packageJson, packageJsonPath);
   } catch (err) {
     console.log(
         `error in bower.json -> package.json conversion (${err.message})`);

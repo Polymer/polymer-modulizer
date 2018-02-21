@@ -13,11 +13,12 @@
  */
 
 import chalk from 'chalk';
+import * as fse from 'fs-extra';
 import * as path from 'path';
 import {run, WorkspaceRepo} from 'polymer-workspaces';
 
 import {ConversionResultsMap, GIT_STAGING_BRANCH_NAME, WorkspaceConversionSettings} from './convert-workspace';
-import {generatePackageJson, localDependenciesBranch, readJson, writeJson} from './manifest-converter';
+import {generatePackageJson, localDependenciesBranch, writeJson} from './manifest-converter';
 import {lookupNpmPackageName} from './urls/workspace-url-handler';
 import {exec, logRepoError, logStep} from './util';
 
@@ -90,12 +91,23 @@ function writeTestingPackageJson(
     newPackageVersion: string) {
   const bowerPackageName = path.basename(repo.dir);
   const bowerJsonPath = path.join(repo.dir, 'bower.json');
-  const bowerJson = readJson(bowerJsonPath);
+  const bowerJson = fse.readJSONSync(bowerJsonPath);
   const npmPackageName =
       lookupNpmPackageName(bowerJsonPath) || bowerPackageName;
+
+  const packageJsonPath = path.join(repo.dir, 'package.json');
+  let existingPackageJson: Partial<YarnConfig>|undefined;
+  if (fse.pathExistsSync(packageJsonPath)) {
+    existingPackageJson = fse.readJSONSync(packageJsonPath);
+  }
+
   const packageJson = generatePackageJson(
-      bowerJson, npmPackageName, newPackageVersion, localConversionMap);
-  writeJson(packageJson, repo.dir, 'package.json');
+      bowerJson,
+      npmPackageName,
+      newPackageVersion,
+      localConversionMap,
+      existingPackageJson);
+  writeJson(packageJson, packageJsonPath);
 }
 
 export async function testWorkspace(

@@ -12,12 +12,13 @@
  * http://polymer.github.io/PATENTS.txt
  */
 
+import * as fse from 'fs-extra';
 import * as path from 'path';
 import {Analyzer, FSUrlLoader, InMemoryOverlayUrlLoader, PackageUrlResolver, ResolvedUrl} from 'polymer-analyzer';
 import {run, WorkspaceRepo} from 'polymer-workspaces';
 
 import {createDefaultConversionSettings, PartialConversionSettings} from './conversion-settings';
-import {generatePackageJson, readJson, writeJson} from './manifest-converter';
+import {generatePackageJson, writeJson} from './manifest-converter';
 import {ProjectConverter} from './project-converter';
 import {polymerFileOverrides} from './special-casing';
 import {lookupNpmPackageName, WorkspaceUrlHandler} from './urls/workspace-url-handler';
@@ -42,12 +43,23 @@ export const GIT_STAGING_BRANCH_NAME = 'polymer-modulizer-staging';
 function writePackageJson(repo: WorkspaceRepo, packageVersion: string) {
   const bowerPackageName = path.basename(repo.dir);
   const bowerJsonPath = path.join(repo.dir, 'bower.json');
-  const bowerJson = readJson(bowerJsonPath);
+  const bowerJson = fse.readJSONSync(bowerJsonPath) as Partial<BowerConfig>;
   const npmPackageName =
       lookupNpmPackageName(bowerJsonPath) || bowerPackageName;
-  const packageJson =
-      generatePackageJson(bowerJson, npmPackageName, packageVersion);
-  writeJson(packageJson, repo.dir, 'package.json');
+
+  const packageJsonPath = path.join(repo.dir, 'package.json');
+  let existingPackageJson: Partial<YarnConfig>|undefined;
+  if (fse.pathExistsSync(packageJsonPath)) {
+    existingPackageJson = fse.readJSONSync(packageJsonPath);
+  }
+
+  const packageJson = generatePackageJson(
+      bowerJson,
+      npmPackageName,
+      packageVersion,
+      undefined,
+      existingPackageJson);
+  writeJson(packageJson, packageJsonPath);
 }
 
 /**
@@ -58,7 +70,8 @@ function configureAnalyzer(options: WorkspaceConversionSettings) {
   const urlResolver = new PackageUrlResolver({packageDir: workspaceDir});
   const urlLoader = new InMemoryOverlayUrlLoader(new FSUrlLoader(workspaceDir));
   for (const [url, contents] of polymerFileOverrides) {
-    urlLoader.urlContentsMap.set(urlResolver.resolve(`polymer/${url}` as ResolvedUrl)!, contents);
+    urlLoader.urlContentsMap.set(
+        urlResolver.resolve(`polymer/${url}` as ResolvedUrl)!, contents);
   }
   return new Analyzer({
     urlLoader,
