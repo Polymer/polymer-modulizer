@@ -22,7 +22,6 @@ import {createDefaultConversionSettings, PartialConversionSettings} from '../../
 import {getPackageDocuments} from '../../convert-package';
 import {getMemberPath} from '../../document-util';
 import {ProjectConverter} from '../../project-converter';
-// import {ProjectScanner} from '../../project-scanner';
 import {PackageUrlHandler} from '../../urls/package-url-handler';
 import {PackageType} from '../../urls/types';
 
@@ -91,8 +90,6 @@ suite('AnalysisConverter', () => {
       // Setup ProjectScanner, use PackageUrlHandler for easy setup.
       const urlHandler =
           new PackageUrlHandler(analyzer, packageName, packageType);
-      // const converter =
-      // await new ProjectScanner(analysis, urlHandler, conversionSettings);
       const converter =
           await new ProjectConverter(analysis, urlHandler, conversionSettings);
       // Gather all relevent package documents, and run the converter!

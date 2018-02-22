@@ -61,7 +61,7 @@ export class ProjectConverter {
   }
 
   /**
-   * Convert a document and any of its dependencies. The output format (JS
+   * Convert a package and any of its dependencies. The output format (JS
    * Module or HTML Document) is determined by whether the file is included in
    * conversionSettings.includes.
    */
