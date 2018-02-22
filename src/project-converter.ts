@@ -40,7 +40,6 @@ const excludeFromResults = new Set([
  * conversions.
  */
 export class ProjectConverter {
-  private readonly analysis: Analysis;
   private readonly urlHandler: UrlHandler;
   private readonly conversionSettings: ConversionSettings;
   private readonly scanner: ProjectScanner;
@@ -54,7 +53,6 @@ export class ProjectConverter {
   constructor(
       analysis: Analysis, urlHandler: UrlHandler,
       conversionSettings: ConversionSettings) {
-    this.analysis = analysis;
     this.urlHandler = urlHandler;
     this.conversionSettings = conversionSettings;
     this.scanner = new ProjectScanner(analysis, urlHandler, conversionSettings);
@@ -69,18 +67,9 @@ export class ProjectConverter {
     // First, scan the package (and any of its dependencies)
     this.scanner.scanPackage(matchPackageName);
     // Then, convert each document in the given package
-    [...this.analysis.getFeatures({kind: 'html-document'})]
-        .filter((d) => d.isInline === false)
-        .filter((d) => {
-          const documentUrl = this.urlHandler.getDocumentUrl(d);
-          const packageName =
-              this.urlHandler.getOriginalPackageNameForUrl(documentUrl);
-          return packageName === matchPackageName &&
-              !this.conversionSettings.excludes.has(documentUrl);
-        })
-        .forEach((document) => {
-          this.convertDocument(document);
-        });
+    for (const document of this.scanner.getPackageDocuments(matchPackageName)) {
+      this.convertDocument(document);
+    }
   }
 
   /**
@@ -91,7 +80,7 @@ export class ProjectConverter {
     console.assert(
         document.kinds.has('html-document'),
         `convertDocument() must be called with an HTML document, but got ${
-      document.kinds}`);
+            document.kinds}`);
 
     // Note that this should be a quick no-op if this method was called via
     // convertPackage() (which first scans the entire package) since each
@@ -124,7 +113,8 @@ export class ProjectConverter {
 
   /**
    * This method collects the results after all documents are converted. It
-   * handles any broken edge-cases and sets empty map entries for files to be deleted.
+   * handles any broken edge-cases and sets empty map entries for files to be
+   * deleted.
    */
   getResults(): Map<ConvertedDocumentFilePath, string|undefined> {
     const results = new Map<ConvertedDocumentFilePath, string|undefined>();

@@ -15,7 +15,7 @@
 import * as path from 'path';
 import {Analysis, Analyzer, FSUrlLoader, InMemoryOverlayUrlLoader, PackageUrlResolver, ResolvedUrl} from 'polymer-analyzer';
 
-import {ConversionSettings, createDefaultConversionSettings, PartialConversionSettings} from './conversion-settings';
+import {createDefaultConversionSettings, PartialConversionSettings} from './conversion-settings';
 import {generatePackageJson, readJson, writeJson} from './manifest-converter';
 import {ProjectConverter} from './project-converter';
 import {polymerFileOverrides} from './special-casing';
@@ -75,21 +75,6 @@ function getConversionSettings(
     conversionSettings.includes.add(filename);
   }
   return conversionSettings;
-}
-
-/**
- * Get the relevant documents from a package, to be converted.
- */
-export function getPackageDocuments(
-    urlHandler: PackageUrlHandler,
-    analysis: Analysis,
-    conversionSettings: ConversionSettings) {
-  const htmlDocuments = [...analysis.getFeatures({kind: 'html-document'})];
-  return htmlDocuments.filter((d) => {
-    const documentUrl = urlHandler.getDocumentUrl(d);
-    return PackageUrlHandler.isUrlInternalToPackage(documentUrl) &&
-        !conversionSettings.excludes.has(documentUrl);
-  });
 }
 
 /**

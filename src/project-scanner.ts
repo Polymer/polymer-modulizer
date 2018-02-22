@@ -64,6 +64,22 @@ export class ProjectScanner {
   }
 
   /**
+   * Get all relevant HTML documents from a package that should be scanned,
+   * coverted, or otherwise handled by the modulizer.
+   */
+  getPackageDocuments(matchPackageName: string) {
+    return [...this.analysis.getFeatures({kind: 'html-document'})]
+        .filter((d) => d.isInline === false)
+        .filter((d) => {
+          const documentUrl = this.urlHandler.getDocumentUrl(d);
+          const packageName =
+              this.urlHandler.getOriginalPackageNameForUrl(documentUrl);
+          return packageName === matchPackageName &&
+              !this.conversionSettings.excludes.has(documentUrl);
+        });
+  }
+
+  /**
    * Scan a document and any of its dependency packages for their new interface.
    */
   scanPackage(matchPackageName: string) {
@@ -73,17 +89,9 @@ export class ProjectScanner {
     // Add this package to our cache so that it won't get double scanned.
     this.scannedPackages.add(matchPackageName);
     // Gather all relevent package documents, and run the scanner on them.
-    [...this.analysis.getFeatures({kind: 'html-document'})]
-        .filter((d) => d.isInline === false)
-        .filter((d) => {
-          const documentUrl = this.urlHandler.getDocumentUrl(d);
-          const packageName =
-              this.urlHandler.getOriginalPackageNameForUrl(documentUrl);
-          return packageName === matchPackageName;
-        })
-        .forEach((document) => {
-          this.scanDocument(document);
-        });
+    for (const document of this.getPackageDocuments(matchPackageName)) {
+      this.scanDocument(document);
+    }
   }
 
   /**

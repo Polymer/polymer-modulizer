@@ -19,7 +19,6 @@ import {EOL} from 'os';
 import {Analyzer, InMemoryOverlayUrlLoader} from 'polymer-analyzer';
 
 import {createDefaultConversionSettings, PartialConversionSettings} from '../../conversion-settings';
-import {getPackageDocuments} from '../../convert-package';
 import {getMemberPath} from '../../document-util';
 import {ProjectConverter} from '../../project-converter';
 import {PackageUrlHandler} from '../../urls/package-url-handler';
@@ -94,11 +93,7 @@ suite('AnalysisConverter', () => {
           await new ProjectConverter(analysis, urlHandler, conversionSettings);
       // Gather all relevent package documents, and run the converter!
       const stopIntercepting = interceptWarnings();
-      for (const doc of getPackageDocuments(
-               urlHandler, analysis, conversionSettings)) {
-        // converter.scanDocument(doc);
-        converter.convertDocument(doc);
-      }
+      converter.convertPackage(packageName);
       // Assert warnings matched expected.
       const warnings = stopIntercepting();
       assert.deepEqual(
