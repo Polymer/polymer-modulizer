@@ -77,7 +77,7 @@ export class PackageUrlHandler implements UrlHandler {
    * package.
    */
   getOriginalPackageNameForUrl(url: OriginalDocumentUrl): string {
-    if (url.startsWith('bower_components/')) {
+    if (url.startsWith('../')) {
       return url.split('/')[1];
     } else {
       return this.packageName;

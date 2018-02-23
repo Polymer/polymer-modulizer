@@ -142,6 +142,7 @@ suite('Fixtures', () => {
         const diffResult =
             dircompare.compareSync(fixtureResultDir, fixtureExpectedDir, {
               compareSize: true,
+              compareContent: true,
               excludeFilter: 'bower_components',
             });
         if (!diffResult.same) {

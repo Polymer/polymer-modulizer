@@ -5,6 +5,6 @@ module.exports = {
   stdout: `[1/2] 🌀  Converting Package...
 Out directory: ${path.join(__dirname, 'generated')}
 [2/2] 🎉  Conversion Complete!`,
-  stderr: `WARN: bower->npm mapping for "marked" not found
-WARN: bower->npm mapping for "prism" not found`,
+  stderr:
+      `paper-button: package.json name is changing from "paper-button" to "@polymer/paper-button".`,
 };
