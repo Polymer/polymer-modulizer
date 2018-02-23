@@ -1,5 +1,5 @@
 // https://docs.npmjs.com/files/package.json
-interface NpmConfig {
+export interface NpmConfig {
   name: string;
   version: string;
   description?: string;
@@ -15,18 +15,18 @@ interface NpmConfig {
   man?: string|string[];
   repository?: {type: string, url: string}|string;
   scripts?: {[cmd: string]: string};
-  dependencies?: {[pkg: string]: string}|string;
-  devDependencies?: {[pkg: string]: string}|string;
-  peerDependencies?: {[pkg: string]: string}|string;
+  dependencies?: {[pkg: string]: string};
+  devDependencies?: {[pkg: string]: string};
+  peerDependencies?: {[pkg: string]: string};
   private?: boolean;
 }
 
-interface YarnConfig extends NpmConfig {
+export interface YarnConfig extends NpmConfig {
   flat?: boolean;
   resolutions?: {[pkg: string]: string};
 }
 
-interface NpmPerson {
+export interface NpmPerson {
   name?: string;
   email?: string;
   url?: string;

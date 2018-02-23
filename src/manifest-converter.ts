@@ -14,11 +14,14 @@
 
 'use strict';
 
-import * as fs from 'mz/fs';
+import * as fse from 'fs-extra';
 import {EOL} from 'os';
 import * as path from 'path';
 import * as spdxLicenseList from 'spdx-license-list/simple';
+
 import {replaceHtmlExtensionIfFound} from './urls/util';
+import {BowerConfig} from './bower-config';
+import {YarnConfig} from './npm-config';
 
 interface DependencyMapEntry {
   npm: string;
@@ -28,7 +31,7 @@ interface DependencyMap {
   [bower: string]: DependencyMapEntry|undefined;
 }
 const dependencyMap: DependencyMap =
-    readJson(__dirname, '../dependency-map.json');
+    fse.readJSONSync(path.join(__dirname, '..', 'dependency-map.json'));
 const warningCache: Set<String> = new Set();
 
 /**
@@ -74,22 +77,13 @@ function setNpmDependencyFromBower(
 }
 
 /**
- * helper function to read and parse JSON.
- */
-export function readJson(...pathPieces: string[]) {
-  const jsonPath = path.resolve(...pathPieces);
-  const jsonContents = fs.readFileSync(jsonPath, 'utf-8');
-  return JSON.parse(jsonContents);
-}
-
-/**
  * helper function to serialize and parse JSON.
  */
 export function writeJson(json: any, ...pathPieces: string[]) {
   const jsonPath = path.resolve(...pathPieces);
   const jsonContents =
       JSON.stringify(json, undefined, 2).split('\n').join(EOL) + EOL;
-  fs.writeFileSync(jsonPath, jsonContents);
+  fse.writeFileSync(jsonPath, jsonContents);
 }
 
 /**
@@ -97,25 +91,30 @@ export function writeJson(json: any, ...pathPieces: string[]) {
  * optionally merging with an existing package.json.
  *
  * @param bowerJson The package's existing parsed bower.json.
- * @param name NPM package name. Always wins over existingPackageJson.
- * @param version NPM package version. Always wins over existingPackageJson.
+ * @param options Values from here always win over existingPackageJson.
  * @param useLocal Optional map of any NPM dependencies (name -> local file
  * path) that should be referenced via local file path and not public package
  * name in the package.json. This is useful for testing against other, converted
  * repos.
  * @param existingPackageJson Optional pre-existing parsed package.json. If
- * provided, values from this package.json will win over ones derived from
- * bower.json, with these exceptions:
+ * provided, values from this package.json will not be modified, with these
+ * exceptions:
  *   - name, version, flat, and private are always overridden.
  *   - dependencies, devDependencies, and resolutions are merged, with newly
  *     generated versions for the same package winning.
  */
 export function generatePackageJson(
     bowerJson: Partial<BowerConfig>,
-    name: string,
-    version: string,
+    options: {name: string, version: string, flat: boolean, private: boolean},
     useLocal?: Map<string, string>,
     existingPackageJson?: Partial<YarnConfig>): YarnConfig {
+  if (existingPackageJson && existingPackageJson.name &&
+      existingPackageJson.name !== options.name) {
+    console.warn(
+        `${bowerJson.name}: package.json name is changing from ` +
+        `"${existingPackageJson.name}" to "${options.name}".`);
+  }
+
   const packageJson: YarnConfig = {
     description: bowerJson.description,
     keywords: bowerJson.keywords,
@@ -123,15 +122,16 @@ export function generatePackageJson(
     homepage: bowerJson.homepage,
 
     ...existingPackageJson,
-
-    name,
-    version,
-    flat: true,
-    // TODO(aomarks) We probably want this behind a flag, because switching an
-    // existing package to be publishable could be dangerous. We need this for
-    // the Polymer elements, because the 2.x branches are marked private.
-    private: undefined,
+    ...options,
   };
+
+  // Don't need to explicitly write these default cases.
+  if (packageJson.flat === false) {
+    delete packageJson.flat;
+  }
+  if (packageJson.private === false) {
+    delete packageJson.private;
+  }
 
   // TODO (fks): Remove these resolutions needed by wct-browser-legacy
   // https://github.com/Polymer/polymer-modulizer/issues/251
@@ -144,37 +144,44 @@ export function generatePackageJson(
   };
 
   if (!packageJson.main) {
-    let main;
+    let bowerMains = new Array<string>();
     if (typeof bowerJson.main === 'string') {
-      main = bowerJson.main;
+      bowerMains = [bowerJson.main];
     } else if (Array.isArray(bowerJson.main)) {
-      if (bowerJson.main.length === 1) {
-        main = bowerJson.main[0];
-      } else {
-        // We could potentially be smarter here. Bower configs have loose
-        // semantics around main, and allow one file per filetype. There might
-        // be an HTML file for the main element, and some extra things like a
-        // CSS file. Maybe in that case we should find just the HTML file.
-        //
-        // There could also be multiple HTML files in main, e.g. a repo like
-        // paper-behaviors which contains 3 separate Polymer behaviors. We
-        // currently let that be, so importing the module directly will fail.
-        // We could also generate an index that re-exports all of the symbols
-        // from all of the mains.
-        console.warn(
-            `${bowerJson.name}: Found multiple mains in bower.json, ` +
-            `but package.json must have only one.`);
-      }
+      bowerMains = bowerJson.main;
     }
-    if (main && main.endsWith('.html')) {
-      // Assume that the bower main is already a correct relative path to an
-      // HTML file, and that the module equivalent will be in the same directory
-      // but with a JS extension.
-      packageJson.main = replaceHtmlExtensionIfFound(main);
+    // Bower configs allow one file per filetype. There might be an HTML file
+    // for the main element, and some extra things like a CSS file.
+    const htmlMains =
+        bowerMains.filter((filepath) => filepath.endsWith('.html'));
+
+    if (htmlMains.length === 1) {
+      // Assume that this bower main is already a correct relative path and that
+      // the module equivalent will be in the same directory but with a JS
+      // extension.
+      //
+      // TODO(aomarks) Use the conversion result to look up the new path in case
+      // this file mapping becomes more complicated.
+      packageJson.main = replaceHtmlExtensionIfFound(htmlMains[0]);
+
+    } else if (htmlMains.length > 1) {
+      // There can be multiple HTML files in main, e.g. a repo like
+      // paper-behaviors which contains 3 separate Polymer behaviors. We
+      // currently let that be, so importing the module directly will fail. We
+      // could also generate an index that re-exports all of the symbols from
+      // all of the mains.
+      console.warn(
+          `${bowerJson.name}: Found multiple HTML mains in bower.json. ` +
+          `A main was not added to package.json, ` +
+          `so this package will not be directly importable by name. ` +
+          `Manually update main in your bower.json or package.json to fix.`);
+
     } else {
       console.warn(
-          `${bowerJson.name}: Could not automatically find main. ` +
-          `Please manually set your package.json main.`);
+          `${bowerJson.name}: Did not find an HTML main in bower.json. ` +
+          `A main was not added to package.json, ` +
+          `so this package will not be directly importable by name. ` +
+          `Manually update main in your bower.json or package.json to fix.`);
     }
   }
 
@@ -203,29 +210,30 @@ export function generatePackageJson(
   }
 
   if (!packageJson.license) {
-    let license;
+    let bowerLicenses = new Array<string>();
     if (typeof bowerJson.license === 'string') {
-      license = bowerJson.license;
+      bowerLicenses = [bowerJson.license];
     } else if (Array.isArray(bowerJson.license)) {
-      if (bowerJson.license.length === 1) {
-        license = bowerJson.license[0];
-      } else {
-        console.warn(
-            `${bowerJson.name}: Found multiple licenses in bower.json, ` +
-            `but package.json must have only one.`);
-      }
+      bowerLicenses = bowerJson.license;
     }
-    if (license) {
-      if (license.includes('polymer.github.io/LICENSE')) {
-        license = 'BSD-3-Clause';
-      } else if (!spdxLicenseList.has(license)) {
+
+    if (bowerLicenses.length === 1) {
+      packageJson.license = bowerLicenses[0];
+      if (packageJson.license.includes('polymer.github.io/LICENSE')) {
+        packageJson.license = 'BSD-3-Clause';
+      } else if (!spdxLicenseList.has(bowerLicenses[0])) {
         console.warn(
             `${bowerJson.name}: ` +
             `'${bowerJson.license}' is not a valid SPDX license. ` +
             `You can find a list of valid licenses at ` +
             `https://spdx.org/licenses/`);
       }
-      packageJson.license = license;
+
+    } else if (bowerLicenses.length > 1) {
+      console.warn(
+          `${bowerJson.name}: Found multiple licenses in bower.json, ` +
+          `but package.json must have only one.`);
+
     } else {
       console.warn(
           `${bowerJson.name}: ` +
@@ -235,12 +243,12 @@ export function generatePackageJson(
     }
   }
 
-  packageJson.dependencies = Object.assign({}, packageJson.dependencies);
+  packageJson.dependencies = {...packageJson.dependencies};
   for (const bowerPackageName in bowerJson.dependencies || []) {
     setNpmDependencyFromBower(
         packageJson.dependencies, bowerPackageName, useLocal);
   }
-  packageJson.devDependencies = Object.assign({}, packageJson.devDependencies);
+  packageJson.devDependencies = {...packageJson.devDependencies};
   for (const bowerPackageName in bowerJson.devDependencies || []) {
     setNpmDependencyFromBower(
         packageJson.devDependencies, bowerPackageName, useLocal);

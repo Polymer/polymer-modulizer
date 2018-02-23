@@ -17,12 +17,14 @@ import * as path from 'path';
 import {Analyzer, FSUrlLoader, InMemoryOverlayUrlLoader, PackageUrlResolver, ResolvedUrl} from 'polymer-analyzer';
 import {run, WorkspaceRepo} from 'polymer-workspaces';
 
+import {BowerConfig} from './bower-config';
 import {createDefaultConversionSettings, PartialConversionSettings} from './conversion-settings';
 import {generatePackageJson, writeJson} from './manifest-converter';
+import {YarnConfig} from './npm-config';
 import {ProjectConverter} from './project-converter';
 import {polymerFileOverrides} from './special-casing';
 import {lookupNpmPackageName, WorkspaceUrlHandler} from './urls/workspace-url-handler';
-import {exec, logRepoError, rimraf, writeFileResults} from './util';
+import {exec, logRepoError, readJsonIfExists, rimraf, writeFileResults} from './util';
 
 /**
  * Configuration options required for workspace conversions. Contains
@@ -40,7 +42,9 @@ export const GIT_STAGING_BRANCH_NAME = 'polymer-modulizer-staging';
 /**
  * For a given repo, generate a new package.json and write it to disk.
  */
-function writePackageJson(repo: WorkspaceRepo, packageVersion: string) {
+async function writePackageJson(
+    repo: WorkspaceRepo,
+    options: {version: string, flat: boolean, private: boolean}) {
   const bowerPackageName = path.basename(repo.dir);
   const bowerJsonPath = path.join(repo.dir, 'bower.json');
   const bowerJson = fse.readJSONSync(bowerJsonPath) as Partial<BowerConfig>;
@@ -48,15 +52,12 @@ function writePackageJson(repo: WorkspaceRepo, packageVersion: string) {
       lookupNpmPackageName(bowerJsonPath) || bowerPackageName;
 
   const packageJsonPath = path.join(repo.dir, 'package.json');
-  let existingPackageJson: Partial<YarnConfig>|undefined;
-  if (fse.pathExistsSync(packageJsonPath)) {
-    existingPackageJson = fse.readJSONSync(packageJsonPath);
-  }
+  const existingPackageJson =
+      await readJsonIfExists<Partial<YarnConfig>>(packageJsonPath);
 
   const packageJson = generatePackageJson(
       bowerJson,
-      npmPackageName,
-      packageVersion,
+      {name: npmPackageName, ...options},
       undefined,
       existingPackageJson);
   writeJson(packageJson, packageJsonPath);
@@ -132,9 +133,12 @@ export default async function convert(options: WorkspaceConversionSettings):
   }
 
   // Generate a new package.json for each repo:
-  const packageJsonResults = await run(options.reposToConvert, async (repo) => {
-    return writePackageJson(repo, options.packageVersion);
-  });
+  const packageJsonResults = await run(
+      options.reposToConvert, async (repo) => await writePackageJson(repo, {
+                                version: options.packageVersion,
+                                flat: options.flat,
+                                private: options.private,
+                              }));
   packageJsonResults.failures.forEach(logRepoError);
 
   // Commit all changes to a staging branch for easy state resetting.

@@ -143,6 +143,16 @@ export interface PartialConversionSettings {
    * glob patterns.
    */
   readonly deleteFiles?: Iterable<string>;
+
+  /**
+   * TODO
+   */
+  readonly flat: boolean;
+
+  /**
+   * TODO
+   */
+  readonly private: boolean;
 }
 
 /**

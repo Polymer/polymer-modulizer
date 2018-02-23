@@ -16,14 +16,15 @@ import * as fse from 'fs-extra';
 import * as path from 'path';
 import {Analysis, Analyzer, FSUrlLoader, InMemoryOverlayUrlLoader, PackageUrlResolver, ResolvedUrl} from 'polymer-analyzer';
 
+import {BowerConfig} from './bower-config';
 import {ConversionSettings, createDefaultConversionSettings, PartialConversionSettings} from './conversion-settings';
 import {generatePackageJson, writeJson} from './manifest-converter';
+import {YarnConfig} from './npm-config';
 import {ProjectConverter} from './project-converter';
 import {polymerFileOverrides} from './special-casing';
 import {PackageUrlHandler} from './urls/package-url-handler';
 import {PackageType} from './urls/types';
-import {mkdirp, rimraf, writeFileResults} from './util';
-
+import {mkdirp, readJsonIfExists, rimraf, writeFileResults} from './util';
 
 /**
  * Configuration options required for package-layout conversions. Contains
@@ -116,8 +117,6 @@ function configureAnalyzer(options: PackageConversionSettings) {
  */
 export default async function convert(options: PackageConversionSettings) {
   const outDir = options.outDir;
-  const npmPackageName = options.packageName;
-  const npmPackageVersion = options.packageVersion;
   await setupOutDir(outDir, options.cleanOutDir);
 
   // Configure the analyzer and run an analysis of the package.
@@ -156,17 +155,19 @@ export default async function convert(options: PackageConversionSettings) {
   }
 
   const packageJsonPath = path.join(options.inDir, 'package.json');
-  let existingPackageJson: Partial<YarnConfig>|undefined;
-  if (await fse.pathExists(packageJsonPath)) {
-    existingPackageJson = await fse.readJSON(packageJsonPath);
-  }
+  const existingPackageJson =
+      await readJsonIfExists<Partial<YarnConfig>>(packageJsonPath);
 
   // Generate a new package.json, and write it to disk.
   try {
     const packageJson = generatePackageJson(
         bowerJson,
-        npmPackageName,
-        npmPackageVersion,
+        {
+          name: options.packageName,
+          version: options.packageVersion,
+          flat: options.flat,
+          private: options.private,
+        },
         undefined,
         existingPackageJson);
     writeJson(packageJson, packageJsonPath);

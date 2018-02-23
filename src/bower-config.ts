@@ -1,5 +1,5 @@
 // https://github.com/bower/spec/blob/master/json.md
-interface BowerConfig {
+export interface BowerConfig {
   name: string;
   description?: string;
   version?: string;
@@ -16,7 +16,7 @@ interface BowerConfig {
   private?: boolean;
 }
 
-interface BowerPerson {
+export interface BowerPerson {
   name?: string;
   email?: string;
   homepage?: string;
