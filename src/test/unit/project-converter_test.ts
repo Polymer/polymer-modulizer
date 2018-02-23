@@ -470,12 +470,14 @@ console.log('a statement');
             'use strict';
 
             console.log('a statement');
+            console.log('just do not forget to', 'use strict', 'okay?');
           </script>
         `,
       });
       assertSources(await convert(), {
         'test.js': `
 console.log('a statement');
+console.log('just do not forget to', 'use strict', 'okay?');
 `
       });
     });
