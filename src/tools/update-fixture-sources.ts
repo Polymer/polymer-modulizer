@@ -19,22 +19,16 @@ import * as path from 'path';
 import {exec} from 'mz/child_process';
 import * as fs from 'fs-extra';
 
-import convertPackage from '../convert-package';
-
 interface UpdateFixtureOptions {
   folder: string;
   repoUrl: string;
   branch?: string;
-  packageName: string;
-  packageVersion: string;
-  deleteFiles?: string[];
 }
 
 async function updateFixture(options: UpdateFixtureOptions) {
   const fixturesDir =
       path.resolve(__dirname, '../../fixtures/packages/', options.folder);
   const sourceDir = path.join(fixturesDir, 'source');
-  const convertedDir = path.join(fixturesDir, 'expected');
   const branch = options.branch || 'master';
 
   console.log(`Cloning ${options.repoUrl} #${branch} to ${sourceDir}...`);
@@ -51,23 +45,6 @@ async function updateFixture(options: UpdateFixtureOptions) {
   await overridePolymer(sourceDir);
 
   await exec('bower install', {cwd: sourceDir});
-
-  // We're going to do an in-place conversion.
-  await fs.emptyDir(convertedDir);
-  await fs.copy(sourceDir, convertedDir);
-
-  console.log(`Converting...`);
-  await convertPackage({
-    inDir: convertedDir,
-    outDir: convertedDir,
-    cleanOutDir: false,
-    packageName: options.packageName,
-    packageVersion: options.packageVersion,
-    addImportPath: true,
-    deleteFiles: options.deleteFiles,
-    flat: false,
-    private: false,
-  });
   console.log(`Done.`);
 }
 
@@ -97,21 +74,14 @@ async function overridePolymer(sourceDir: string) {
     updateFixture({
       folder: 'polymer',
       repoUrl: 'https://github.com/Polymer/polymer.git',
-      packageName: '@polymer/polymer',
-      packageVersion: '3.0.0',
-      deleteFiles: ['types'],
     }),
     updateFixture({
       folder: 'paper-button',
       repoUrl: 'https://github.com/PolymerElements/paper-button.git',
-      packageName: '@polymer/paper-button',
-      packageVersion: '3.0.0',
     }),
     updateFixture({
       folder: 'iron-icon',
       repoUrl: 'https://github.com/PolymerElements/iron-icon.git',
-      packageName: '@polymer/iron-icon',
-      packageVersion: '3.0.0',
     }),
   ].map((p) => p.catch((e) => {
     // Exit with an error code if any fixture fails, but let them all finish.

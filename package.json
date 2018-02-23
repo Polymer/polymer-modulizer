@@ -13,7 +13,8 @@
   },
   "scripts": {
     "build": "tsc",
-    "build:fixtures": "npm run build && node lib/tools/update-fixtures",
+    "update-fixture-sources": "npm run build && node lib/tools/update-fixture-sources",
+    "update-fixture-expected": "npm run build && UPDATE_EXPECTED=true mocha lib/test/fixtures/fixtures_test.js",
     "test:full": "npm run build && bash test/run-mocha.sh && npm run lint",
     "test:fast": "npm run build && bash test/run-mocha.sh unit",
     "test:watch": "watchy -w src/ -w custom_typings/ -- npm run test:fast --loglevel=silent",

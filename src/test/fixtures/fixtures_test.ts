@@ -135,6 +135,12 @@ suite('Fixtures', () => {
           '--add-import-path',
         ].concat(fixtureTestConfig.options || []));
 
+        if (process.env.UPDATE_EXPECTED === 'true') {
+          console.log(`\n💾 updating expected result for ${fixtureBasename}\n`);
+          await fs.emptyDir(fixtureExpectedDir);
+          await fs.copy(fixtureResultDir, fixtureExpectedDir);
+        }
+
         // 1. Check stderr output that no (unexpected) errors were emitted.
         assert.equal(output.stderr, (fixtureTestConfig.stderr || ''));
 
