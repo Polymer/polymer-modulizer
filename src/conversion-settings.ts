@@ -145,12 +145,12 @@ export interface PartialConversionSettings {
   readonly deleteFiles?: Iterable<string>;
 
   /**
-   * TODO
+   * Whether to set flat:true in the newly generated package.json.,
    */
   readonly flat: boolean;
 
   /**
-   * TODO
+   * Whether to set private:true in the newly generated package.json.
    */
   readonly private: boolean;
 }
