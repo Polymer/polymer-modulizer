@@ -54,7 +54,6 @@
   },
   "publishConfig": {
     "access": "public"
-    "wct-browser-legacy": "0.0.1-pre.11",
   },
   "resolutions": {
     "inherits": "2.0.3",
