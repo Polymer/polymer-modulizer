@@ -18,18 +18,18 @@
   },
   "license": "BSD-3-Clause",
   "dependencies": {
-    "@polymer/iron-flex-layout": "^3.0.0-pre.1",
-    "@polymer/iron-meta": "^3.0.0-pre.1",
-    "@polymer/polymer": "^3.0.0-pre.1"
+    "@polymer/iron-flex-layout": "^3.0.0-pre.10",
+    "@polymer/iron-meta": "^3.0.0-pre.10",
+    "@polymer/polymer": "^3.0.0-pre.10"
   },
   "devDependencies": {
-    "@polymer/promise-polyfill": "^3.0.0-pre.1",
-    "@polymer/iron-iconset": "^3.0.0-pre.1",
-    "@polymer/iron-icons": "^3.0.0-pre.1",
-    "@polymer/iron-component-page": "^3.0.0-pre.1",
-    "wct-browser-legacy": "0.0.1-pre.10",
+    "@polymer/promise-polyfill": "^3.0.0-pre.10",
+    "@polymer/iron-iconset": "^3.0.0-pre.10",
+    "@polymer/iron-icons": "^3.0.0-pre.10",
+    "@polymer/iron-component-page": "^3.0.0-pre.10",
+    "wct-browser-legacy": "0.0.1-pre.11",
     "@webcomponents/webcomponentsjs": "^1.0.0",
-    "@polymer/iron-demo-helpers": "^3.0.0-pre.1"
+    "@polymer/iron-demo-helpers": "^3.0.0-pre.10"
   },
   "resolutions": {
     "inherits": "2.0.3",
