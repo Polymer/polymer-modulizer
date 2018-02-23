@@ -35,5 +35,5 @@
     "@polymer/test-fixture": "^3.0.0-pre.10",
     "wct-browser-legacy": "0.0.1-pre.11",
     "@webcomponents/webcomponentsjs": "^1.0.0"
-  },
+  }
 }
