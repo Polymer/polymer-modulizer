@@ -68,14 +68,21 @@ export class ProjectScanner {
    * coverted, or otherwise handled by the modulizer.
    */
   getPackageDocuments(matchPackageName: string) {
-    return [...this.analysis.getFeatures({kind: 'html-document'})]
-        .filter((d) => d.isInline === false)
-        .filter((d) => {
+    return [...this.analysis.getFeatures({kind: 'html-document'})].filter(
+        (d) => {
+          // Filter out any inline documents returned by the analyzer
+          if (d.isInline === true) {
+            return false;
+          }
+          // Filter out any excluded documents
           const documentUrl = this.urlHandler.getDocumentUrl(d);
+          if (this.conversionSettings.excludes.has(documentUrl)) {
+            return false;
+          }
+          // Filter out any external documents
           const packageName =
               this.urlHandler.getOriginalPackageNameForUrl(documentUrl);
-          return packageName === matchPackageName &&
-              !this.conversionSettings.excludes.has(documentUrl);
+          return packageName === matchPackageName;
         });
   }
 

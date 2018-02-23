@@ -128,6 +128,10 @@ interface Edit {
   replacementText: string;
 }
 
+/**
+ * Contains information about how an existing file should be converted to a new
+ * JS Module. Includes a mapping of its new exports.
+ */
 export interface JsModuleScanResult {
   type: 'js-module';
   originalUrl: OriginalDocumentUrl;
@@ -135,11 +139,19 @@ export interface JsModuleScanResult {
   exportMigrationRecords: NamespaceMemberToExport[];
 }
 
+/**
+ * Contains information that an existing file should be deleted during
+ * conversion.
+ */
 export interface DeleteFileScanResult {
   type: 'delete-file';
   originalUrl: OriginalDocumentUrl;
 }
 
+/**
+ * Contains information that an existing file should be converted as a top-level
+ * HTML file (and not as a new JS module).
+ */
 export interface HtmlDocumentScanResult {
   type: 'html-document';
   originalUrl: OriginalDocumentUrl;
@@ -416,7 +428,9 @@ export class DocumentConverter {
   }
 
   /**
-   * Scan a document as a top-level HTML document.
+   * Scan a document as a top-level HTML document. Top-level HTML documents
+   * have no exports to scan, so this returns a simple object containing
+   * relevant url mapping information.
    */
   scanTopLevelHtmlDocument(): HtmlDocumentScanResult {
     return {
