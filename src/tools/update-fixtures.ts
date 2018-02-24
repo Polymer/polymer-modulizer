@@ -18,10 +18,28 @@ require('source-map-support').install();
 import * as path from 'path';
 import {exec} from 'mz/child_process';
 import * as fs from 'fs-extra';
+import * as commandLineArgs from 'command-line-args';
+import {runFixture, TestConfig} from '../test/fixtures/run-fixture';
+
+const cliDefs = [
+  {
+    name: 'skip-source-update',
+    type: Boolean,
+    defaultValue: false,
+    description: `Whether to skip updating the source repo, ` +
+        `so that the expected result is generated from the existing source.`,
+
+  },
+];
+
+interface CliOpts {
+  'skip-source-update': boolean;
+}
 
 interface UpdateFixtureOptions {
   folder: string;
   repoUrl: string;
+  skipSourceUpdate: boolean;
   branch?: string;
 }
 
@@ -29,22 +47,31 @@ async function updateFixture(options: UpdateFixtureOptions) {
   const fixturesDir =
       path.resolve(__dirname, '../../fixtures/packages/', options.folder);
   const sourceDir = path.join(fixturesDir, 'source');
-  const branch = options.branch || 'master';
+  const convertedDir = path.join(fixturesDir, 'expected');
 
-  console.log(`Cloning ${options.repoUrl} #${branch} to ${sourceDir}...`);
-  await fs.ensureDir(fixturesDir);
-  await fs.remove(sourceDir);
+  if (!options.skipSourceUpdate) {
+    const branch = options.branch || 'master';
 
-  await exec(
-      `git clone ${options.repoUrl} ${sourceDir} --branch=${branch} --depth=1`,
-      {cwd: fixturesDir});
-  await fs.remove(path.join(sourceDir, '.git'));
-  await fs.remove(path.join(sourceDir, '.github'));
-  await fs.remove(path.join(sourceDir, '.gitignore'));
+    console.log(`Cloning ${options.repoUrl} #${branch} to ${sourceDir}...`);
+    await fs.ensureDir(fixturesDir);
+    await fs.remove(sourceDir);
 
-  await overridePolymer(sourceDir);
+    await exec(
+        `git clone ${options.repoUrl} ${sourceDir} --branch=${
+            branch} --depth=1`,
+        {cwd: fixturesDir});
+    await fs.remove(path.join(sourceDir, '.git'));
+    await fs.remove(path.join(sourceDir, '.github'));
+    await fs.remove(path.join(sourceDir, '.gitignore'));
 
-  await exec('bower install', {cwd: sourceDir});
+    await overridePolymer(sourceDir);
+
+    await exec('bower install', {cwd: sourceDir});
+  }
+
+  const testConfig = require(path.join(fixturesDir, 'test.js')) as TestConfig;
+  await runFixture(sourceDir, convertedDir, testConfig);
+
   console.log(`Done.`);
 }
 
@@ -68,20 +95,26 @@ async function overridePolymer(sourceDir: string) {
 }
 
 (async () => {
+  const options = commandLineArgs(cliDefs) as CliOpts;
+  const skipSourceUpdate = options['skip-source-update'];
+
   let exitCode = 0;
 
   await Promise.all([
     updateFixture({
       folder: 'polymer',
       repoUrl: 'https://github.com/Polymer/polymer.git',
+      skipSourceUpdate,
     }),
     updateFixture({
       folder: 'paper-button',
       repoUrl: 'https://github.com/PolymerElements/paper-button.git',
+      skipSourceUpdate,
     }),
     updateFixture({
       folder: 'iron-icon',
       repoUrl: 'https://github.com/PolymerElements/iron-icon.git',
+      skipSourceUpdate,
     }),
   ].map((p) => p.catch((e) => {
     // Exit with an error code if any fixture fails, but let them all finish.
