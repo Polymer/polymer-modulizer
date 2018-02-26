@@ -97,6 +97,18 @@ modulizer owner/repo owner2/repo2
 
 This will create a `modulizer_workspace` directory and checkout the repos and their Bower dependencies and convert them all in place. You can then run `polymer serve` in the workspace directory and try out the results in Chrome 61 or Safari 10.1 (or Edge and Firefox with the appropriate flags turned on).
 
+
+## Conversion Options
+
+#### `--import-style ["name"|"path"]`
+
+Setting the import style allows you to set whether dependency imports are specifiered by npm package name, or relative file path. Importing specifiers that use package names are easier for third-party packages to work with, but unlike paths they currently can not run natively on the web. Defaults to "path".
+
+#### `--add-import-path`
+
+If included, the static `importPath` property will be added to converted Polymer elements. See [the `importPath` documentation](https://www.polymer-project.org/2.0/docs/devguide/dom-template) for more information.
+
+
 ## Conversion Guidelines
 
 polymer-modulizer works best on well-structured projects, where each HTML file is conceptually a single module already, and references to objects other files, even though via globals, are kept to simple, declarative forms.
