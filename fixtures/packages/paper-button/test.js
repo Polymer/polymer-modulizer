@@ -7,6 +7,7 @@ module.exports = {
     '--npm-version',
     '3.0.0',
     '--delete-files',
+    'bower.json',
     '**/*.d.ts',
   ],
   stdout: `[1/2] 🌀  Converting Package...
