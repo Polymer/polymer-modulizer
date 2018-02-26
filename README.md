@@ -16,7 +16,7 @@ polymer-modulizer may include bugs, unexpected behavior, breaking changes, and e
  5. 📚 _If_ you want to publish the output of the tool, use a pre-release version and tag for now, until we can make stronger guarantees about the API of the output it generates.
 
 
-To track our status on Polymer elements, check out or [elements status tracker](./docs/polymer-3-element-status.md).  
+To track our status on Polymer elements, check out or [elements status tracker](./docs/polymer-3-element-status.md).
 For a list of all breaking changes, see our [Breaking Changes Changelog](./docs/breaking_changes.md).
 
 Good luck, the future is exciting! 😎 Please join us for discussion in the [`#modulizer` Slack channel](https://polymer.slack.com/messages/G6R11FXEC/).
@@ -105,7 +105,7 @@ This will create a `modulizer_workspace` directory and checkout the repos and th
 
 #### `--import-style ["name"|"path"]`
 
-Setting the import style allows you to set whether dependency imports are specifiered by npm package name, or relative file path. Importing specifiers that use package names are easier for third-party packages to work with, but unlike paths they currently can not run natively on the web. Defaults to "path".
+Setting the import style allows you to set whether JavaScript imports are specified by npm package name, or relative file path. Importing specifiers that use package names are easier for third-party packages to work with, but unlike paths they currently can not run natively on the web. Defaults to "path".
 
 #### `--add-import-path`
 
