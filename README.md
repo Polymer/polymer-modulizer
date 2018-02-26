@@ -7,9 +7,7 @@ polymer-modulizer is a tool to convert packages of HTML imports to JavaScript mo
 
 ## 🚧 Warning: Extremely Early Preview! 🚧
 
-polymer-modulizer, and the output it generates, are very early versions. As far as we can tell, they mostly work, but they're still subject to bugs, unexpected behavior, breaking changes, and especially, too little documentation.
-
-We are opening this tool now so we can work in the open, and to gather feedback on how well it works on your code. If you choose to use it:
+polymer-modulizer may include bugs, unexpected behavior, breaking changes, and especially, too little documentation. If you choose to use it:
 
  1. 🚿 Run the tool in a clean Git working directory, or use workspace mode. Do not run on uncommitted changes.
  2. 📞 Please report any issues you find!
@@ -17,11 +15,16 @@ We are opening this tool now so we can work in the open, and to gather feedback 
  4. 🔄 Be ready to update and run the tool again in the future to pick up changes in output.
  5. 📚 _If_ you want to publish the output of the tool, use a pre-release version and tag for now, until we can make stronger guarantees about the API of the output it generates.
 
+
+To track our status on Polymer elements, check out or [elements status tracker](./docs/polymer-3-element-status.md).  
+For a list of all breaking changes, see our [Breaking Changes Changelog](./docs/breaking_changes.md).
+
 Good luck, the future is exciting! 😎 Please join us for discussion in the [`#modulizer` Slack channel](https://polymer.slack.com/messages/G6R11FXEC/).
+
 
 ## Overview
 
-polymer-modulizer is designed to convert HTML Imports, and especially those containing Polymer and Polymer elements, to JavaScript modules as automatically as possible.
+polymer-modulizer is designed to convert HTML documents, and especially those containing Polymer and Polymer elements, to JavaScript modules as automatically as possible.
 
 polymer-modulizer tries to strike a balance between supporting the general semantics of HTML Imports and generating idiomatic JavaScript modules. It converts assignments to global namespace objects to module exports, and references to namespaces as imported names.
 
@@ -155,15 +158,6 @@ polymer-modulizer works best on well-structured projects, where each HTML file i
 
     We need wider dynamic `import()` support in Browsers to properly support dynamic loading and PRPL.
 
-## Status
-
-polymer-modulizer is under heavy construction, but can already convert Polymer core and many elements. Demos often work, though sometimes with a few manual fixes. Work is continuing on getting tests to run and pass automatically, and in generating more idiomatic JavaScript modules.
-
-Please file any issues you have with conversions.
-
-## Breaking changes
-
-Converting HTML to modules involves a few breaking changes. See [./docs/breaking_changes.md](./docs/breaking_changes.md).
 
 ## Contributing
 
