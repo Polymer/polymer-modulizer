@@ -39,11 +39,11 @@ import {rewriteNamespacesThisReferences} from './passes/rewrite-namespace-this-r
 import {rewriteReferencesToLocalExports} from './passes/rewrite-references-to-local-exports';
 import {rewriteReferencesToNamespaceMembers} from './passes/rewrite-references-to-namespace-members';
 import {rewriteToplevelThis} from './passes/rewrite-toplevel-this';
-import {invertMultimap, joinCamelCase} from './util';
 import {ConvertedDocumentUrl, OriginalDocumentUrl} from './urls/types';
 import {UrlHandler} from './urls/url-handler';
 import {isOriginalDocumentUrlFormat} from './urls/util';
 import {getHtmlDocumentConvertedFilePath, getJsModuleConvertedFilePath, getModuleId, replaceHtmlExtensionIfFound} from './urls/util';
+import {invertMultimap, joinCamelCase} from './util';
 
 /**
  * Keep a map of dangerous references to check for. Output the related warning
