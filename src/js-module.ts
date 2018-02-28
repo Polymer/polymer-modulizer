@@ -12,40 +12,29 @@
  * http://polymer.github.io/PATENTS.txt
  */
 
-import {ConvertedDocumentUrl} from './url-converter';
+import {ConvertedDocumentFilePath, ConvertedDocumentUrl, OriginalDocumentUrl} from './urls/types';
 
-export type ConversionOutput = DeleteFile | HtmlFile | JsModule;
-
-export interface DeleteFile {
-  readonly type: 'delete-file';
-  readonly url: ConvertedDocumentUrl;
-}
-
-export interface HtmlFile {
-  readonly type: 'html-file';
-  readonly url: ConvertedDocumentUrl;
-
-  readonly source: string;
-}
-
-export interface JsModule {
-  readonly type: 'js-module';
-  /**
-   * Package-relative URL of the converted JS module.
-   */
-  readonly url: ConvertedDocumentUrl;
+export interface ConversionResult {
+  readonly originalUrl: OriginalDocumentUrl;
+  readonly convertedUrl: ConvertedDocumentUrl;
+  readonly convertedFilePath: ConvertedDocumentFilePath;
 
   /**
-   * Converted source of the JS module.
+   * Explicitly keep or remove the original file from disk. By default, the
+   * original file will be destroyed. If the convertedFilePath matches
+   * originalUrl, the original file will always be overwritten with the
+   * converted output.
    */
-  readonly source: string;
+  readonly deleteOriginal?: boolean;
 
   /**
-   * Set of exported names.
+   * An object describing the converted output of this module, or `undefined`.
+   *
+   * If `undefined`, no new file is created and the original file is deleted
+   * regardless of the value of `deleteOriginal`. This is useful in cases where
+   * there original is an HTML file that only loads an external script.
    */
-  readonly es6Exports: ReadonlySet<string>;
-
-  readonly exportedNamespaceMembers: ReadonlyArray<NamespaceMemberToExport>;
+  readonly output: string|undefined;
 }
 
 export class JsExport {
@@ -57,7 +46,7 @@ export class JsExport {
   /**
    * Exported name, ie Foo for `export Foo`;
    *
-   * The name * represents the entire module, for when the key in the
+   * The name represents the entire module, for when the key in the
    * namespacedExports Map represents a namespace object.
    */
   readonly name: string;

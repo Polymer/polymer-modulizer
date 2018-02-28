@@ -11,241 +11,127 @@
  * subject to an additional IP rights grant found at
  * http://polymer.github.io/PATENTS.txt
  */
-
-import * as astTypes from 'ast-types';
-import {NodePath} from 'ast-types';
-import * as dom5 from 'dom5';
-import * as estree from 'estree';
+import chalk from 'chalk';
+import {ExecOptions} from 'child_process';
+import * as fse from 'fs-extra';
 import {Iterable as IterableX} from 'ix';
-import * as jsc from 'jscodeshift';
-import * as parse5 from 'parse5';
 import * as path from 'path';
-import {Analysis} from 'polymer-analyzer';
+import {WorkspaceRepo} from 'polymer-workspaces';
 
-export function serializeNode(node: parse5.ASTNode): string {
-  const container = parse5.treeAdapters.default.createDocumentFragment();
-  dom5.append(container, node);
-  return parse5.serialize(container);
-}
+import {ConvertedDocumentFilePath} from './urls/types';
 
-/**
- * Get the import name for an imported module object. Useful when generating an
- * import statement, or a reference to an imported module object.
- */
-export function getModuleId(url: string) {
-  const baseName = path.basename(url);
-  const lastDotIndex = baseName.lastIndexOf('.');
-  const mainName = baseName.substring(0, lastDotIndex);
-  return dashToCamelCase(mainName);
-}
+import _mkdirp = require('mkdirp');
+import _rimraf = require('rimraf');
+import _glob = require('glob');
+const {promisify} = require('util');
+const {execFile: _execFile} = require('child_process');
+const execFile = promisify(_execFile);
+const glob = promisify(_glob);
+
 
 /**
- * Finds an unused identifier name given an array of requested identifiers, in
- * order of preference, and a set of used identifiers.
- *
- * The result is either:
- * - the first element of `requested` that is not in `used`, or
- * - `requested[requested.length - 1] + '$' + suffix`, where `suffix` is the
- *   lowest non-negative integer such that the result is not in `used`.
+ * Helper promisified "mkdirp" library function.
  */
-export function findAvailableIdentifier(
-    requested: ReadonlyArray<string>, used: ReadonlySet<string>) {
-  if (requested.length < 1) {
-    throw new Error('At least one identifier must be requested.');
-  }
-
-  let index = 0;
-  let alias = requested[index++];
-  while (used.has(alias) && index < requested.length) {
-    alias = requested[index++];
-  }
-
-  let suffix = 0;
-  while (used.has(alias)) {
-    alias = requested[requested.length - 1] + '$' + (suffix++);
-  }
-
-  return alias;
-}
-
-function dashToCamelCase(s: string) {
-  return s.replace(/-[a-z]/g, (m) => m[1].toUpperCase());
-}
-
-export function sourceLocationsEqual(a: estree.Node, b: estree.Node): boolean {
-  if (a === b) {
-    return true;
-  }
-  const aLoc = a.loc;
-  const bLoc = b.loc;
-  if (aLoc === bLoc) {
-    return true;
-  }
-  if (aLoc == null || bLoc == null) {
-    return false;
-  }
-  return aLoc.start.column === bLoc.start.column &&
-      aLoc.start.line === bLoc.start.line &&
-      aLoc.end.column === bLoc.end.column && aLoc.end.line === bLoc.end.line;
-}
-
-export function nodeToTemplateLiteral(
-    node: parse5.ASTNode, addNewlines = true): estree.TemplateLiteral {
-  const lines = parse5.serialize(node).split('\n');
-
-  // Remove empty / whitespace-only leading lines.
-  while (/^\s*$/.test(lines[0])) {
-    lines.shift();
-  }
-  // Remove empty / whitespace-only trailing lines.
-  while (/^\s*$/.test(lines[lines.length - 1])) {
-    lines.pop();
-  }
-
-  let cooked = lines.join('\n');
-  if (addNewlines) {
-    cooked = `\n${cooked}\n`;
-  }
-
-  // The `\` -> `\\` replacement must occur first so that the backslashes
-  // introduced by later replacements are not replaced.
-  const raw = cooked.replace(/<\/script/g, '&lt;/script')
-                  .replace(/\\/g, '\\\\')
-                  .replace(/`/g, '\\`')
-                  .replace(/\$/g, '\\$');
-
-  return jsc.templateLiteral([jsc.templateElement({cooked, raw}, true)], []);
-}
+export const mkdirp = promisify(_mkdirp);
 
 /**
- * Returns an array of identifiers if an expression is a chain of property
- * access, as used in namespace-style exports.
+ * Helper promisified "rimraf" library function.
  */
-export function getMemberPath(expression: estree.Node): string[]|undefined {
-  if (expression.type !== 'MemberExpression' || expression.computed ||
-      expression.property.type !== 'Identifier') {
-    return;
-  }
-  const property = expression.property.name;
+export const rimraf = promisify(_rimraf);
 
-  if (expression.object.type === 'ThisExpression') {
-    return ['this', property];
-  } else if (expression.object.type === 'Identifier') {
-    if (expression.object.name === 'window') {
-      return [property];
-    } else {
-      return [expression.object.name, property];
+
+/**
+ * Write each file to the out-directory.
+ */
+export async function writeFileResults(
+    outDir: string, files: Map<ConvertedDocumentFilePath, string|undefined>) {
+  return Promise.all(IterableX.from(files).map(async ([newPath, newSource]) => {
+    const filePath = path.join(outDir, newPath);
+    await mkdirp(path.dirname(filePath));
+    if (newSource !== undefined) {
+      await fse.writeFile(filePath, newSource);
+    } else if (await fse.pathExists(filePath)) {
+      await fse.unlink(filePath);
     }
-  } else if (expression.object.type === 'MemberExpression') {
-    const prefixPath = getMemberPath(expression.object);
-    if (prefixPath !== undefined) {
-      return [...prefixPath, property];
-    }
+  }));
+}
+
+/**
+ * The exec() helper return type.
+ */
+export interface ExecResult {
+  stdout: string;
+  stderr: string;
+}
+
+/**
+ * A helper function for working with Node's core execFile() method.
+ */
+export async function exec(
+    cwd: string, command: string, args?: string[], options?: ExecOptions):
+    Promise<ExecResult> {
+  const commandOptions = {...options, cwd: cwd} as ExecOptions;
+  try {
+    const {stdout, stderr} = await execFile(command, args, commandOptions);
+    // Trim unneccesary extra newlines/whitespace from exec/execFile output
+    return {stdout: stdout.trim(), stderr: stderr.trim()};
+  } catch (err) {
+    // If an error happens, attach the working directory to the error object
+    err.cwd = cwd;
+    throw err;
+  }
+}
+
+/**
+ * Log an error that occurred when performing some task on a workspace repo.
+ */
+export function logRepoError(err: Error, repo: WorkspaceRepo) {
+  const repoDirName = path.basename(repo.dir);
+  console.error(chalk.red(`${repoDirName}: ${err.message}`), err);
+}
+
+/**
+ * Log a user-facing message about progress through some set of steps.
+ */
+export function logStep(
+    stepNum: number, totalNum: number, emoji: string, msg: string) {
+  const stepInfo = `[${stepNum}/${totalNum}]`;
+  console.log(`${chalk.dim(stepInfo)} ${emoji}  ${chalk.magenta(msg)}`);
+}
+
+/**
+ * Check if a file exists at the given path. If it does, read it as JSON and
+ * cast to the given type. If not, return undefined.
+ */
+export async function readJsonIfExists<T>(filepath: string):
+    Promise<T|undefined> {
+  if (await fse.pathExists(filepath)) {
+    return await fse.readJSON(filepath) as T;
   }
   return undefined;
 }
 
-/** Like getMemberPath but joins the name back up into a single string. */
-export function getMemberName(expression: estree.Node): string|undefined {
-  const path = getMemberPath(expression);
-  return path ? path.join('.') : path;
-}
-
-export function getMemberOrIdentifierName(expression: estree.Node): string|
-    undefined {
-  if (expression.type === 'Identifier') {
-    return expression.name;
+/**
+ * Delete all files matching any of the given glob patterns, rooted in the given
+ * directory, excluding any file in node_modules/ or bower_components/.
+ */
+export async function deleteGlobsSafe(
+    globs: Iterable<string>, cwd: string): Promise<void> {
+  const toDelete = new Set<string>();
+  for (const g of globs) {
+    const matches = await glob(g, {
+      cwd,
+      absolute: true,
+      ignore: [
+        'node_modules/**',
+        'bower_components/**',
+      ],
+    });
+    for (const m of matches) {
+      toDelete.add(m);
+    }
   }
-  return getMemberName(expression);
-}
-
-/**
- * Find the node in program that corresponds to the same part of code
- * as the given node.
- *
- * This method is necessary because program is parsed locally, but the
- * given node may have come from the analyzer (so a different parse run,
- * possibly by a different parser, though they output the same format).
- */
-export function getNodeGivenAnalyzerAstNode(
-    program: estree.Program, node: estree.Node) {
-  const nodePath = getNodePathGivenAnalyzerAstNode(program, node);
-  return nodePath ? nodePath.node : undefined;
-}
-
-/** Like `getNode`, but returns the `NodePath` for mutating the AST. */
-export function getNodePathGivenAnalyzerAstNode(
-    program: estree.Program, node: estree.Node) {
-  let associatedNodePath: NodePath|undefined;
-
-  astTypes.visit(program, {
-    visitNode(path: NodePath<estree.Node>): boolean |
-    undefined {
-      // Traverse first, because we want the most specific node that exactly
-      // matches the given node.
-      this.traverse(path);
-      if (associatedNodePath === undefined &&
-          sourceLocationsEqual(path.node, node) &&
-          path.node.type === node.type) {
-        associatedNodePath = path;
-        return false;
-      }
-      return undefined;
-    }
-  });
-
-  return associatedNodePath;
-}
-
-/**
- * Yields the NodePath for each statement at the top level of `program`.
- *
- * Like `yield* program.body` except it yields NodePaths rather than
- * Nodes, so that the caller can mutate the AST with the NodePath api.
- */
-export function* toplevelStatements(program: estree.Program) {
-  const nodePaths: NodePath[] = [];
-  astTypes.visit(program, {
-    visitNode(path: NodePath<estree.Node>) {
-      if (!path.parent) {
-        // toplevel program
-        this.traverse(path);
-        return;
-      }
-      if (path.parent.node.type !== 'Program') {
-        // not a toplevel statement, skip it
-        return false;
-      }
-      this.traverse(path);
-
-      // ok, path.node must be a toplevel statement of the program.
-      nodePaths.push(path);
-      return;
-    }
-  });
-  yield* nodePaths;
-}
-
-/**
- * Returns true if a statement is the literal "use strict".
- */
-export function isUseStrict(statement: estree.Statement) {
-  return statement.type === 'ExpressionStatement' &&
-      statement.expression.type === 'Literal' &&
-      statement.expression.value === 'use strict';
-}
-
-export function getNamespaces(analysis: Analysis) {
-  return IterableX
-      .from(analysis.getFeatures(
-          {kind: 'namespace', externalPackages: true, imported: true}))
-      .map((n) => {
-        const name = n.name;
-        if (name.startsWith('window.')) {
-          return name.slice('window.'.length);
-        }
-        return name;
-      });
+  await Promise.all([...toDelete].map((filepath) => fse.remove(filepath)));
 }
 
 export function joinCamelCase(arr: ReadonlyArray<string>) {
