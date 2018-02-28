@@ -26,8 +26,8 @@ import {Document, Import, isPositionInsideRange, ParsedHtmlDocument, Severity, W
 import * as recast from 'recast';
 
 import {ConversionSettings} from './conversion-settings';
-import {attachCommentsToFirstStatement, canDomModuleBeInlined, collectIdentifierNames, containsWriteToGlobalSettingsObject, createDomNodeInsertStatements, filterClone, findAvailableIdentifier, getCommentsBetween, getMemberPath, getNodePathInProgram, getPathOfAssignmentTo, getSetterName, insertStatementsIntoProgramBody, serializeNode, serializeNodeToTemplateLiteral} from './document-util';
-import {ConversionResult, JsExport, NamespaceMemberToExport} from './js-module';
+import {attachCommentsToFirstStatement, canDomModuleBeInlined, collectIdentifierNames, containsWriteToGlobalSettingsObject, createDomNodeInsertStatements, filterClone, findAvailableIdentifier, generateAliasRequests, generateMemberPathAliases, getCommentsBetween, getMemberPath, getNodePathInProgram, getPathOfAssignmentTo, getSetterName, insertStatementsIntoProgramBody, serializeNode, serializeNodeToTemplateLiteral} from './document-util';
+import {ConversionResult, ImportReference, JsExport, NamespaceMemberToExport} from './js-module';
 import {addA11ySuiteIfUsed} from './passes/add-a11y-suite-if-used';
 import {removeNamespaceInitializers} from './passes/remove-namespace-initializers';
 import {removeToplevelUseStrict} from './passes/remove-toplevel-use-strict';
@@ -43,7 +43,6 @@ import {ConvertedDocumentUrl, OriginalDocumentUrl} from './urls/types';
 import {UrlHandler} from './urls/url-handler';
 import {isOriginalDocumentUrlFormat} from './urls/util';
 import {getHtmlDocumentConvertedFilePath, getJsModuleConvertedFilePath, getModuleId, replaceHtmlExtensionIfFound} from './urls/util';
-import {invertMultimap, joinCamelCase} from './util';
 
 /**
  * Keep a map of dangerous references to check for. Output the related warning
@@ -114,17 +113,6 @@ function isLegacyJavaScriptTag(scriptNode: parse5.ASTNode) {
   }
   return legacyJavascriptTypes.has(dom5.getAttribute(scriptNode, 'type'));
 }
-
-/**
- * Pairs a subtree of an AST (`path` as a `NodePath`) to be replaced with a
- * reference to a particular import binding represented by the JSExport
- * `target`.
- */
-type ImportReference = {
-  path: NodePath,
-  target: JsExport,
-  requestedIdentifiers: string[],
-};
 
 /** Represents a change to a portion of a file. */
 interface Edit {
@@ -972,25 +960,6 @@ export class DocumentConverter {
         new Map<ConvertedDocumentUrl, Set<ImportReference>>();
 
     /**
-     * Creates an array of preferred aliases for an import reference from the
-     * array of identifiers in the chain of member expressions of that
-     * reference.
-     *
-     * For example:
-     *    ['Polymer', 'Async', 'microTask']
-     * becomes:
-     *    ['microTask', 'AsyncMicroTask', 'PolymerAsyncMicroTask']
-     */
-    function generateMemberPathAliases(memberPath: ReadonlyArray<string>):
-        Array<string> {
-      const aliases = [];
-      for (let i = memberPath.length - 1; i >= 0; i--) {
-        aliases.push(joinCamelCase(memberPath.slice(i)));
-      }
-      return aliases;
-    }
-
-    /**
      * Add the given JsExport and referencing NodePath to this.module's
      * `importedReferences` map.
      */
@@ -1255,45 +1224,4 @@ export class DocumentConverter {
     // Return true if any imports were added, false otherwise
     return jsImportDeclarations.length > 0;
   }
-}
-
-/**
- * Produces an array of preferred aliases for all `JsExports` referenced by a
- * set of `ImportReference`s, given a set of undesirable aliases.
- */
-function generateAliasRequests(
-    importReferences: ReadonlySet<ImportReference>,
-    undesirableAliases: ReadonlySet<string>): Map<JsExport, Array<string>> {
-  const dedupedAliasRequests = new Map<JsExport, Set<string>>();
-  for (const {target, requestedIdentifiers} of importReferences) {
-    let aliasRequestsForImport = dedupedAliasRequests.get(target);
-    if (aliasRequestsForImport === undefined) {
-      aliasRequestsForImport = new Set();
-      dedupedAliasRequests.set(target, aliasRequestsForImport);
-    }
-
-    for (const identifier of requestedIdentifiers) {
-      aliasRequestsForImport.add(identifier);
-    }
-  }
-
-  for (const [name, imports] of invertMultimap(dedupedAliasRequests)) {
-    if (imports.size <= 1 && !undesirableAliases.has(name)) {
-      continue;
-    }
-
-    for (const import_ of imports) {
-      const aliasRequestsForImport = dedupedAliasRequests.get(import_);
-      if (aliasRequestsForImport && aliasRequestsForImport.size > 1) {
-        aliasRequestsForImport.delete(name);
-      }
-    }
-  }
-
-  const aliasRequests = new Map<JsExport, Array<string>>();
-  for (const [name, imports] of dedupedAliasRequests) {
-    aliasRequests.set(name, [...imports]);
-  }
-
-  return aliasRequests;
 }

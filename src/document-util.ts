@@ -19,6 +19,8 @@ import {Iterable as IterableX} from 'ix';
 import * as jsc from 'jscodeshift';
 import {EOL} from 'os';
 import * as parse5 from 'parse5';
+import {ImportReference, JsExport} from './js-module';
+import {invertMultimap, joinCamelCase} from './util';
 
 /**
  * Serialize a parse5 Node to a string.
@@ -570,4 +572,64 @@ export function insertStatementsIntoProgramBody(
     }
   }
   program.body.splice(insertionPoint, 0, ...statements);
+}
+
+/**
+ * Creates an array of preferred aliases for an import reference from the
+ * array of identifiers in the chain of member expressions of that
+ * reference.
+ *
+ * For example:
+ *    ['Polymer', 'Async', 'microTask']
+ * becomes:
+ *    ['microTask', 'AsyncMicroTask', 'PolymerAsyncMicroTask']
+ */
+export function generateMemberPathAliases(memberPath: ReadonlyArray<string>):
+    Array<string> {
+  const aliases = [];
+  for (let i = memberPath.length - 1; i >= 0; i--) {
+    aliases.push(joinCamelCase(memberPath.slice(i)));
+  }
+  return aliases;
+}
+
+/**
+ * Produces an array of preferred aliases for all `JsExports` referenced by a
+ * set of `ImportReference`s, given a set of undesirable aliases.
+ */
+export function generateAliasRequests(
+    importReferences: ReadonlySet<ImportReference>,
+    undesirableAliases: ReadonlySet<string>): Map<JsExport, Array<string>> {
+  const dedupedAliasRequests = new Map<JsExport, Set<string>>();
+  for (const {target, requestedIdentifiers} of importReferences) {
+    let aliasRequestsForImport = dedupedAliasRequests.get(target);
+    if (aliasRequestsForImport === undefined) {
+      aliasRequestsForImport = new Set();
+      dedupedAliasRequests.set(target, aliasRequestsForImport);
+    }
+
+    for (const identifier of requestedIdentifiers) {
+      aliasRequestsForImport.add(identifier);
+    }
+  }
+
+  for (const [name, imports] of invertMultimap(dedupedAliasRequests)) {
+    if (imports.size <= 1 && !undesirableAliases.has(name)) {
+      continue;
+    }
+
+    for (const import_ of imports) {
+      const aliasRequestsForImport = dedupedAliasRequests.get(import_);
+      if (aliasRequestsForImport && aliasRequestsForImport.size > 1) {
+        aliasRequestsForImport.delete(name);
+      }
+    }
+  }
+
+  const aliasRequests = new Map<JsExport, Array<string>>();
+  for (const [name, imports] of dedupedAliasRequests) {
+    aliasRequests.set(name, [...imports]);
+  }
+
+  return aliasRequests;
 }

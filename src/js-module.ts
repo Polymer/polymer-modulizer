@@ -12,6 +12,7 @@
  * http://polymer.github.io/PATENTS.txt
  */
 
+import {NodePath} from 'ast-types';
 import {ConvertedDocumentFilePath, ConvertedDocumentUrl, OriginalDocumentUrl} from './urls/types';
 
 export interface ConversionResult {
@@ -61,3 +62,14 @@ export interface NamespaceMemberToExport {
   oldNamespacedName: string;
   es6ExportName: string;
 }
+
+/**
+ * Pairs a subtree of an AST (`path` as a `NodePath`) to be replaced with a
+ * reference to a particular import binding represented by the JSExport
+ * `target`.
+ */
+export type ImportReference = {
+  path: NodePath,
+  target: JsExport,
+  requestedIdentifiers: string[],
+};
