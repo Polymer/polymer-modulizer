@@ -17,7 +17,7 @@ import {ConvertedDocumentFilePath, ConvertedDocumentUrl, OriginalDocumentUrl} fr
 export interface ConversionResult {
   readonly originalUrl: OriginalDocumentUrl;
   readonly convertedUrl: ConvertedDocumentUrl;
-  readonly convertedFilePath: ConvertedDocumentFilePath;
+  readonly convertedFilePath?: ConvertedDocumentFilePath;
 
   /**
    * Explicitly keep or remove the original file from disk. By default, the
@@ -34,7 +34,7 @@ export interface ConversionResult {
    * regardless of the value of `deleteOriginal`. This is useful in cases where
    * there original is an HTML file that only loads an external script.
    */
-  readonly output: string|undefined;
+  readonly output?: string;
 }
 
 export class JsExport {

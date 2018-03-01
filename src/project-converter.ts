@@ -99,11 +99,11 @@ export class ProjectConverter {
         this.urlHandler,
         this.conversionSettings);
     if (scanResult.type === 'js-module') {
-      documentConverter.convertJsModule().forEach((newModule) => {
+      documentConverter.convertJsModule(scanResults).forEach((newModule) => {
         this.results.set(newModule.originalUrl, newModule);
       });
     } else if (scanResult.type === 'html-document') {
-      const newModule = documentConverter.convertTopLevelHtmlDocument();
+      const newModule = documentConverter.convertTopLevelHtmlDocument(scanResults);
       this.results.set(newModule.originalUrl, newModule);
     } else if (scanResult.type === 'delete-file') {
       const newModule = documentConverter.createDeleteResult();
@@ -131,7 +131,7 @@ export class ProjectConverter {
             convertedModule.originalUrl as string as ConvertedDocumentFilePath,
             undefined);
       }
-      if (convertedModule.output !== undefined) {
+      if (convertedModule.convertedFilePath !== undefined && convertedModule.output !== undefined) {
         results.set(convertedModule.convertedFilePath, convertedModule.output);
       }
     }

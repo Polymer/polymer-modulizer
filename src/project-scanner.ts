@@ -20,6 +20,11 @@ import {JsExport} from './js-module';
 import {OriginalDocumentUrl} from './urls/types';
 import {UrlHandler} from './urls/url-handler';
 
+export interface ScannerResults {
+  files: Map<OriginalDocumentUrl, JsModuleScanResult|DeleteFileScanResult|HtmlDocumentScanResult>;
+  exports: Map<string, JsExport>;
+};
+
 /**
  * ProjectScanner provides the top-level interface for scanning packages and
  * their dependencies. Scanning packages allows us to detect the new ES Module
@@ -179,7 +184,7 @@ export class ProjectScanner {
     }
   }
 
-  getResults() {
+  getResults(): ScannerResults {
     return {
       files: this.results,
       exports: this.namespacedExports,
