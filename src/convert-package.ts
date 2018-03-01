@@ -123,7 +123,6 @@ export default async function convert(options: PackageConversionSettings) {
 
   // Convert the package
   converter.convertPackage(npmPackageName);
-
   // Filter out external results before writing them to disk.
   const results = converter.getResults();
   for (const [newPath] of results) {

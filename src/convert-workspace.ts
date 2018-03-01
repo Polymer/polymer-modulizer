@@ -63,6 +63,19 @@ async function writePackageJson(
   writeJson(packageJson, packageJsonPath);
 }
 
+
+/**
+ * For a given repo, generate a new package.json and write it to disk.
+ */
+async function writeConversionManifest(
+    repo: WorkspaceRepo, converter: ProjectConverter) {
+  const bowerPackageName = path.basename(repo.dir);
+  const manifestJsonPath = path.join(repo.dir, 'manifest.json');
+  const packageManifest = converter.getPackageManifest(bowerPackageName);
+  writeJson(packageManifest, manifestJsonPath);
+}
+
+
 /**
  * Configure a basic analyzer instance for the workspace.
  */
@@ -134,6 +147,11 @@ export default async function convert(options: WorkspaceConversionSettings):
                                 private: options.private,
                               }));
   packageJsonResults.failures.forEach(logRepoError);
+
+  const manifestResults = await run(options.reposToConvert, async (repo) => {
+    return writeConversionManifest(repo, converter);
+  });
+  manifestResults.failures.forEach(logRepoError);
 
   // Commit all changes to a staging branch for easy state resetting.
   // Useful when performing actions that modify the repo, like installing deps.

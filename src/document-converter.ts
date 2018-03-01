@@ -38,7 +38,7 @@ import {rewriteNamespacesThisReferences} from './passes/rewrite-namespace-this-r
 import {rewriteReferencesToLocalExports} from './passes/rewrite-references-to-local-exports';
 import {rewriteReferencesToNamespaceMembers} from './passes/rewrite-references-to-namespace-members';
 import {rewriteToplevelThis} from './passes/rewrite-toplevel-this';
-import {ConvertedDocumentUrl, OriginalDocumentUrl} from './urls/types';
+import {ConvertedDocumentFilePath, ConvertedDocumentUrl, OriginalDocumentUrl} from './urls/types';
 import {UrlHandler} from './urls/url-handler';
 import {isOriginalDocumentUrlFormat} from './urls/util';
 import {getHtmlDocumentConvertedFilePath, getJsModuleConvertedFilePath, getModuleId, replaceHtmlExtensionIfFound} from './urls/util';
@@ -129,9 +129,8 @@ interface Edit {
   replacementText: string;
 }
 
-export type ScanResult = JsModuleScanResult |
-  DeleteFileScanResult |
-  HtmlDocumentScanResult;
+export type ScanResult =
+    JsModuleScanResult|DeleteFileScanResult|HtmlDocumentScanResult;
 /**
  * Contains information about how an existing file should be converted to a new
  * JS Module. Includes a mapping of its new exports.
@@ -140,6 +139,7 @@ export interface JsModuleScanResult {
   type: 'js-module';
   originalUrl: OriginalDocumentUrl;
   convertedUrl: ConvertedDocumentUrl;
+  convertedFilePath: ConvertedDocumentFilePath;
   exportMigrationRecords: NamespaceMemberToExport[];
 }
 
@@ -150,6 +150,8 @@ export interface JsModuleScanResult {
 export interface DeleteFileScanResult {
   type: 'delete-file';
   originalUrl: OriginalDocumentUrl;
+  convertedUrl: undefined;
+  convertedFilePath: undefined;
 }
 
 /**
@@ -160,6 +162,7 @@ export interface HtmlDocumentScanResult {
   type: 'html-document';
   originalUrl: OriginalDocumentUrl;
   convertedUrl: ConvertedDocumentUrl;
+  convertedFilePath: ConvertedDocumentFilePath;
 }
 
 /**
@@ -357,6 +360,8 @@ export class DocumentConverter {
       return {
         type: 'delete-file',
         originalUrl: this.originalUrl,
+        convertedUrl: undefined,
+        convertedFilePath: undefined,
       };
     }
 
@@ -368,6 +373,7 @@ export class DocumentConverter {
       type: 'js-module',
       originalUrl: this.originalUrl,
       convertedUrl: this.convertedUrl,
+      convertedFilePath: getJsModuleConvertedFilePath(this.originalUrl),
       exportMigrationRecords,
     };
   }
@@ -441,6 +447,7 @@ export class DocumentConverter {
       type: 'html-document',
       convertedUrl: this.convertedUrl,
       originalUrl: this.originalUrl,
+      convertedFilePath: getHtmlDocumentConvertedFilePath(this.originalUrl),
     };
   }
 
