@@ -15,27 +15,11 @@
 import {Analysis} from 'polymer-analyzer';
 
 import {ConversionSettings} from './conversion-settings';
-import {DeleteFileScanResult, HtmlDocumentScanResult, JsModuleScanResult, ScanResult} from './document-converter';
+import {DeleteFileScanResult, HtmlDocumentScanResult, JsModuleScanResult} from './document-converter';
 import {JsExport} from './js-module';
 import {PackageScanner} from './package-scanner';
 import {OriginalDocumentUrl} from './urls/types';
 import {UrlHandler} from './urls/url-handler';
-
-function exportsMapToObject(exportsMap: Map<string, JsExport>) {
-  const exportsObject: any = {};
-  for (const [k, v] of exportsMap) {
-    exportsObject[k] = { name: v.name, url: v.url };
-  }
-  return exportsObject;
-}
-
-function filesMapToObject(filesMap: Map<OriginalDocumentUrl, ScanResult>) {
-  const filesObject: any = {};
-  for (const [k, v] of filesMap) {
-    filesObject[k] = (<any>v).convertedUrl || null;
-  }
-  return filesObject;
-}
 
 /**
  * ProjectScanner provides the top-level interface for scanning packages and
@@ -85,15 +69,9 @@ export class ProjectScanner {
     if (!this.scannedPackages.has(packageName)) {
       this.scanPackage(packageName);
     }
-
     const packageScanner = this.scannedPackages.get(packageName)!;
-    const scanResults = packageScanner.getResults();
-    return {
-      files: filesMapToObject(scanResults.files),
-      exports: exportsMapToObject(scanResults.exports),
-    };
+    return packageScanner.getConversionManifest();
   }
-
 
   /**
    * Scan a document and any of its dependency packages for their new interface.

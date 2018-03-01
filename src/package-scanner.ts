@@ -15,7 +15,7 @@
 import {Analysis, Document} from 'polymer-analyzer';
 
 import {ConversionSettings} from './conversion-settings';
-import {DeleteFileScanResult, DocumentConverter, HtmlDocumentScanResult, JsModuleScanResult} from './document-converter';
+import {DeleteFileScanResult, DocumentConverter, HtmlDocumentScanResult, JsModuleScanResult, ScanResult} from './document-converter';
 import {JsExport} from './js-module';
 import {OriginalDocumentUrl} from './urls/types';
 import {UrlHandler} from './urls/url-handler';
@@ -25,6 +25,46 @@ export interface PackageScanResult {
       Map<OriginalDocumentUrl,
           JsModuleScanResult|DeleteFileScanResult|HtmlDocumentScanResult>;
   exports: Map<string, JsExport>;
+}
+
+type PackageExports = Map<string, JsExport>;
+type PackageExportsJson = {
+  [exportName: string]: {name: string, url: string}
+};
+type PackageFiles = Map<OriginalDocumentUrl, ScanResult>;
+type PackageFilesJson = {
+  [originalFilePath: string]: string|null
+};
+
+/**
+ * Convert a map of exports to a serializable JSON object.
+ */
+function exportsMapToJsonObject(
+    exportsMap: PackageExports, urlHandler: UrlHandler): PackageExportsJson {
+  const exportsObject: PackageExportsJson = {};
+  for (const [name, data] of exportsMap) {
+    exportsObject[name] = {
+      name: data.name,
+      url: urlHandler.convertedUrlToPackageRelative(data.url)
+    };
+  }
+  return exportsObject;
+}
+
+/**
+ * Convert a map of files to a serializable JSON object.
+ */
+function filesMapToJsonObject(
+    filesMap: PackageFiles, urlHandler: UrlHandler): PackageFilesJson {
+  const filesObject: PackageFilesJson = {};
+  for (const [originalFilePath, scanResult] of filesMap) {
+    filesObject[urlHandler.originalUrlToPackageRelative(originalFilePath)] =
+        scanResult.convertedFilePath !== undefined ?
+        urlHandler.convertedDocumentFilePathToPackageRelative(
+            scanResult.convertedFilePath) :
+        null;
+  }
+  return filesObject;
 }
 
 /**
@@ -49,15 +89,13 @@ export class PackageScanner {
    * All JS Exports for a single package registered by namespaced identifier,
    * to map implicit HTML imports to explicit named JS imports.
    */
-  private readonly namespacedExports = new Map<string, JsExport>();
+  private readonly namespacedExports: PackageExports = new Map();
 
   /**
    * All Scan Results for a single package registered by document URL, so that
    * the conversion process knows how to treat each file.
    */
-  private readonly results = new Map<
-      OriginalDocumentUrl,
-      JsModuleScanResult|DeleteFileScanResult|HtmlDocumentScanResult>();
+  private readonly results: PackageFiles = new Map();
 
   constructor(
       packageName: string, analysis: Analysis, urlHandler: UrlHandler,
@@ -113,6 +151,17 @@ export class PackageScanner {
     return {
       files: this.results,
       exports: this.namespacedExports,
+    };
+  }
+
+  /**
+   * Get a package manifest (a serializable version of the scanner results) for
+   * a package.
+   */
+  getConversionManifest() {
+    return {
+      files: filesMapToJsonObject(this.results, this.urlHandler),
+      exports: exportsMapToJsonObject(this.namespacedExports, this.urlHandler),
     };
   }
 

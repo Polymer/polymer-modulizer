@@ -186,4 +186,28 @@ export class PackageUrlHandler implements UrlHandler {
   getNameImportUrl(url: ConvertedDocumentUrl): ConvertedDocumentUrl {
     return url.slice('./node_modules/'.length) as ConvertedDocumentUrl;
   }
+
+  originalUrlToPackageRelative(url: OriginalDocumentUrl): string {
+    if (url.startsWith('bower_components/')) {
+      return url.split('/').splice(1).join('/');
+    } else {
+      return url;
+    }
+  }
+
+  convertedUrlToPackageRelative(url: ConvertedDocumentUrl): string {
+    if (url.startsWith('./node_modules/@')) {
+      return url.split('/').splice(4).join('/');
+    } else if (url.startsWith('./node_modules/')) {
+      return url.split('/').splice(3).join('/');
+    } else {
+      return url.substring('./'.length);
+    }
+  }
+
+  convertedDocumentFilePathToPackageRelative(url: ConvertedDocumentFilePath):
+      string {
+    return this.originalUrlToPackageRelative(
+        url as string as OriginalDocumentUrl);
+  }
 }
