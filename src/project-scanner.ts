@@ -15,18 +15,15 @@
 import {Analysis, Document, ParsedHtmlDocument} from 'polymer-analyzer';
 
 import {ConversionSettings} from './conversion-settings';
-import {DeleteFileScanResult, DocumentConverter, HtmlDocumentScanResult, JsModuleScanResult} from './document-converter';
+import {AnyScanResult, DocumentConverter} from './document-converter';
 import {JsExport} from './js-module';
 import {OriginalDocumentUrl} from './urls/types';
 import {UrlHandler} from './urls/url-handler';
 
 export interface ScanResults {
-  files:
-      Map<OriginalDocumentUrl,
-          JsModuleScanResult|DeleteFileScanResult|HtmlDocumentScanResult>;
+  files: Map<OriginalDocumentUrl, AnyScanResult>;
   exports: Map<string, JsExport>;
 }
-;
 
 /**
  * ProjectScanner provides the top-level interface for scanning packages and
@@ -59,9 +56,7 @@ export class ProjectScanner {
    * All Scan Results registered by document URL, so that the conversion process
    * knows how to treat each file.
    */
-  private readonly results = new Map<
-      OriginalDocumentUrl,
-      JsModuleScanResult|DeleteFileScanResult|HtmlDocumentScanResult>();
+  private readonly results = new Map<OriginalDocumentUrl, AnyScanResult>();
 
   constructor(
       analysis: Analysis, urlHandler: UrlHandler,
@@ -132,8 +127,7 @@ export class ProjectScanner {
         this.namespacedExports,
         this.urlHandler,
         this.conversionSettings);
-    let scanResult: JsModuleScanResult|HtmlDocumentScanResult|
-        DeleteFileScanResult;
+    let scanResult: AnyScanResult;
     try {
       scanResult =
           (forceJs || this.conversionSettings.includes.has(documentUrl)) ?

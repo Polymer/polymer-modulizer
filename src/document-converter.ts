@@ -161,6 +161,9 @@ export interface HtmlDocumentScanResult {
   convertedUrl: ConvertedDocumentUrl;
 }
 
+export type AnyScanResult =
+    JsModuleScanResult|HtmlDocumentScanResult|DeleteFileScanResult;
+
 interface FileConversionSettings {
   /**
    * The file will be treated as if it were renamed to the value of
