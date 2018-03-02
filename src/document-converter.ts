@@ -163,8 +163,8 @@ export interface HtmlDocumentScanResult {
 
 interface FileConversionSettings {
   /**
-   * The file will be treated as if it were renamed to `usedFileName` (and all
-   * references to it were updated) before conversion.
+   * The file will be treated as if it were renamed to the value of
+   * `usedFileName` and all references to it were updated before conversion.
    */
   usedFileName: string;
 }
@@ -284,6 +284,11 @@ export class DocumentConverter {
     return [...document.getFeatures({kind: 'html-import'})];
   }
 
+  /**
+   * Finds the comment containing the FileConversionSettings object and returns
+   * the parsed object. Throws if more than one comment could be parsed as the
+   * FileConversionSettings object.
+   */
   private getFileConversionSettings(document: ParsedHtmlDocument):
       Partial<FileConversionSettings> {
     const treeAdapter = parse5.treeAdapters.default;
@@ -300,7 +305,9 @@ export class DocumentConverter {
       }
 
       if (settings) {
-        throw new Error('Multiple file conversion settings objects found.');
+        throw new Error(
+            'Multiple file conversion settings objects were ' +
+            `found in "${this.originalUrl}".`);
       }
 
       settings = JSON.parse(content.substring(SETTINGS_COMMENT_PREFIX.length));
@@ -1163,7 +1170,7 @@ export class DocumentConverter {
     // TODO(fks): This can be removed later if type-checking htmlUrl is enough
     if (!isOriginalDocumentUrlFormat(oldUrl)) {
       throw new Error(
-          `convertDocumentUrl() expects an OriginalDocumentUrl string` +
+          `convertScriptUrl() expects an OriginalDocumentUrl string` +
           `from the analyzer, but got "${oldUrl}"`);
     }
     // Use the layout-specific UrlHandler to convert the URL.
