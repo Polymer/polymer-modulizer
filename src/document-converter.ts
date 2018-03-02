@@ -164,6 +164,10 @@ export interface HtmlDocumentScanResult {
 export type AnyScanResult =
     JsModuleScanResult|HtmlDocumentScanResult|DeleteFileScanResult;
 
+/**
+ * Conversion settings specific to a file which are extracted from a comment in
+ * that file.
+ */
 interface FileConversionSettings {
   /**
    * The file will be treated as if it were renamed to the value of
@@ -248,6 +252,11 @@ function getImportDeclarations(
   return importDeclarations;
 }
 
+/**
+ * Any comment in a document being converted starting with this string (after
+ * any trimmable whitespace) are assumed to contain that file's conversion
+ * settings object.
+ */
 const SETTINGS_COMMENT_PREFIX = 'polymer-modulizer:';
 
 /**
