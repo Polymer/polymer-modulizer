@@ -43,7 +43,7 @@ import {ConvertedDocumentUrl, OriginalDocumentUrl} from './urls/types';
 import {UrlHandler} from './urls/url-handler';
 import {isOriginalDocumentUrlFormat} from './urls/util';
 import {getHtmlDocumentConvertedFilePath, getJsModuleConvertedFilePath, getModuleId, replaceHtmlExtensionIfFound} from './urls/util';
-import {ScannerResults} from './project-scanner';
+import {ScanResults} from './project-scanner';
 
 /**
  * Keep a map of dangerous references to check for. Output the related warning
@@ -401,7 +401,7 @@ export class DocumentConverter {
   /**
    * Convert a document to a JS Module.
    */
-  convertJsModule(scannerResults: ScannerResults): ConversionResult[] {
+  convertJsModule(scanResults: ScanResults): ConversionResult[] {
     const {program, convertedHtmlScripts} = this._prepareJsModule();
     const importedReferences = this.collectNamespacedReferences(program);
     const results: ConversionResult[] = [];
@@ -421,7 +421,7 @@ export class DocumentConverter {
         results.push({
           originalUrl: oldScriptUrl,
           convertedUrl: newScriptUrl,
-          convertedFilePath: getJsModuleConvertedFilePath(oldScriptUrl, scannerResults),
+          convertedFilePath: getJsModuleConvertedFilePath(oldScriptUrl, scanResults),
           deleteOriginal: true,
           output: undefined,
         });
@@ -430,7 +430,7 @@ export class DocumentConverter {
       }
     }
 
-    this.addJsImports(scannerResults, program, importedReferences);
+    this.addJsImports(scanResults, program, importedReferences);
     const {localNamespaceNames, namespaceNames, exportMigrationRecords} =
         rewriteNamespacesAsExports(
             program, this.document, this.conversionSettings.namespaces);
@@ -448,7 +448,7 @@ export class DocumentConverter {
     results.push({
       originalUrl: this.originalUrl,
       convertedUrl: this.convertedUrl,
-      convertedFilePath: getJsModuleConvertedFilePath(this.originalUrl, scannerResults),
+      convertedFilePath: getJsModuleConvertedFilePath(this.originalUrl, scanResults),
       deleteOriginal: true,
       output: outputProgram.code + EOL
     });
@@ -471,7 +471,7 @@ export class DocumentConverter {
   /**
    * Convert a document to a top-level HTML document.
    */
-  convertTopLevelHtmlDocument(scannerResults: ScannerResults): ConversionResult {
+  convertTopLevelHtmlDocument(scanResults: ScanResults): ConversionResult {
     const htmlDocument = this.document.parsedDocument as ParsedHtmlDocument;
     const p = dom5.predicates;
 
@@ -490,7 +490,7 @@ export class DocumentConverter {
       const offsets = htmlDocument.sourceRangeToOffsets(sourceRange);
 
       const file = recast.parse(script.parsedDocument.contents);
-      const program = this.rewriteInlineScript(scannerResults, file.program);
+      const program = this.rewriteInlineScript(scanResults, file.program);
 
       if (program === undefined) {
         continue;
@@ -537,7 +537,7 @@ export class DocumentConverter {
       const offsets = htmlDocument.sourceRangeToOffsets(sourceRange);
 
       const file = recast.parse(dom5.getTextContent(astNode));
-      const program = this.rewriteInlineScript(scannerResults, file.program);
+      const program = this.rewriteInlineScript(scanResults, file.program);
 
       if (program === undefined) {
         continue;
@@ -567,7 +567,7 @@ export class DocumentConverter {
 
       const htmlDocumentUrl =
           this.urlHandler.getDocumentUrl(htmlImport.document);
-      const importedJsDocumentUrl = this.convertDocumentUrl(htmlDocumentUrl, scannerResults);
+      const importedJsDocumentUrl = this.convertDocumentUrl(htmlDocumentUrl, scanResults);
       const importUrl =
           this.formatImportUrl(importedJsDocumentUrl, htmlImport.originalUrl);
       const scriptTag = parse5.parseFragment(`<script type="module"></script>`)
@@ -593,7 +593,7 @@ export class DocumentConverter {
           htmlDocument.sourceRangeForNode(scriptImport.astNode)!);
 
       const convertedUrl = this.convertDocumentUrl(
-          this.urlHandler.getDocumentUrl(scriptImport.document), scannerResults);
+          this.urlHandler.getDocumentUrl(scriptImport.document), scanResults);
       const formattedUrl =
           this.formatImportUrl(convertedUrl, scriptImport.originalUrl);
       dom5.setAttribute(scriptImport.astNode, 'src', formattedUrl);
@@ -639,7 +639,7 @@ export class DocumentConverter {
     return {
       originalUrl: this.originalUrl,
       convertedUrl: this.convertedUrl,
-      convertedFilePath: getHtmlDocumentConvertedFilePath(this.originalUrl, scannerResults),
+      convertedFilePath: getHtmlDocumentConvertedFilePath(this.originalUrl, scanResults),
       output: contents
     };
   }
@@ -685,7 +685,7 @@ export class DocumentConverter {
    * Rewrite an inline script that will exist inlined inside an HTML document.
    * Should not be called on top-level JS Modules.
    */
-  private rewriteInlineScript(scannerResults: ScannerResults, program: Program) {
+  private rewriteInlineScript(scanResults: ScanResults, program: Program) {
     // Any code that sets the global settings object cannot be inlined (and
     // deferred) because the settings object must be created/configured
     // before other imports evaluate in following module scripts.
@@ -702,7 +702,7 @@ export class DocumentConverter {
         program,
         this.formatImportUrl(this.urlHandler.createConvertedUrl(
             'wct-browser-legacy/a11ySuite.js')));
-    const wereImportsAdded = this.addJsImports(scannerResults, program, importedReferences);
+    const wereImportsAdded = this.addJsImports(scanResults, program, importedReferences);
     // Don't convert the HTML.
     // Don't inline templates, they're fine where they are.
 
@@ -1089,10 +1089,10 @@ export class DocumentConverter {
    * Converts an HTML Document's path from old world to new. Use new NPM naming
    * as needed in the path, and change any .html extension to .js.
    */
-  private convertDocumentUrl(htmlUrl: OriginalDocumentUrl, scannerResults?: ScannerResults):
+  private convertDocumentUrl(htmlUrl: OriginalDocumentUrl, scanResults?: ScanResults):
       ConvertedDocumentUrl {
-    if (scannerResults) {
-      const result = scannerResults.files.get(htmlUrl);
+    if (scanResults) {
+      const result = scanResults.files.get(htmlUrl);
       if (result && result.type !== 'delete-file') {
         return result.convertedUrl;
       }
@@ -1183,7 +1183,7 @@ export class DocumentConverter {
    * the imports in this.module.importedReferences.
    */
   private addJsImports(
-      scannerResults: ScannerResults,
+      scanResults: ScanResults,
       program: Program,
       importedReferences:
           ReadonlyMap<ConvertedDocumentUrl, ReadonlySet<ImportReference>>):
@@ -1208,7 +1208,7 @@ export class DocumentConverter {
     const jsImportDeclarations = [];
     for (const htmlImport of this.getHtmlImports()) {
       const importedJsDocumentUrl = this.convertDocumentUrl(
-          this.urlHandler.getDocumentUrl(htmlImport.document), scannerResults);
+          this.urlHandler.getDocumentUrl(htmlImport.document), scanResults);
 
       const references = importedReferences.get(importedJsDocumentUrl);
       const namedExports =

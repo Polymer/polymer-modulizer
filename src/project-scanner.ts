@@ -20,7 +20,7 @@ import {JsExport} from './js-module';
 import {OriginalDocumentUrl} from './urls/types';
 import {UrlHandler} from './urls/url-handler';
 
-export interface ScannerResults {
+export interface ScanResults {
   files: Map<OriginalDocumentUrl, JsModuleScanResult|DeleteFileScanResult|HtmlDocumentScanResult>;
   exports: Map<string, JsExport>;
 };
@@ -184,7 +184,7 @@ export class ProjectScanner {
     }
   }
 
-  getResults(): ScannerResults {
+  getResults(): ScanResults {
     return {
       files: this.results,
       exports: this.namespacedExports,
