@@ -97,7 +97,8 @@ export class ProjectConverter {
         document,
         scanResults.exports,
         this.urlHandler,
-        this.conversionSettings);
+        this.conversionSettings,
+        scanResult);
     if (scanResult.type === 'js-module') {
       documentConverter.convertJsModule(scanResults).forEach((newModule) => {
         this.results.set(newModule.originalUrl, newModule);
@@ -120,6 +121,10 @@ export class ProjectConverter {
   getResults(): Map<ConvertedDocumentFilePath, string|undefined> {
     const results = new Map<ConvertedDocumentFilePath, string|undefined>();
 
+    function removeCurrentDirPrefix(path: string): string {
+      return path.startsWith('./') ? path.slice(2) : path;
+    }
+
     for (const convertedModule of this.results.values()) {
       // TODO(fks): This is hacky, ProjectConverter isn't supposed to know about
       //  project layout / file location. Move into URLHandler, potentially make
@@ -128,12 +133,14 @@ export class ProjectConverter {
         continue;
       }
       if (convertedModule.deleteOriginal) {
-        results.set(
-            convertedModule.originalUrl as string as ConvertedDocumentFilePath,
-            undefined);
+        const path =
+            removeCurrentDirPrefix(convertedModule.originalUrl as string);
+        results.set(path as ConvertedDocumentFilePath, undefined);
       }
       if (convertedModule.output !== undefined) {
-        results.set(convertedModule.convertedFilePath, convertedModule.output);
+        const path =
+            removeCurrentDirPrefix(convertedModule.convertedFilePath as string);
+        results.set(path as ConvertedDocumentFilePath, convertedModule.output);
       }
     }
     return results;

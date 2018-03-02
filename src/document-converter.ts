@@ -267,7 +267,7 @@ export class DocumentConverter {
   constructor(
       document: Document<ParsedHtmlDocument>,
       namespacedExports: Map<string, JsExport>, urlHandler: UrlHandler,
-      conversionSettings: ConversionSettings) {
+      conversionSettings: ConversionSettings, selfScanResult?: AnyScanResult) {
     this.namespacedExports = namespacedExports;
     this.conversionSettings = conversionSettings;
     this.fileConversionSettings =
@@ -275,7 +275,11 @@ export class DocumentConverter {
     this.urlHandler = urlHandler;
     this.document = document;
     this.originalUrl = urlHandler.getDocumentUrl(document);
-    this.convertedUrl = this.generateSelfDocumentUrl();
+    if (selfScanResult && selfScanResult.type !== 'delete-file') {
+      this.convertedUrl = selfScanResult.convertedUrl;
+    } else {
+      this.convertedUrl = this.generateSelfDocumentUrl();
+    }
   }
 
   /**
@@ -417,7 +421,8 @@ export class DocumentConverter {
     return {
       type: 'js-module',
       originalUrl: this.originalUrl,
-      convertedUrl: this.convertedUrl,
+      convertedUrl: replaceHtmlExtensionIfFound(this.convertedUrl) as
+          ConvertedDocumentUrl,
       exportMigrationRecords,
     };
   }
@@ -1118,7 +1123,7 @@ export class DocumentConverter {
   /**
    * Converts this HTML Document's path from old world to new.
    */
-  private generateSelfDocumentUrl() {
+  private generateSelfDocumentUrl(): ConvertedDocumentUrl {
     let selfUrl = this.originalUrl;
 
     // Replace the file name with `usedFileName` from this file's
@@ -1177,8 +1182,6 @@ export class DocumentConverter {
           'shadycss/custom-style-interface.html',
           'shadycss/entrypoints/custom-style-interface.js');
     }
-    // Convert any ".html" URLs to point to their new ".js" module equivilent
-    jsUrl = replaceHtmlExtensionIfFound(jsUrl);
     return jsUrl as ConvertedDocumentUrl;
   }
 
