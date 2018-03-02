@@ -21,9 +21,12 @@ import {OriginalDocumentUrl} from './urls/types';
 import {UrlHandler} from './urls/url-handler';
 
 export interface ScanResults {
-  files: Map<OriginalDocumentUrl, JsModuleScanResult|DeleteFileScanResult|HtmlDocumentScanResult>;
+  files:
+      Map<OriginalDocumentUrl,
+          JsModuleScanResult|DeleteFileScanResult|HtmlDocumentScanResult>;
   exports: Map<string, JsExport>;
-};
+}
+;
 
 /**
  * ProjectScanner provides the top-level interface for scanning packages and

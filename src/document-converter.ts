@@ -39,11 +39,11 @@ import {rewriteNamespacesThisReferences} from './passes/rewrite-namespace-this-r
 import {rewriteReferencesToLocalExports} from './passes/rewrite-references-to-local-exports';
 import {rewriteReferencesToNamespaceMembers} from './passes/rewrite-references-to-namespace-members';
 import {rewriteToplevelThis} from './passes/rewrite-toplevel-this';
+import {ScanResults} from './project-scanner';
 import {ConvertedDocumentUrl, OriginalDocumentUrl} from './urls/types';
 import {UrlHandler} from './urls/url-handler';
 import {isOriginalDocumentUrlFormat} from './urls/util';
 import {getHtmlDocumentConvertedFilePath, getJsModuleConvertedFilePath, getModuleId, replaceHtmlExtensionIfFound} from './urls/util';
-import {ScanResults} from './project-scanner';
 
 /**
  * Keep a map of dangerous references to check for. Output the related warning
@@ -283,7 +283,8 @@ export class DocumentConverter {
     return [...document.getFeatures({kind: 'html-import'})];
   }
 
-  private getFileConversionSettings(document: ParsedHtmlDocument): Partial<FileConversionSettings> {
+  private getFileConversionSettings(document: ParsedHtmlDocument):
+      Partial<FileConversionSettings> {
     const treeAdapter = parse5.treeAdapters.default;
 
     let settings: Partial<FileConversionSettings> = {};
@@ -429,7 +430,8 @@ export class DocumentConverter {
         results.push({
           originalUrl: oldScriptUrl,
           convertedUrl: newScriptUrl,
-          convertedFilePath: getJsModuleConvertedFilePath(oldScriptUrl, scanResults),
+          convertedFilePath:
+              getJsModuleConvertedFilePath(oldScriptUrl, scanResults),
           deleteOriginal: true,
           output: undefined,
         });
@@ -456,7 +458,8 @@ export class DocumentConverter {
     results.push({
       originalUrl: this.originalUrl,
       convertedUrl: this.convertedUrl,
-      convertedFilePath: getJsModuleConvertedFilePath(this.originalUrl, scanResults),
+      convertedFilePath:
+          getJsModuleConvertedFilePath(this.originalUrl, scanResults),
       deleteOriginal: true,
       output: outputProgram.code + EOL
     });
@@ -575,7 +578,8 @@ export class DocumentConverter {
 
       const htmlDocumentUrl =
           this.urlHandler.getDocumentUrl(htmlImport.document);
-      const importedJsDocumentUrl = this.convertDocumentUrl(htmlDocumentUrl, scanResults);
+      const importedJsDocumentUrl =
+          this.convertDocumentUrl(htmlDocumentUrl, scanResults);
       const importUrl =
           this.formatImportUrl(importedJsDocumentUrl, htmlImport.originalUrl);
       const scriptTag = parse5.parseFragment(`<script type="module"></script>`)
@@ -647,7 +651,8 @@ export class DocumentConverter {
     return {
       originalUrl: this.originalUrl,
       convertedUrl: this.convertedUrl,
-      convertedFilePath: getHtmlDocumentConvertedFilePath(this.originalUrl, scanResults),
+      convertedFilePath:
+          getHtmlDocumentConvertedFilePath(this.originalUrl, scanResults),
       output: contents
     };
   }
@@ -710,7 +715,8 @@ export class DocumentConverter {
         program,
         this.formatImportUrl(this.urlHandler.createConvertedUrl(
             'wct-browser-legacy/a11ySuite.js')));
-    const wereImportsAdded = this.addJsImports(scanResults, program, importedReferences);
+    const wereImportsAdded =
+        this.addJsImports(scanResults, program, importedReferences);
     // Don't convert the HTML.
     // Don't inline templates, they're fine where they are.
 
@@ -1097,8 +1103,9 @@ export class DocumentConverter {
    * Converts an HTML Document's path from old world to new. Use new NPM naming
    * as needed in the path, and change any .html extension to .js.
    */
-  private convertDocumentUrl(htmlUrl: OriginalDocumentUrl, scanResults?: ScanResults):
-      ConvertedDocumentUrl {
+  private convertDocumentUrl(
+      htmlUrl: OriginalDocumentUrl,
+      scanResults?: ScanResults): ConvertedDocumentUrl {
     if (scanResults) {
       const result = scanResults.files.get(htmlUrl);
       if (result && result.type !== 'delete-file') {
@@ -1115,7 +1122,7 @@ export class DocumentConverter {
 
     if (htmlUrl === this.originalUrl) {
       const newName = this.fileConversionSettings.usedFileName;
-      if (typeof newName === "string") {
+      if (typeof newName === 'string') {
         const parts = htmlUrl.split('/');
         parts[parts.length - 1] = newName;
         htmlUrl = parts.join('/') as OriginalDocumentUrl;
@@ -1191,8 +1198,7 @@ export class DocumentConverter {
    * the imports in this.module.importedReferences.
    */
   private addJsImports(
-      scanResults: ScanResults,
-      program: Program,
+      scanResults: ScanResults, program: Program,
       importedReferences:
           ReadonlyMap<ConvertedDocumentUrl, ReadonlySet<ImportReference>>):
       boolean {

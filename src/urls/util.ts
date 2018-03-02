@@ -37,8 +37,9 @@ export function replaceHtmlExtensionIfFound(url: string): string {
  * Create a ConvertedDocumentFilePath for the OriginalDocumentUrl of a document
  * being converted to a JS module.
  */
-export function getJsModuleConvertedFilePath(originalUrl: OriginalDocumentUrl, scanResults: ScanResults):
-    ConvertedDocumentFilePath {
+export function getJsModuleConvertedFilePath(
+    originalUrl: OriginalDocumentUrl,
+    scanResults: ScanResults): ConvertedDocumentFilePath {
   const result = scanResults.files.get(originalUrl);
   if (result && result.type !== 'delete-file') {
     return result.convertedUrl as string as ConvertedDocumentFilePath;
@@ -53,7 +54,8 @@ export function getJsModuleConvertedFilePath(originalUrl: OriginalDocumentUrl, s
  * since HTML documents should keep their current html file extension).
  */
 export function getHtmlDocumentConvertedFilePath(
-    originalUrl: OriginalDocumentUrl, scanResults: ScanResults): ConvertedDocumentFilePath {
+    originalUrl: OriginalDocumentUrl,
+    scanResults: ScanResults): ConvertedDocumentFilePath {
   const result = scanResults.files.get(originalUrl);
   if (result && result.type !== 'delete-file') {
     return result.convertedUrl as string as ConvertedDocumentFilePath;
