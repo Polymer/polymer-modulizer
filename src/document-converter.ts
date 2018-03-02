@@ -306,7 +306,7 @@ export class DocumentConverter {
         return;
       }
 
-      const content = treeAdapter.getCommentNodeContent(node);
+      const content = treeAdapter.getCommentNodeContent(node).trim();
       if (!content.startsWith(SETTINGS_COMMENT_PREFIX)) {
         return;
       }
@@ -317,7 +317,7 @@ export class DocumentConverter {
             `found in "${this.originalUrl}".`);
       }
 
-      settings = JSON.parse(content.substring(SETTINGS_COMMENT_PREFIX.length));
+      settings = JSON.parse(content.substring(SETTINGS_COMMENT_PREFIX.length).trim());
     }]);
     return settings || {};
   }
