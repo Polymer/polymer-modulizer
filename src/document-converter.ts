@@ -272,7 +272,7 @@ export class DocumentConverter {
     this.urlHandler = urlHandler;
     this.document = document;
     this.originalUrl = urlHandler.getDocumentUrl(document);
-    this.convertedUrl = this.convertDocumentUrl(this.originalUrl);
+    this.convertedUrl = this.generateSelfDocumentUrl();
   }
 
   /**
@@ -1113,12 +1113,31 @@ export class DocumentConverter {
   }
 
   /**
-   * Converts an HTML Document's path from old world to new. Use new NPM naming
-   * as needed in the path, and change any .html extension to .js.
+   * Converts this HTML Document's path from old world to new.
+   */
+  private generateSelfDocumentUrl() {
+    let selfUrl = this.originalUrl;
+
+    // Replace the file name with `usedFileName` from this file's
+    // FileConversionSettings object, if provided.
+    const newName = this.fileConversionSettings.usedFileName;
+    if (typeof newName === 'string') {
+      const parts = selfUrl.split('/');
+      parts[parts.length - 1] = newName;
+      selfUrl = parts.join('/') as OriginalDocumentUrl;
+    }
+
+    return this.convertUnknownDocumentUrl(selfUrl);
+  }
+
+  /**
+   * Converts an HTML Document's path from old world to new, reading from the
+   * scan results if possible.
    */
   private convertDocumentUrl(
       htmlUrl: OriginalDocumentUrl,
-      scanResults?: ScanResults): ConvertedDocumentUrl {
+      scanResults: ScanResults): ConvertedDocumentUrl {
+    // Use the converted URL that each document assigned itself, if available.
     if (scanResults) {
       const result = scanResults.files.get(htmlUrl);
       if (result && result.type !== 'delete-file') {
@@ -1126,20 +1145,20 @@ export class DocumentConverter {
       }
     }
 
+    return this.convertUnknownDocumentUrl(htmlUrl);
+  }
+
+  /**
+   * Converts an HTML Document's path from old world to new. Use new NPM naming
+   * as needed in the path, and change any .html extension to .js.
+   */
+  private convertUnknownDocumentUrl(htmlUrl: OriginalDocumentUrl):
+      ConvertedDocumentUrl {
     // TODO(fks): This can be removed later if type-checking htmlUrl is enough
     if (!isOriginalDocumentUrlFormat(htmlUrl)) {
       throw new Error(
           `convertDocumentUrl() expects an OriginalDocumentUrl string` +
           `from the analyzer, but got "${htmlUrl}"`);
-    }
-
-    if (htmlUrl === this.originalUrl) {
-      const newName = this.fileConversionSettings.usedFileName;
-      if (typeof newName === 'string') {
-        const parts = htmlUrl.split('/');
-        parts[parts.length - 1] = newName;
-        htmlUrl = parts.join('/') as OriginalDocumentUrl;
-      }
     }
 
     // Use the layout-specific UrlHandler to convert the URL.
