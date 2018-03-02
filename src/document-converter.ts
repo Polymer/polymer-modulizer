@@ -287,7 +287,7 @@ export class DocumentConverter {
       Partial<FileConversionSettings> {
     const treeAdapter = parse5.treeAdapters.default;
 
-    let settings: Partial<FileConversionSettings> = {};
+    let settings: Partial<FileConversionSettings>|null = null;
     document.visit([(node: parse5.ASTNode) => {
       if (!treeAdapter.isCommentNode(node)) {
         return;
@@ -298,9 +298,13 @@ export class DocumentConverter {
         return;
       }
 
+      if (settings) {
+        throw new Error("Multiple file conversion settings objects found.");
+      }
+
       settings = JSON.parse(content.substring(SETTINGS_COMMENT_PREFIX.length));
     }]);
-    return settings;
+    return settings || {};
   }
 
   /**
