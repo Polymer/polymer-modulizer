@@ -665,11 +665,11 @@ export class DocumentConverter {
    * Create a ConversionResult object to delete the file instead of converting
    * it.
    */
-  createDeleteResult(): ConversionResult {
+  createDeleteResult(scanResults: ScanResults): ConversionResult {
     return {
       originalUrl: this.originalUrl,
       convertedUrl: this.convertedUrl,
-      convertedFilePath: undefined,
+      convertedFilePath: getJsModuleConvertedFilePath(this.originalUrl, scanResults),
       deleteOriginal: true,
       output: undefined,
     };

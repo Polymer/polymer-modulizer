@@ -107,7 +107,7 @@ export class ProjectConverter {
           documentConverter.convertTopLevelHtmlDocument(scanResults);
       this.results.set(newModule.originalUrl, newModule);
     } else if (scanResult.type === 'delete-file') {
-      const newModule = documentConverter.createDeleteResult();
+      const newModule = documentConverter.createDeleteResult(scanResults);
       this.results.set(newModule.originalUrl, newModule);
     }
   }
@@ -132,8 +132,7 @@ export class ProjectConverter {
             convertedModule.originalUrl as string as ConvertedDocumentFilePath,
             undefined);
       }
-      if (convertedModule.convertedFilePath !== undefined &&
-          convertedModule.output !== undefined) {
+      if (convertedModule.output !== undefined) {
         results.set(convertedModule.convertedFilePath, convertedModule.output);
       }
     }
