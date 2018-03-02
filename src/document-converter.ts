@@ -259,15 +259,16 @@ export class DocumentConverter {
   private readonly namespacedExports: Map<string, JsExport>;
   private readonly conversionSettings: ConversionSettings;
   private readonly fileConversionSettings: Partial<FileConversionSettings>;
-  private readonly document: Document;
+  private readonly document: Document<ParsedHtmlDocument>;
 
   constructor(
-      document: Document, namespacedExports: Map<string, JsExport>,
-      urlHandler: UrlHandler, conversionSettings: ConversionSettings) {
+      document: Document<ParsedHtmlDocument>,
+      namespacedExports: Map<string, JsExport>, urlHandler: UrlHandler,
+      conversionSettings: ConversionSettings) {
     this.namespacedExports = namespacedExports;
     this.conversionSettings = conversionSettings;
-    this.fileConversionSettings = this.getFileConversionSettings(
-        document.parsedDocument as ParsedHtmlDocument);
+    this.fileConversionSettings =
+        this.getFileConversionSettings(document.parsedDocument);
     this.urlHandler = urlHandler;
     this.document = document;
     this.originalUrl = urlHandler.getDocumentUrl(document);
@@ -279,7 +280,7 @@ export class DocumentConverter {
    * to documents that are meant to be ignored/excluded during conversion. It
    * it is up to the caller to filter out any unneccesary/excluded documents.
    */
-  static getAllHtmlImports(document: Document): Import[] {
+  static getAllHtmlImports(document: Document<ParsedHtmlDocument>): Import[] {
     return [...document.getFeatures({kind: 'html-import'})];
   }
 

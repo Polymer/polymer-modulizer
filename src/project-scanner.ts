@@ -12,7 +12,7 @@
  * http://polymer.github.io/PATENTS.txt
  */
 
-import {Analysis, Document} from 'polymer-analyzer';
+import {Analysis, Document, ParsedHtmlDocument} from 'polymer-analyzer';
 
 import {ConversionSettings} from './conversion-settings';
 import {DeleteFileScanResult, DocumentConverter, HtmlDocumentScanResult, JsModuleScanResult} from './document-converter';
@@ -116,7 +116,7 @@ export class ProjectScanner {
    * format (JS Module or HTML Document) is determined by whether the file is
    * included in conversionSettings.includes.
    */
-  scanDocument(document: Document, forceJs = false) {
+  scanDocument(document: Document<ParsedHtmlDocument>, forceJs = false) {
     console.assert(
         document.kinds.has('html-document'),
         `scanDocument() must be called with an HTML document, but got ${
@@ -170,7 +170,7 @@ export class ProjectScanner {
    * Scan document dependencies. If a dependency is external to this package,
    * scan the entire external package.
    */
-  private _scanDependencies(document: Document) {
+  private _scanDependencies(document: Document<ParsedHtmlDocument>) {
     const documentUrl = this.urlHandler.getDocumentUrl(document);
     const packageName =
         this.urlHandler.getOriginalPackageNameForUrl(documentUrl);
@@ -180,7 +180,8 @@ export class ProjectScanner {
           this.urlHandler.getOriginalPackageNameForUrl(importDocumentUrl);
 
       if (importPackageName === packageName) {
-        this.scanDocument(htmlImport.document, true);
+        this.scanDocument(
+            htmlImport.document as Document<ParsedHtmlDocument>, true);
       } else {
         this.scanPackage(importPackageName);
       }
