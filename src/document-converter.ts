@@ -161,6 +161,14 @@ export interface HtmlDocumentScanResult {
   convertedUrl: ConvertedDocumentUrl;
 }
 
+interface FileConversionSettings {
+  /**
+   * The file will be treated as if it were renamed to `usedFileName` (and all
+   * references to it were updated) before conversion.
+   */
+  usedFileName: string;
+}
+
 /**
  * Convert a module specifier & an optional set of named exports (or '*' to
  * import entire namespace) to a set of ImportDeclaration objects.
@@ -250,7 +258,7 @@ export class DocumentConverter {
   private readonly urlHandler: UrlHandler;
   private readonly namespacedExports: Map<string, JsExport>;
   private readonly conversionSettings: ConversionSettings;
-  private readonly fileConversionSettings: any;
+  private readonly fileConversionSettings: Partial<FileConversionSettings>;
   private readonly document: Document;
 
   constructor(
@@ -275,10 +283,10 @@ export class DocumentConverter {
     return [...document.getFeatures({kind: 'html-import'})];
   }
 
-  private getFileConversionSettings(document: ParsedHtmlDocument) {
+  private getFileConversionSettings(document: ParsedHtmlDocument): Partial<FileConversionSettings> {
     const treeAdapter = parse5.treeAdapters.default;
 
-    let settings: any = {};
+    let settings: Partial<FileConversionSettings> = {};
     document.visit([(node: parse5.ASTNode) => {
       if (!treeAdapter.isCommentNode(node)) {
         return;
