@@ -280,7 +280,7 @@ export class DocumentConverter {
    * to documents that are meant to be ignored/excluded during conversion. It
    * it is up to the caller to filter out any unneccesary/excluded documents.
    */
-  static getAllHtmlImports(document: Document<ParsedHtmlDocument>): Import[] {
+  static getAllHtmlImports(document: Document): Import[] {
     return [...document.getFeatures({kind: 'html-import'})];
   }
 
