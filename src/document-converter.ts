@@ -300,7 +300,7 @@ export class DocumentConverter {
       }
 
       if (settings) {
-        throw new Error("Multiple file conversion settings objects found.");
+        throw new Error('Multiple file conversion settings objects found.');
       }
 
       settings = JSON.parse(content.substring(SETTINGS_COMMENT_PREFIX.length));
@@ -670,7 +670,8 @@ export class DocumentConverter {
     return {
       originalUrl: this.originalUrl,
       convertedUrl: this.convertedUrl,
-      convertedFilePath: getJsModuleConvertedFilePath(this.originalUrl, scanResults),
+      convertedFilePath:
+          getJsModuleConvertedFilePath(this.originalUrl, scanResults),
       deleteOriginal: true,
       output: undefined,
     };
