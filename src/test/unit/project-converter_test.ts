@@ -2623,7 +2623,7 @@ Polymer({
         setSources({
           'test.html': `
 <!--                    polymer-modulizer:          {
-"usedFileName": "test-renamed.html"
+  "usedFileName": "test-renamed.html"
 }                       -->
 `,
         });
@@ -2631,7 +2631,7 @@ Polymer({
           // The file was renamed successfully even with the whitespace.
           'test-renamed.js': `
 /*                    polymer-modulizer:          {
-"usedFileName": "test-renamed.html"
+  "usedFileName": "test-renamed.html"
 }                       */
 ;
 `,
@@ -2645,14 +2645,14 @@ Polymer({
           setSources({
             'test.html': `
 <!--polymer-modulizer:{
-"usedFileName": "test-renamed.html"
+  "usedFileName": "test-renamed.html"
 }-->
 `,
           });
           assertSources(await convert({}), {
             'test-renamed.js': `
 /*polymer-modulizer:{
-"usedFileName": "test-renamed.html"
+  "usedFileName": "test-renamed.html"
 }*/
 ;
 `,
@@ -2677,7 +2677,7 @@ console.log('other');
 `,
             'before-renaming.html': `
 <!--polymer-modulizer:{
-"usedFileName": "after-renaming.html"
+  "usedFileName": "after-renaming.html"
 }-->
 <script>
 console.log('before-renaming -> after-renaming');
@@ -2696,7 +2696,7 @@ console.log('other');
 `,
             'after-renaming.js': `
 /*polymer-modulizer:{
-"usedFileName": "after-renaming.html"
+  "usedFileName": "after-renaming.html"
 }*/
 console.log('before-renaming -> after-renaming');
 `,
