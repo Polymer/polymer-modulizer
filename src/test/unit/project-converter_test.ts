@@ -2702,6 +2702,53 @@ console.log('before-renaming -> after-renaming');
 `,
           });
         });
+
+        testName = 'References to renamed files are updated in all files. ' +
+          '(cyclical imports)';
+        test(testName, async () => {
+          setSources({
+            'test.html': `
+<link rel="import" href="./other-1.html">
+<!--polymer-modulizer:{
+  "usedFileName": "test-renamed.html"
+}-->
+<script>
+console.log('test');
+</script>
+`,
+            'other-1.html': `
+<link rel="import" href="./test.html">
+<link rel="import" href="./other-2.html">
+<script>
+console.log('other-1');
+</script>
+`,
+            'other-2.html': `
+<link rel="import" href="./test.html">
+<script>
+console.log('other-2');
+</script>
+`,
+          });
+          assertSources(await convert({}), {
+            'test-renamed.js': `
+import './other-1.js';
+/*polymer-modulizer:{
+  "usedFileName": "test-renamed.html"
+}*/
+console.log('test');
+`,
+            'other-1.js': `
+import './test-renamed.js';
+import './other-2.js';
+console.log('other-1');
+`,
+            'other-2.js': `
+import './test-renamed.js';
+console.log('other-2');
+`,
+          });
+        });
       });
     });
   });
