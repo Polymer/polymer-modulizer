@@ -2579,6 +2579,131 @@ Polymer({
         });
       });
     });
+
+    suite('FileConversionSettings', () => {
+      testName = 'Conversion throws when multiple comments with the prefix ' +
+          'are found.';
+      test(testName, async () => {
+        setSources({
+          'test.html': `
+<!--      polymer-modulizer:    {}   -->
+<!--polymer-modulizer:{}-->
+`,
+        });
+
+        try {
+          await convert({});
+        } catch (e) {
+          return;
+        }
+
+        throw new Error('Conversion did not throw.');
+      });
+
+      testName = 'Conversion throws when the comment content after the ' +
+          'prefix content can\'t be parsed as JSON.';
+      test(testName, async () => {
+        setSources({
+          'test.html': `
+<!--polymer-modulizer:This isn't json.-->
+`,
+        });
+
+        try {
+          await convert({});
+        } catch (e) {
+          return;
+        }
+
+        throw new Error('Conversion did not throw.');
+      });
+
+      testName = 'The comment prefix and JSON can be surrounded by whitespace.';
+      test(testName, async () => {
+        setSources({
+          'test.html': `
+<!--                    polymer-modulizer:          {
+"usedFileName": "test-renamed.html"
+}                       -->
+`,
+        });
+        assertSources(await convert({}), {
+          // The file was renamed successfully even with the whitespace.
+          'test-renamed.js': `
+/*                    polymer-modulizer:          {
+"usedFileName": "test-renamed.html"
+}                       */
+;
+`,
+        });
+      });
+
+      suite('usedFileName', () => {
+        testName = 'The file is treated as if it had a different name before ' +
+            'conversion.';
+        test(testName, async () => {
+          setSources({
+            'test.html': `
+<!--polymer-modulizer:{
+"usedFileName": "test-renamed.html"
+}-->
+`,
+          });
+          assertSources(await convert({}), {
+            'test-renamed.js': `
+/*polymer-modulizer:{
+"usedFileName": "test-renamed.html"
+}*/
+;
+`,
+          });
+        });
+
+        testName = 'References to renamed files are updated in all files.';
+        test(testName, async () => {
+          setSources({
+            'test.html': `
+<link rel="import" href="./other.html">
+<link rel="import" href="./before-renaming.html">
+<script>
+console.log('test');
+</script>
+`,
+            'other.html': `
+<link rel="import" href="./before-renaming.html">
+<script>
+console.log('other');
+</script>
+`,
+            'before-renaming.html': `
+<!--polymer-modulizer:{
+"usedFileName": "after-renaming.html"
+}-->
+<script>
+console.log('before-renaming -> after-renaming');
+</script>
+`,
+          });
+          assertSources(await convert({}), {
+            'test.js': `
+import './other.js';
+import './after-renaming.js';
+console.log('test');
+`,
+            'other.js': `
+import './after-renaming.js';
+console.log('other');
+`,
+            'after-renaming.js': `
+/*polymer-modulizer:{
+"usedFileName": "after-renaming.html"
+}*/
+console.log('before-renaming -> after-renaming');
+`,
+          });
+        });
+      });
+    });
   });
 
   suite('getMemberPath', () => {

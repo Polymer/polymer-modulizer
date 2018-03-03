@@ -326,7 +326,8 @@ export class DocumentConverter {
             `found in "${this.originalUrl}".`);
       }
 
-      settings = JSON.parse(content.substring(SETTINGS_COMMENT_PREFIX.length).trim());
+      settings =
+          JSON.parse(content.substring(SETTINGS_COMMENT_PREFIX.length).trim());
     }]);
     return settings || {};
   }
