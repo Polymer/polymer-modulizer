@@ -300,6 +300,17 @@ export class DocumentConverter {
     return [...document.getFeatures({kind: 'html-import'})];
   }
 
+  private *dom5DepthFirst(node: parse5.ASTNode): IterableIterator<parse5.ASTNode> {
+    const treeAdapter = parse5.treeAdapters.default;
+    yield node;
+    const children = treeAdapter.getChildNodes(node);
+    if (children) {
+      for (const child of children) {
+        yield* this.dom5DepthFirst(child);
+      }
+    }
+  }
+
   /**
    * Finds the comment containing the FileConversionSettings object and returns
    * the parsed object. Throws if more than one comment could be parsed as the
@@ -309,27 +320,18 @@ export class DocumentConverter {
       Partial<FileConversionSettings> {
     const treeAdapter = parse5.treeAdapters.default;
 
-    let settings: Partial<FileConversionSettings>|null = null;
-    document.visit([(node: parse5.ASTNode) => {
+    for (const node of this.dom5DepthFirst(document.ast)) {
       if (!treeAdapter.isCommentNode(node)) {
-        return;
+        continue;
       }
 
       const content = treeAdapter.getCommentNodeContent(node).trim();
-      if (!content.startsWith(SETTINGS_COMMENT_PREFIX)) {
-        return;
+      if (content.startsWith(SETTINGS_COMMENT_PREFIX)) {
+        return JSON.parse(content.substring(SETTINGS_COMMENT_PREFIX.length));
       }
+    }
 
-      if (settings) {
-        throw new Error(
-            'Multiple file conversion settings objects were ' +
-            `found in "${this.originalUrl}".`);
-      }
-
-      settings =
-          JSON.parse(content.substring(SETTINGS_COMMENT_PREFIX.length).trim());
-    }]);
-    return settings || {};
+    return {};
   }
 
   /**
