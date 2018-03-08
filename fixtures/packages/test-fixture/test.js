@@ -8,10 +8,11 @@ module.exports = {
     '3.0.0',
     '--delete-files',
     'bower.json',
-    'types',
+    '**.d.ts',
   ],
   stdout: `[1/2] 🌀  Converting Package...
 Out directory: ${path.join(__dirname, 'generated')}
 [2/2] 🎉  Conversion Complete!`,
-  stderr: ``,
+  stderr:
+      `test-fixture: package.json name is changing from "test-fixture" to "@polymer/test-fixture".`,
 };
