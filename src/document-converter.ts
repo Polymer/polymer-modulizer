@@ -40,7 +40,7 @@ import {rewriteReferencesToLocalExports} from './passes/rewrite-references-to-lo
 import {rewriteReferencesToNamespaceMembers} from './passes/rewrite-references-to-namespace-members';
 import {rewriteToplevelThis} from './passes/rewrite-toplevel-this';
 import {ScanResults} from './project-scanner';
-import {ConvertedDocumentUrl, OriginalDocumentUrl} from './urls/types';
+import {ConvertedDocumentFilePath, ConvertedDocumentUrl, OriginalDocumentUrl} from './urls/types';
 import {UrlHandler} from './urls/url-handler';
 import {isOriginalDocumentUrlFormat} from './urls/util';
 import {getHtmlDocumentConvertedFilePath, getJsModuleConvertedFilePath, getModuleId, replaceHtmlExtensionIfFound} from './urls/util';
@@ -131,6 +131,8 @@ interface Edit {
   replacementText: string;
 }
 
+export type ScanResult =
+    JsModuleScanResult|DeleteFileScanResult|HtmlDocumentScanResult;
 /**
  * Contains information about how an existing file should be converted to a new
  * JS Module. Includes a mapping of its new exports.
@@ -139,6 +141,7 @@ export interface JsModuleScanResult {
   type: 'js-module';
   originalUrl: OriginalDocumentUrl;
   convertedUrl: ConvertedDocumentUrl;
+  convertedFilePath: ConvertedDocumentFilePath;
   exportMigrationRecords: NamespaceMemberToExport[];
 }
 
@@ -149,6 +152,8 @@ export interface JsModuleScanResult {
 export interface DeleteFileScanResult {
   type: 'delete-file';
   originalUrl: OriginalDocumentUrl;
+  convertedUrl: undefined;
+  convertedFilePath: undefined;
 }
 
 /**
@@ -159,10 +164,8 @@ export interface HtmlDocumentScanResult {
   type: 'html-document';
   originalUrl: OriginalDocumentUrl;
   convertedUrl: ConvertedDocumentUrl;
+  convertedFilePath: ConvertedDocumentFilePath;
 }
-
-export type AnyScanResult =
-    JsModuleScanResult|HtmlDocumentScanResult|DeleteFileScanResult;
 
 /**
  * Conversion settings specific to a file which are extracted from a comment in
@@ -268,16 +271,13 @@ export class DocumentConverter {
   private readonly originalUrl: OriginalDocumentUrl;
   private readonly convertedUrl: ConvertedDocumentUrl;
   private readonly urlHandler: UrlHandler;
-  private readonly namespacedExports: Map<string, JsExport>;
   private readonly conversionSettings: ConversionSettings;
   private readonly fileConversionSettings: Partial<FileConversionSettings>;
   private readonly document: Document<ParsedHtmlDocument>;
 
   constructor(
-      document: Document<ParsedHtmlDocument>,
-      namespacedExports: Map<string, JsExport>, urlHandler: UrlHandler,
-      conversionSettings: ConversionSettings, selfScanResult?: AnyScanResult) {
-    this.namespacedExports = namespacedExports;
+      document: Document<ParsedHtmlDocument>, urlHandler: UrlHandler,
+      conversionSettings: ConversionSettings, selfScanResult?: ScanResult) {
     this.conversionSettings = conversionSettings;
     this.fileConversionSettings =
         this.getFileConversionSettings(document.parsedDocument);
@@ -362,7 +362,7 @@ export class DocumentConverter {
    * Creates a single program from all the JavaScript in the current document.
    * The standard program result can be used for either scanning or conversion.
    */
-  private _prepareJsModule() {
+  private prepareJsModule() {
     const combinedToplevelStatements = [];
     const convertedHtmlScripts = new Set<Import>();
     const claimedDomModules = new Set<parse5.ASTNode>();
@@ -423,10 +423,12 @@ export class DocumentConverter {
       return {
         type: 'delete-file',
         originalUrl: this.originalUrl,
+        convertedUrl: undefined,
+        convertedFilePath: undefined,
       };
     }
 
-    const {program} = this._prepareJsModule();
+    const {program} = this.prepareJsModule();
     const {exportMigrationRecords} = rewriteNamespacesAsExports(
         program, this.document, this.conversionSettings.namespaces);
 
@@ -435,6 +437,8 @@ export class DocumentConverter {
       originalUrl: this.originalUrl,
       convertedUrl: replaceHtmlExtensionIfFound(this.convertedUrl) as
           ConvertedDocumentUrl,
+      convertedFilePath: replaceHtmlExtensionIfFound(this.convertedUrl) as
+          ConvertedDocumentFilePath,
       exportMigrationRecords,
     };
   }
@@ -442,9 +446,11 @@ export class DocumentConverter {
   /**
    * Convert a document to a JS Module.
    */
-  convertJsModule(scanResults: ScanResults): ConversionResult[] {
-    const {program, convertedHtmlScripts} = this._prepareJsModule();
-    const importedReferences = this.collectNamespacedReferences(program);
+  convertJsModule(scanResults: ScanResults, namespacedExports: Map<string, JsExport>):
+      ConversionResult[] {
+    const {program, convertedHtmlScripts} = this.prepareJsModule();
+    const importedReferences =
+        this.collectNamespacedReferences(program, namespacedExports);
     const results: ConversionResult[] = [];
 
     // Add imports for every non-module <script> tag to just import the file
@@ -508,13 +514,14 @@ export class DocumentConverter {
       type: 'html-document',
       convertedUrl: this.convertedUrl,
       originalUrl: this.originalUrl,
+      convertedFilePath: this.originalUrl as string as ConvertedDocumentFilePath,
     };
   }
 
   /**
    * Convert a document to a top-level HTML document.
    */
-  convertTopLevelHtmlDocument(scanResults: ScanResults): ConversionResult {
+  convertTopLevelHtmlDocument(scanResults: ScanResults, namespacedExports: Map<string, JsExport>): ConversionResult {
     const htmlDocument = this.document.parsedDocument as ParsedHtmlDocument;
     const p = dom5.predicates;
 
@@ -533,7 +540,7 @@ export class DocumentConverter {
       const offsets = htmlDocument.sourceRangeToOffsets(sourceRange);
 
       const file = recast.parse(script.parsedDocument.contents);
-      const program = this.rewriteInlineScript(scanResults, file.program);
+      const program = this.rewriteInlineScript(scanResults, file.program, namespacedExports);
 
       if (program === undefined) {
         continue;
@@ -580,7 +587,7 @@ export class DocumentConverter {
       const offsets = htmlDocument.sourceRangeToOffsets(sourceRange);
 
       const file = recast.parse(dom5.getTextContent(astNode));
-      const program = this.rewriteInlineScript(scanResults, file.program);
+      const program = this.rewriteInlineScript(scanResults, file.program, namespacedExports);
 
       if (program === undefined) {
         continue;
@@ -731,7 +738,8 @@ export class DocumentConverter {
    * Rewrite an inline script that will exist inlined inside an HTML document.
    * Should not be called on top-level JS Modules.
    */
-  private rewriteInlineScript(scanResults: ScanResults, program: Program) {
+  private rewriteInlineScript(scanResults: ScanResults,
+      program: Program, namespacedExports: Map<string, JsExport>) {
     // Any code that sets the global settings object cannot be inlined (and
     // deferred) because the settings object must be created/configured
     // before other imports evaluate in following module scripts.
@@ -743,7 +751,8 @@ export class DocumentConverter {
     removeToplevelUseStrict(program);
     removeUnnecessaryEventListeners(program);
     removeWrappingIIFEs(program);
-    const importedReferences = this.collectNamespacedReferences(program);
+    const importedReferences =
+        this.collectNamespacedReferences(program, namespacedExports);
     const wasA11ySuiteAdded = addA11ySuiteIfUsed(
         program,
         this.formatImportUrl(this.urlHandler.createConvertedUrl(
@@ -1031,10 +1040,10 @@ export class DocumentConverter {
    * Returns a map of from url to identifier of the references we should
    * import.
    */
-  private collectNamespacedReferences(program: Program):
+  private collectNamespacedReferences(
+      program: Program, namespacedExports: Map<string, JsExport>):
       Map<ConvertedDocumentUrl, Set<ImportReference>> {
     const convertedUrl = this.convertedUrl;
-    const namespacedExports = this.namespacedExports;
     const conversionSettings = this.conversionSettings;
     const importedReferences =
         new Map<ConvertedDocumentUrl, Set<ImportReference>>();
