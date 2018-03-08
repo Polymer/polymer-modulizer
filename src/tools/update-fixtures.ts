@@ -120,6 +120,11 @@ async function overridePolymer(sourceDir: string) {
       repoUrl: 'https://github.com/PolymerElements/iron-icon.git',
       skipSourceUpdate,
     }),
+    updateFixture({
+      folder: 'test-fixture',
+      repoUrl: 'https://github.com/PolymerElements/test-fixture.git',
+      skipSourceUpdate,
+    }),
   ].map((p) => p.catch((e) => {
     // Exit with an error code if any fixture fails, but let them all finish.
     console.error(e);
