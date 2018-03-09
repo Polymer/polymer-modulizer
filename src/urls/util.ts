@@ -14,7 +14,7 @@
 
 import {posix as path} from 'path';
 
-import {ScanResults} from '../project-scanner';
+import {PackageScanResult} from '../package-scanner';
 import {ConvertedDocumentFilePath, ConvertedDocumentUrl, OriginalDocumentUrl} from './types';
 
 /**
@@ -39,7 +39,7 @@ export function replaceHtmlExtensionIfFound(url: string): string {
  */
 export function getJsModuleConvertedFilePath(
     originalUrl: OriginalDocumentUrl,
-    scanResults: ScanResults): ConvertedDocumentFilePath {
+    scanResults: PackageScanResult): ConvertedDocumentFilePath {
   const result = scanResults.files.get(originalUrl);
   if (result && result.type !== 'delete-file') {
     return result.convertedUrl as string as ConvertedDocumentFilePath;
@@ -55,7 +55,7 @@ export function getJsModuleConvertedFilePath(
  */
 export function getHtmlDocumentConvertedFilePath(
     originalUrl: OriginalDocumentUrl,
-    scanResults: ScanResults): ConvertedDocumentFilePath {
+    scanResults: PackageScanResult): ConvertedDocumentFilePath {
   const result = scanResults.files.get(originalUrl);
   if (result && result.type !== 'delete-file') {
     return result.convertedUrl as string as ConvertedDocumentFilePath;

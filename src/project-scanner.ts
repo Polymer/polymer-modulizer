@@ -17,14 +17,9 @@ import {Analysis} from 'polymer-analyzer';
 import {ConversionSettings} from './conversion-settings';
 import {ScanResult} from './document-converter';
 import {JsExport} from './js-module';
-import {PackageScanner} from './package-scanner';
+import {PackageScanner, PackageScanResult} from './package-scanner';
 import {OriginalDocumentUrl} from './urls/types';
 import {UrlHandler} from './urls/url-handler';
-
-export interface ScanResults {
-  files: Map<OriginalDocumentUrl, ScanResult>;
-  exports: Map<string, JsExport>;
-}
 
 /**
  * ProjectScanner provides the top-level interface for scanning packages and
@@ -99,7 +94,7 @@ export class ProjectScanner {
     }
   }
 
-  getResults(): ScanResults {
+  getResults(): PackageScanResult {
     const allResults = [...this.scannedPackages.values()].map(
         (scanner) => scanner.getResults());
     const allFiles = new Map<OriginalDocumentUrl, ScanResult>();

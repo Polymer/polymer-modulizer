@@ -39,7 +39,7 @@ import {rewriteNamespacesThisReferences} from './passes/rewrite-namespace-this-r
 import {rewriteReferencesToLocalExports} from './passes/rewrite-references-to-local-exports';
 import {rewriteReferencesToNamespaceMembers} from './passes/rewrite-references-to-namespace-members';
 import {rewriteToplevelThis} from './passes/rewrite-toplevel-this';
-import {ScanResults} from './project-scanner';
+import {PackageScanResult} from './package-scanner';
 import {ConvertedDocumentFilePath, ConvertedDocumentUrl, OriginalDocumentUrl} from './urls/types';
 import {UrlHandler} from './urls/url-handler';
 import {isOriginalDocumentUrlFormat} from './urls/util';
@@ -447,7 +447,7 @@ export class DocumentConverter {
   /**
    * Convert a document to a JS Module.
    */
-  convertJsModule(scanResults: ScanResults): ConversionResult[] {
+  convertJsModule(scanResults: PackageScanResult): ConversionResult[] {
     const {program, convertedHtmlScripts} = this.prepareJsModule();
     const importedReferences =
         this.collectNamespacedReferences(program, scanResults.exports);
@@ -522,7 +522,8 @@ export class DocumentConverter {
   /**
    * Convert a document to a top-level HTML document.
    */
-  convertTopLevelHtmlDocument(scanResults: ScanResults): ConversionResult {
+  convertTopLevelHtmlDocument(scanResults: PackageScanResult):
+      ConversionResult {
     const htmlDocument = this.document.parsedDocument as ParsedHtmlDocument;
     const p = dom5.predicates;
 
@@ -701,7 +702,7 @@ export class DocumentConverter {
    * Create a ConversionResult object to delete the file instead of converting
    * it.
    */
-  createDeleteResult(scanResults: ScanResults): ConversionResult {
+  createDeleteResult(scanResults: PackageScanResult): ConversionResult {
     return {
       originalUrl: this.originalUrl,
       convertedUrl: this.convertedUrl,
@@ -739,7 +740,8 @@ export class DocumentConverter {
    * Rewrite an inline script that will exist inlined inside an HTML document.
    * Should not be called on top-level JS Modules.
    */
-  private rewriteInlineScript(program: Program, scanResults: ScanResults) {
+  private rewriteInlineScript(
+      program: Program, scanResults: PackageScanResult) {
     // Any code that sets the global settings object cannot be inlined (and
     // deferred) because the settings object must be created/configured
     // before other imports evaluate in following module scripts.
@@ -1165,7 +1167,7 @@ export class DocumentConverter {
    */
   private convertDocumentUrl(
       htmlUrl: OriginalDocumentUrl,
-      scanResults: ScanResults): ConvertedDocumentUrl {
+      scanResults: PackageScanResult): ConvertedDocumentUrl {
     // Use the converted URL that each document assigned itself, if available.
     if (scanResults) {
       const result = scanResults.files.get(htmlUrl);
@@ -1260,7 +1262,7 @@ export class DocumentConverter {
       program: Program,
       importedReferences:
           ReadonlyMap<ConvertedDocumentUrl, ReadonlySet<ImportReference>>,
-      scanResults: ScanResults): boolean {
+      scanResults: PackageScanResult): boolean {
     // Collect Identifier nodes within trees that will be completely replaced
     // with an import reference.
     const ignoredIdentifiers: Set<Identifier> = new Set();
