@@ -106,8 +106,8 @@ export class ProjectConverter {
             this.results.set(newModule.originalUrl, newModule);
           });
     } else if (scanResult.type === 'html-document') {
-      const newModule =
-          documentConverter.convertTopLevelHtmlDocument(scanResults, scanResults.exports);
+      const newModule = documentConverter.convertTopLevelHtmlDocument(
+          scanResults, scanResults.exports);
       this.results.set(newModule.originalUrl, newModule);
     } else if (scanResult.type === 'delete-file') {
       const newModule = documentConverter.createDeleteResult(scanResults);

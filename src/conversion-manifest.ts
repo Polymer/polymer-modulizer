@@ -112,7 +112,8 @@ function fileMappingToScanResult(
     type: 'js-module',
     originalUrl: originalUrl,
     convertedUrl: convertedUrl,
-    convertedFilePath: replaceHtmlExtensionIfFound(originalUrl) as ConvertedDocumentFilePath,
+    convertedFilePath: replaceHtmlExtensionIfFound(originalUrl) as
+        ConvertedDocumentFilePath,
     exportMigrationRecords: fileData.exports.map((ex) => ({
                                                    oldNamespacedName: ex.id,
                                                    es6ExportName: ex.name,

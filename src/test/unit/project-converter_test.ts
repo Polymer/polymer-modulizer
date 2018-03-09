@@ -2783,7 +2783,7 @@ console.log('before-renaming -> after-renaming');
         });
 
         testName = 'References to renamed files are updated in all files. ' +
-          '(cyclical imports)';
+            '(cyclical imports)';
         test(testName, async () => {
           setSources({
             'test.html': `

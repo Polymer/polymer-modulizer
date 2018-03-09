@@ -193,7 +193,8 @@ export class PackageScanner {
    * format (JS Module or HTML Document) is determined by whether the file is
    * included in conversionSettings.includes.
    */
-  private scanDocument(document: Document<ParsedHtmlDocument>, forceJs = false) {
+  private scanDocument(
+      document: Document<ParsedHtmlDocument>, forceJs = false) {
     console.assert(
         document.kinds.has('html-document'),
         `scanDocument() must be called with an HTML document, but got ${
@@ -255,7 +256,8 @@ export class PackageScanner {
           this.urlHandler.getOriginalPackageNameForUrl(importDocumentUrl);
 
       if (importPackageName === packageName) {
-        this.scanDocument(htmlImport.document as Document<ParsedHtmlDocument>, true);
+        this.scanDocument(
+            htmlImport.document as Document<ParsedHtmlDocument>, true);
       } else {
         this.externalDependencies.add(importPackageName);
       }

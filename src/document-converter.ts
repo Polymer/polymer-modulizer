@@ -300,7 +300,8 @@ export class DocumentConverter {
     return [...document.getFeatures({kind: 'html-import'})];
   }
 
-  private *dom5DepthFirst(node: parse5.ASTNode): IterableIterator<parse5.ASTNode> {
+  private *
+      dom5DepthFirst(node: parse5.ASTNode): IterableIterator<parse5.ASTNode> {
     const treeAdapter = parse5.treeAdapters.default;
     yield node;
     const children = treeAdapter.getChildNodes(node);
@@ -446,8 +447,9 @@ export class DocumentConverter {
   /**
    * Convert a document to a JS Module.
    */
-  convertJsModule(scanResults: ScanResults, namespacedExports: Map<string, JsExport>):
-      ConversionResult[] {
+  convertJsModule(
+      scanResults: ScanResults,
+      namespacedExports: Map<string, JsExport>): ConversionResult[] {
     const {program, convertedHtmlScripts} = this.prepareJsModule();
     const importedReferences =
         this.collectNamespacedReferences(program, namespacedExports);
@@ -514,14 +516,17 @@ export class DocumentConverter {
       type: 'html-document',
       convertedUrl: this.convertedUrl,
       originalUrl: this.originalUrl,
-      convertedFilePath: this.originalUrl as string as ConvertedDocumentFilePath,
+      convertedFilePath: this.originalUrl as string as
+          ConvertedDocumentFilePath,
     };
   }
 
   /**
    * Convert a document to a top-level HTML document.
    */
-  convertTopLevelHtmlDocument(scanResults: ScanResults, namespacedExports: Map<string, JsExport>): ConversionResult {
+  convertTopLevelHtmlDocument(
+      scanResults: ScanResults,
+      namespacedExports: Map<string, JsExport>): ConversionResult {
     const htmlDocument = this.document.parsedDocument as ParsedHtmlDocument;
     const p = dom5.predicates;
 
@@ -540,7 +545,8 @@ export class DocumentConverter {
       const offsets = htmlDocument.sourceRangeToOffsets(sourceRange);
 
       const file = recast.parse(script.parsedDocument.contents);
-      const program = this.rewriteInlineScript(scanResults, file.program, namespacedExports);
+      const program = this.rewriteInlineScript(
+          scanResults, file.program, namespacedExports);
 
       if (program === undefined) {
         continue;
@@ -587,7 +593,8 @@ export class DocumentConverter {
       const offsets = htmlDocument.sourceRangeToOffsets(sourceRange);
 
       const file = recast.parse(dom5.getTextContent(astNode));
-      const program = this.rewriteInlineScript(scanResults, file.program, namespacedExports);
+      const program = this.rewriteInlineScript(
+          scanResults, file.program, namespacedExports);
 
       if (program === undefined) {
         continue;
@@ -738,8 +745,9 @@ export class DocumentConverter {
    * Rewrite an inline script that will exist inlined inside an HTML document.
    * Should not be called on top-level JS Modules.
    */
-  private rewriteInlineScript(scanResults: ScanResults,
-      program: Program, namespacedExports: Map<string, JsExport>) {
+  private rewriteInlineScript(
+      scanResults: ScanResults, program: Program,
+      namespacedExports: Map<string, JsExport>) {
     // Any code that sets the global settings object cannot be inlined (and
     // deferred) because the settings object must be created/configured
     // before other imports evaluate in following module scripts.
