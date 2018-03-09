@@ -70,7 +70,7 @@ export class ProjectScanner {
    * Get a package manifest (a serializable version of the scanner results) for
    * a package.
    */
-  async getPackageManifest(packageName: string) {
+  async getConversionManifest(packageName: string) {
     if (!this.scannedPackages.has(packageName)) {
       await this.scanPackage(packageName);
     }

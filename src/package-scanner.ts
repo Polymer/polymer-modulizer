@@ -79,9 +79,9 @@ export class PackageScanner {
    * cannot be reached, etc.) it will scan the package manually.
    */
   async scanPackage(): Promise<PackageScanResult> {
-    const packageManifest = await this.getPackageManifest();
-    if (packageManifest) {
-      this.scanPackageFromManifest(packageManifest);
+    const resultsFromManifest = await this.getResultsFromManifest();
+    if (resultsFromManifest) {
+      this.scanPackageFromManifest(resultsFromManifest);
     } else {
       this.scanPackageManually();
     }
@@ -92,7 +92,7 @@ export class PackageScanner {
    * Get a package manifest (a serializable version of the scanner results) for
    * a package.
    */
-  scanPackageFromManifest(packageScanManifest: PackageScanResult) {
+  private scanPackageFromManifest(packageScanManifest: PackageScanResult) {
     for (const [originalUrl, scanResult] of packageScanManifest.files) {
       this.results.set(originalUrl, scanResult);
       if (scanResult.type === 'js-module') {
@@ -119,7 +119,7 @@ export class PackageScanner {
   /**
    * Fetch a conversion manifest from NPM. If none can be found, return null.
    */
-  async getPackageManifest(): Promise<PackageScanResult|null> {
+  async getResultsFromManifest(): Promise<PackageScanResult|null> {
     const npmPackageInfo = lookupDependencyMapping(this.packageName);
     if (!npmPackageInfo) {
       return null;

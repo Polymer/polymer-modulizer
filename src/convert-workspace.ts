@@ -70,7 +70,8 @@ async function writeConversionManifest(
     repo: WorkspaceRepo, converter: ProjectConverter) {
   const bowerPackageName = path.basename(repo.dir);
   const manifestJsonPath = path.join(repo.dir, 'manifest.json');
-  const packageManifest = await converter.getPackageManifest(bowerPackageName);
+  const packageManifest =
+      await converter.getConversionManifest(bowerPackageName);
   writeJson(packageManifest, manifestJsonPath);
 }
 

@@ -77,8 +77,8 @@ export class ProjectConverter {
    * Get a package manifest (a serializable version of the scanner results) for
    * a package.
    */
-  async getPackageManifest(packageName: string) {
-    return this.scanner.getPackageManifest(packageName);
+  async getConversionManifest(packageName: string) {
+    return this.scanner.getConversionManifest(packageName);
   }
 
   /**
