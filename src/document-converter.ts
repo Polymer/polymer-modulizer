@@ -478,7 +478,7 @@ export class DocumentConverter {
       }
     }
 
-    this.addJsImports(scanResults, program, importedReferences);
+    this.addJsImports(program, importedReferences, scanResults);
     const {localNamespaceNames, namespaceNames, exportMigrationRecords} =
         rewriteNamespacesAsExports(
             program, this.document, this.conversionSettings.namespaces);
@@ -541,7 +541,7 @@ export class DocumentConverter {
       const offsets = htmlDocument.sourceRangeToOffsets(sourceRange);
 
       const file = recast.parse(script.parsedDocument.contents);
-      const program = this.rewriteInlineScript(scanResults, file.program);
+      const program = this.rewriteInlineScript(file.program, scanResults);
 
       if (program === undefined) {
         continue;
@@ -588,7 +588,7 @@ export class DocumentConverter {
       const offsets = htmlDocument.sourceRangeToOffsets(sourceRange);
 
       const file = recast.parse(dom5.getTextContent(astNode));
-      const program = this.rewriteInlineScript(scanResults, file.program);
+      const program = this.rewriteInlineScript(file.program, scanResults);
 
       if (program === undefined) {
         continue;
@@ -739,7 +739,7 @@ export class DocumentConverter {
    * Rewrite an inline script that will exist inlined inside an HTML document.
    * Should not be called on top-level JS Modules.
    */
-  private rewriteInlineScript(scanResults: ScanResults, program: Program) {
+  private rewriteInlineScript(program: Program, scanResults: ScanResults) {
     // Any code that sets the global settings object cannot be inlined (and
     // deferred) because the settings object must be created/configured
     // before other imports evaluate in following module scripts.
@@ -758,7 +758,7 @@ export class DocumentConverter {
         this.formatImportUrl(this.urlHandler.createConvertedUrl(
             'wct-browser-legacy/a11ySuite.js')));
     const wereImportsAdded =
-        this.addJsImports(scanResults, program, importedReferences);
+        this.addJsImports(program, importedReferences, scanResults);
     // Don't convert the HTML.
     // Don't inline templates, they're fine where they are.
 
@@ -1257,10 +1257,10 @@ export class DocumentConverter {
    * the imports in this.module.importedReferences.
    */
   private addJsImports(
-      scanResults: ScanResults, program: Program,
+      program: Program,
       importedReferences:
-          ReadonlyMap<ConvertedDocumentUrl, ReadonlySet<ImportReference>>):
-      boolean {
+          ReadonlyMap<ConvertedDocumentUrl, ReadonlySet<ImportReference>>,
+      scanResults: ScanResults): boolean {
     // Collect Identifier nodes within trees that will be completely replaced
     // with an import reference.
     const ignoredIdentifiers: Set<Identifier> = new Set();
