@@ -73,11 +73,12 @@ suite('AnalysisConverter', () => {
     async function convert(
         partialOptions: Partial<TestConversionOptions> = {}) {
       // Extract options & settings /w defaults.
-      const bowerPackageName =
-          partialOptions.bowerPackageName || 'some-package';
-      const npmPackageName = partialOptions.npmPackageName || 'some-package';
-      const packageType = partialOptions.packageType || 'element';
-      const expectedWarnings = partialOptions.expectedWarnings || [];
+      const {
+        npmPackageName = 'some-package',
+        bowerPackageName = 'some-package',
+        packageType = 'element',
+        expectedWarnings = [],
+      } = partialOptions;
       const partialSettings: PartialConversionSettings = {
         namespaces: partialOptions.namespaces || ['Polymer'],
         excludes: partialOptions.excludes,

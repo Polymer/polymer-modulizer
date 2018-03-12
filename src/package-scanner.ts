@@ -80,7 +80,7 @@ export class PackageScanner {
    */
   async scanPackage(): Promise<PackageScanResult> {
     const resultsFromManifest = await this.getResultsFromManifest();
-    if (resultsFromManifest) {
+    if (resultsFromManifest !== undefined) {
       this.scanPackageFromManifest(resultsFromManifest);
     } else {
       this.scanPackageManually();
@@ -119,10 +119,10 @@ export class PackageScanner {
   /**
    * Fetch a conversion manifest from NPM. If none can be found, return null.
    */
-  async getResultsFromManifest(): Promise<PackageScanResult|null> {
+  async getResultsFromManifest(): Promise<PackageScanResult|undefined> {
     const npmPackageInfo = lookupDependencyMapping(this.packageName);
     if (!npmPackageInfo) {
-      return null;
+      return undefined;
     }
 
     try {
@@ -136,7 +136,7 @@ export class PackageScanner {
         exports: allExports,
       };
     } catch (err) {
-      return null;
+      return undefined;
     }
   }
 
@@ -148,7 +148,8 @@ export class PackageScanner {
     return [
       ...this.analysis.getFeatures({
         // Set externalPackages=true so that this method works on dependencies
-        // as well.
+        // packages as well. We filter out files from outside this package in
+        // the method below.
         externalPackages: true,
         kind: 'html-document',
       })
@@ -162,7 +163,7 @@ export class PackageScanner {
       if (this.conversionSettings.excludes.has(documentUrl)) {
         return false;
       }
-      // Filter out any documents external *from this package*
+      // Filter out any documents external *to this package*
       const packageName =
           this.urlHandler.getOriginalPackageNameForUrl(documentUrl);
       return packageName === this.packageName;
