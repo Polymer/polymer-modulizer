@@ -43,9 +43,9 @@ suite('src/conversion-manifest', () => {
         'serialize a basic package scan result to a JSON manifest',
         async () => {
           const scanResultJson =
-              await readJson(path.join(manifestsDir, 'simple_parsed.json'));
-          const expectedManifestResult =
               await readJson(path.join(manifestsDir, 'simple_expected.json'));
+          const expectedManifestResult =
+              await readJson(path.join(manifestsDir, 'simple_source.json'));
           const actualResult = serializePackageScanResult(
               new Map(scanResultJson[0]),
               new Map(scanResultJson[1]),
@@ -59,9 +59,9 @@ suite('src/conversion-manifest', () => {
         'deserialize a basic package scan JSON manifest to a scan result',
         async () => {
           const manifestJson =
-              await readJson(path.join(manifestsDir, 'simple_expected.json'));
+              await readJson(path.join(manifestsDir, 'simple_source.json'));
           const expectedResult =
-              await readJson(path.join(manifestsDir, 'simple_parsed.json'));
+              await readJson(path.join(manifestsDir, 'simple_expected.json'));
           const actualResult = filesJsonObjectToMap(
               'paper-behaviors',
               '@polymer/paper-behaviors',

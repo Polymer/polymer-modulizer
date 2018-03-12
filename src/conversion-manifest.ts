@@ -33,7 +33,8 @@ type PackageFilesJson = {
 export interface PackageScanResultJson { files: PackageFilesJson; }
 
 function filterExportsByFile(
-    scanResult: JsModuleScanResult, exportsMap: PackageScanExports): FileExportJson {
+    scanResult: JsModuleScanResult,
+    exportsMap: PackageScanExports): FileExportJson {
   const fileExports: FileExportJson = {};
   for (const exportData of scanResult.exportMigrationRecords) {
     const globalExport = exportsMap.get(exportData.oldNamespacedName);
@@ -111,10 +112,11 @@ function fileMappingToScanResult(
     originalUrl: originalUrl,
     convertedUrl: convertedUrl,
     convertedFilePath: getJsModuleConvertedFilePath(originalUrl),
-    exportMigrationRecords: Object.entries(fileData.exports).map(([exportId, exportName]) => ({
-                                                   oldNamespacedName: exportId,
-                                                   es6ExportName: exportName,
-                                                 })),
+    exportMigrationRecords:
+        Object.entries(fileData.exports).map(([exportId, exportName]) => ({
+                                               oldNamespacedName: exportId,
+                                               es6ExportName: exportName,
+                                             })),
   };
 }
 
