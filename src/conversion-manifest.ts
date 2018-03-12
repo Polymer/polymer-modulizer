@@ -20,13 +20,12 @@ import {ConvertedDocumentUrl, OriginalDocumentUrl} from './urls/types';
 import {UrlHandler} from './urls/url-handler';
 import {getHtmlDocumentConvertedFilePath, getJsModuleConvertedFilePath} from './urls/util';
 
-interface FileExportJson {
-  name: string;
-  id: string;
-}
+type FileExportJson = {
+  [originalExportId: string]: string
+};
 interface PackageFileJson {
-  url: string;
-  exports: FileExportJson[];
+  convertedUrl: string;
+  exports: FileExportJson;
 }
 type PackageFilesJson = {
   [originalFilePath: string]: null|PackageFileJson
@@ -34,13 +33,12 @@ type PackageFilesJson = {
 export interface PackageScanResultJson { files: PackageFilesJson; }
 
 function filterExportsByFile(
-    scanResult: JsModuleScanResult, exportsMap: PackageScanExports) {
-  const fileExports = [];
+    scanResult: JsModuleScanResult, exportsMap: PackageScanExports): FileExportJson {
+  const fileExports: FileExportJson = {};
   for (const exportData of scanResult.exportMigrationRecords) {
     const globalExport = exportsMap.get(exportData.oldNamespacedName);
-    if (globalExport) {
-      fileExports.push(
-          {id: exportData.oldNamespacedName, name: globalExport.name});
+    if (globalExport !== undefined) {
+      fileExports[exportData.oldNamespacedName] = globalExport.name;
     }
   }
   return fileExports;
@@ -61,12 +59,12 @@ function serializePackageFileScanResult(
       urlHandler.convertedDocumentFilePathToPackageRelative(convertedFilePath);
   if (fileScanResult.type === 'html-document') {
     return {
-      url: convertedRelativePath,
-      exports: [],
+      convertedUrl: convertedRelativePath,
+      exports: {},
     };
   }
   return {
-    url: convertedRelativePath,
+    convertedUrl: convertedRelativePath,
     exports: filterExportsByFile(fileScanResult, exportsMap),
   };
 }
@@ -78,21 +76,21 @@ export function serializePackageScanResult(
     filesMap: PackageScanFiles,
     exportsMap: PackageScanExports,
     urlHandler: UrlHandler): PackageScanResultJson {
-  const filesObject: PackageFilesJson = {};
+  const files: PackageFilesJson = {};
   for (const [originalFilePath, scanResult] of filesMap) {
     const originalRelativeUrl =
         urlHandler.originalUrlToPackageRelative(originalFilePath);
-    filesObject[originalRelativeUrl] =
+    files[originalRelativeUrl] =
         serializePackageFileScanResult(scanResult, exportsMap, urlHandler);
   }
-  return {files: filesObject};
+  return {files};
 }
 
 function fileMappingToScanResult(
     originalUrl: OriginalDocumentUrl,
-    convertedUrl: ConvertedDocumentUrl|null,
+    convertedUrl: ConvertedDocumentUrl|undefined,
     fileData: PackageFileJson): ScanResult {
-  if (!convertedUrl) {
+  if (convertedUrl === undefined) {
     return {
       type: 'delete-file',
       originalUrl: originalUrl,
@@ -113,9 +111,9 @@ function fileMappingToScanResult(
     originalUrl: originalUrl,
     convertedUrl: convertedUrl,
     convertedFilePath: getJsModuleConvertedFilePath(originalUrl),
-    exportMigrationRecords: fileData.exports.map((ex) => ({
-                                                   oldNamespacedName: ex.id,
-                                                   es6ExportName: ex.name,
+    exportMigrationRecords: Object.entries(fileData.exports).map(([exportId, exportName]) => ({
+                                                   oldNamespacedName: exportId,
+                                                   es6ExportName: exportName,
                                                  })),
   };
 }
@@ -132,14 +130,14 @@ export function filesJsonObjectToMap(
     const originalUrl = urlHandler.packageRelativeToOriginalUrl(
         originalPackageName, relativeFromUrl);
     const convertedUrl = fileData === null ?
-        null :
+        undefined :
         urlHandler.packageRelativeToConvertedUrl(
-            convertedPackageName, fileData.url);
+            convertedPackageName, fileData.convertedUrl);
     filesMap.set(
         originalUrl,
         fileMappingToScanResult(originalUrl, convertedUrl, fileData!));
   }
-  for (const [_originalUrl, scanResult] of filesMap) {
+  for (const [, scanResult] of filesMap) {
     if (scanResult.type !== 'js-module') {
       continue;
     }

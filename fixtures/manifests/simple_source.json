@@ -1,29 +1,23 @@
 {
   "files": {
     "paper-button-behavior.html": {
-      "url": "paper-button-behavior.js",
-      "exports": [
-        {
-          "id": "Polymer.PaperButtonBehaviorImpl",
-          "name": "PaperButtonBehaviorImpl"
-        },
-        {
-          "id": "Polymer.PaperButtonBehavior",
-          "name": "PaperButtonBehavior"
-        }
-      ]
+      "convertedUrl": "paper-button-behavior.js",
+      "exports": {
+        "Polymer.PaperButtonBehaviorImpl": "PaperButtonBehaviorImpl",
+        "Polymer.PaperButtonBehavior": "PaperButtonBehavior"
+      }
     },
     "index.html": {
-      "url": "index.html",
-      "exports": []
+      "convertedUrl": "index.html",
+      "exports": {}
     },
     "demo/index.html": {
-      "url": "demo/index.html",
-      "exports": []
+      "convertedUrl": "demo/index.html",
+      "exports": {}
     },
     "demo/paper-button.html": {
-      "url": "demo/paper-button.js",
-      "exports": []
+      "convertedUrl": "demo/paper-button.js",
+      "exports": {}
     }
   }
 }
