@@ -2661,25 +2661,6 @@ Polymer({
     });
 
     suite('FileConversionSettings', () => {
-      testName = 'Conversion throws when multiple comments with the prefix ' +
-          'are found.';
-      test(testName, async () => {
-        setSources({
-          'test.html': `
-<!--      polymer-modulizer:    {}   -->
-<!--polymer-modulizer:{}-->
-`,
-        });
-
-        try {
-          await convert({});
-        } catch (e) {
-          return;
-        }
-
-        throw new Error('Conversion did not throw.');
-      });
-
       testName = 'Conversion throws when the comment content after the ' +
           'prefix content can\'t be parsed as JSON.';
       test(testName, async () => {
