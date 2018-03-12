@@ -139,7 +139,7 @@ export function filesJsonObjectToMap(
         originalUrl,
         fileMappingToScanResult(originalUrl, convertedUrl, fileData!));
   }
-  for (const [, scanResult] of filesMap) {
+  for (const scanResult of filesMap.values()) {
     if (scanResult.type !== 'js-module') {
       continue;
     }
