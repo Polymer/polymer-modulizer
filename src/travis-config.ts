@@ -13,17 +13,17 @@
  */
 
 import * as fse from 'fs-extra';
-import {safeDump, safeLoad} from 'js-yaml';
+import { safeDump, safeLoad } from 'js-yaml';
 import * as path from 'path';
 
 const travisConfigFile = '.travis.yml';
 
 // https://docs.travis-ci.com/user/languages/javascript-with-nodejs/
 interface TravisConfig {
-  before_script?: string|string[];
-  install?: string|string[];
-  script?: string|string[];
-  cache?: string|Array<string|{directories: string[]}|{[key: string]: boolean}>;
+  before_script?: string | string[];
+  install?: string | string[];
+  script?: string | string[];
+  cache?: string | Array<string | { directories: string[] } | { [key: string]: boolean }>;
 }
 
 // modify travis scripts, credit to @stramel for the modifications to make
@@ -41,20 +41,20 @@ function addNPMFlag(scripts: string[]): string[] {
 
 function removeBowerAndPolymerInstall(scripts: string[]): string[] {
   return scripts
-      .map((script) => {
-        if (script.match(/bower i(?:nstall)?/) ||
-            script.indexOf('polymer install') > -1) {
-          return '';
-        }
-        if (script.match(/npm i(?:install)?|yarn add/)) {
-          return script.split(' ').filter((s) => s !== 'bower').join(' ');
-        }
-        return script;
-      })
-      .filter((s) => !!s);
+    .map((script) => {
+      if (script.match(/bower i(?:nstall)?/) ||
+        script.indexOf('polymer install') > -1) {
+        return '';
+      }
+      if (script.match(/npm i(?:install)?|yarn add/)) {
+        return script.split(' ').filter((s) => s !== 'bower').join(' ');
+      }
+      return script;
+    })
+    .filter((s) => !!s);
 }
 
-function configToArray(yamlPart: string|string[]|undefined): string[] {
+function configToArray(yamlPart: string | string[] | undefined): string[] {
   if (!yamlPart) {
     return [];
   } else if (typeof yamlPart === 'string') {
@@ -72,9 +72,10 @@ function configToArray(yamlPart: string|string[]|undefined): string[] {
  * @param outDir Root path of output travis config
  */
 export async function transformTravisConfig(
-    inDir: string, outDir: string): Promise<void> {
+  inDir: string, outDir: string): Promise<void> {
   const inTravisPath = path.join(inDir, travisConfigFile);
 
+  console.log(`reading travis config from ${inTravisPath}`);
   if (!await fse.pathExists(inTravisPath)) {
     return;
   }
@@ -104,6 +105,7 @@ export async function transformTravisConfig(
   }
 
   const outPath = path.join(outDir, travisConfigFile);
+  console.log(`writing travis config to ${outPath}`);
   const travisBlobOut = safeDump(travisConfig);
   await fse.writeFile(outPath, travisBlobOut);
 }
