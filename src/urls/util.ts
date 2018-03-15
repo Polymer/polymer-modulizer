@@ -14,6 +14,7 @@
 
 import {posix as path} from 'path';
 
+import {PackageScanResult} from '../package-scanner';
 import {ConvertedDocumentFilePath, ConvertedDocumentUrl, OriginalDocumentUrl} from './types';
 
 /**
@@ -36,8 +37,14 @@ export function replaceHtmlExtensionIfFound(url: string): string {
  * Create a ConvertedDocumentFilePath for the OriginalDocumentUrl of a document
  * being converted to a JS module.
  */
-export function getJsModuleConvertedFilePath(originalUrl: OriginalDocumentUrl):
-    ConvertedDocumentFilePath {
+export function getJsModuleConvertedFilePath(
+    originalUrl: OriginalDocumentUrl,
+    scanResults: PackageScanResult): ConvertedDocumentFilePath {
+  const result = scanResults.files.get(originalUrl);
+  if (result && result.type !== 'delete-file') {
+    return result.convertedUrl as string as ConvertedDocumentFilePath;
+  }
+
   return replaceHtmlExtensionIfFound(originalUrl) as ConvertedDocumentFilePath;
 }
 
@@ -47,7 +54,13 @@ export function getJsModuleConvertedFilePath(originalUrl: OriginalDocumentUrl):
  * since HTML documents should keep their current html file extension).
  */
 export function getHtmlDocumentConvertedFilePath(
-    originalUrl: OriginalDocumentUrl): ConvertedDocumentFilePath {
+    originalUrl: OriginalDocumentUrl,
+    scanResults: PackageScanResult): ConvertedDocumentFilePath {
+  const result = scanResults.files.get(originalUrl);
+  if (result && result.type !== 'delete-file') {
+    return result.convertedUrl as string as ConvertedDocumentFilePath;
+  }
+
   return originalUrl as string as ConvertedDocumentFilePath;
 }
 

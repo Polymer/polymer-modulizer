@@ -39,6 +39,7 @@ import {rewriteNamespacesThisReferences} from './passes/rewrite-namespace-this-r
 import {rewriteReferencesToLocalExports} from './passes/rewrite-references-to-local-exports';
 import {rewriteReferencesToNamespaceMembers} from './passes/rewrite-references-to-namespace-members';
 import {rewriteToplevelThis} from './passes/rewrite-toplevel-this';
+import {PackageScanResult} from './package-scanner';
 import {ConvertedDocumentFilePath, ConvertedDocumentUrl, OriginalDocumentUrl} from './urls/types';
 import {UrlHandler} from './urls/url-handler';
 import {isOriginalDocumentUrlFormat} from './urls/util';
@@ -167,6 +168,18 @@ export interface HtmlDocumentScanResult {
 }
 
 /**
+ * Conversion settings specific to a file which are extracted from a comment in
+ * that file.
+ */
+interface FileConversionSettings {
+  /**
+   * The file will be treated as if it were renamed to the value of
+   * `usedFileName` and all references to it were updated before conversion.
+   */
+  usedFileName: string;
+}
+
+/**
  * Convert a module specifier & an optional set of named exports (or '*' to
  * import entire namespace) to a set of ImportDeclaration objects.
  */
@@ -243,6 +256,13 @@ function getImportDeclarations(
 }
 
 /**
+ * Any comment in a document being converted starting with this string (after
+ * any trimmable whitespace) are assumed to contain that file's conversion
+ * settings object.
+ */
+const SETTINGS_COMMENT_PREFIX = 'polymer-modulizer:';
+
+/**
  * Converts a Document from Bower to NPM. This supports converting HTML files
  * to JS Modules (using JavaScript import/export statements) or the more simple
  * HTML -> HTML conversion.
@@ -252,16 +272,23 @@ export class DocumentConverter {
   private readonly convertedUrl: ConvertedDocumentUrl;
   private readonly urlHandler: UrlHandler;
   private readonly conversionSettings: ConversionSettings;
-  private readonly document: Document;
+  private readonly fileConversionSettings: Partial<FileConversionSettings>;
+  private readonly document: Document<ParsedHtmlDocument>;
 
   constructor(
-      document: Document, urlHandler: UrlHandler,
-      conversionSettings: ConversionSettings) {
+      document: Document<ParsedHtmlDocument>, urlHandler: UrlHandler,
+      conversionSettings: ConversionSettings, selfScanResult?: ScanResult) {
     this.conversionSettings = conversionSettings;
+    this.fileConversionSettings =
+        this.getFileConversionSettings(document.parsedDocument);
     this.urlHandler = urlHandler;
     this.document = document;
     this.originalUrl = urlHandler.getDocumentUrl(document);
-    this.convertedUrl = this.convertDocumentUrl(this.originalUrl);
+    if (selfScanResult && selfScanResult.type !== 'delete-file') {
+      this.convertedUrl = selfScanResult.convertedUrl;
+    } else {
+      this.convertedUrl = this.generateSelfDocumentUrl();
+    }
   }
 
   /**
@@ -271,6 +298,41 @@ export class DocumentConverter {
    */
   static getAllHtmlImports(document: Document): Import[] {
     return [...document.getFeatures({kind: 'html-import'})];
+  }
+
+  private *
+      dom5DepthFirst(node: parse5.ASTNode): IterableIterator<parse5.ASTNode> {
+    const treeAdapter = parse5.treeAdapters.default;
+    yield node;
+    const children = treeAdapter.getChildNodes(node);
+    if (children) {
+      for (const child of children) {
+        yield* this.dom5DepthFirst(child);
+      }
+    }
+  }
+
+  /**
+   * Finds the comment containing the FileConversionSettings object and returns
+   * the parsed object. Throws if more than one comment could be parsed as the
+   * FileConversionSettings object.
+   */
+  private getFileConversionSettings(document: ParsedHtmlDocument):
+      Partial<FileConversionSettings> {
+    const treeAdapter = parse5.treeAdapters.default;
+
+    for (const node of this.dom5DepthFirst(document.ast)) {
+      if (!treeAdapter.isCommentNode(node)) {
+        continue;
+      }
+
+      const content = treeAdapter.getCommentNodeContent(node).trim();
+      if (content.startsWith(SETTINGS_COMMENT_PREFIX)) {
+        return JSON.parse(content.substring(SETTINGS_COMMENT_PREFIX.length));
+      }
+    }
+
+    return {};
   }
 
   /**
@@ -374,8 +436,10 @@ export class DocumentConverter {
     return {
       type: 'js-module',
       originalUrl: this.originalUrl,
-      convertedUrl: this.convertedUrl,
-      convertedFilePath: getJsModuleConvertedFilePath(this.originalUrl),
+      convertedUrl: replaceHtmlExtensionIfFound(this.convertedUrl) as
+          ConvertedDocumentUrl,
+      convertedFilePath: replaceHtmlExtensionIfFound(this.convertedUrl) as
+          ConvertedDocumentFilePath,
       exportMigrationRecords,
     };
   }
@@ -383,11 +447,10 @@ export class DocumentConverter {
   /**
    * Convert a document to a JS Module.
    */
-  convertJsModule(namespacedExports: Map<string, JsExport>):
-      ConversionResult[] {
+  convertJsModule(scanResults: PackageScanResult): ConversionResult[] {
     const {program, convertedHtmlScripts} = this.prepareJsModule();
     const importedReferences =
-        this.collectNamespacedReferences(program, namespacedExports);
+        this.collectNamespacedReferences(program, scanResults.exports);
     const results: ConversionResult[] = [];
 
     // Add imports for every non-module <script> tag to just import the file
@@ -405,7 +468,8 @@ export class DocumentConverter {
         results.push({
           originalUrl: oldScriptUrl,
           convertedUrl: newScriptUrl,
-          convertedFilePath: getJsModuleConvertedFilePath(oldScriptUrl),
+          convertedFilePath:
+              getJsModuleConvertedFilePath(oldScriptUrl, scanResults),
           deleteOriginal: true,
           output: undefined,
         });
@@ -414,7 +478,7 @@ export class DocumentConverter {
       }
     }
 
-    this.addJsImports(program, importedReferences);
+    this.addJsImports(program, importedReferences, scanResults);
     const {localNamespaceNames, namespaceNames, exportMigrationRecords} =
         rewriteNamespacesAsExports(
             program, this.document, this.conversionSettings.namespaces);
@@ -432,7 +496,8 @@ export class DocumentConverter {
     results.push({
       originalUrl: this.originalUrl,
       convertedUrl: this.convertedUrl,
-      convertedFilePath: getJsModuleConvertedFilePath(this.originalUrl),
+      convertedFilePath:
+          getJsModuleConvertedFilePath(this.originalUrl, scanResults),
       deleteOriginal: true,
       output: outputProgram.code + EOL
     });
@@ -449,14 +514,15 @@ export class DocumentConverter {
       type: 'html-document',
       convertedUrl: this.convertedUrl,
       originalUrl: this.originalUrl,
-      convertedFilePath: getHtmlDocumentConvertedFilePath(this.originalUrl),
+      convertedFilePath: this.originalUrl as string as
+          ConvertedDocumentFilePath,
     };
   }
 
   /**
    * Convert a document to a top-level HTML document.
    */
-  convertTopLevelHtmlDocument(namespacedExports: Map<string, JsExport>):
+  convertTopLevelHtmlDocument(scanResults: PackageScanResult):
       ConversionResult {
     const htmlDocument = this.document.parsedDocument as ParsedHtmlDocument;
     const p = dom5.predicates;
@@ -476,7 +542,7 @@ export class DocumentConverter {
       const offsets = htmlDocument.sourceRangeToOffsets(sourceRange);
 
       const file = recast.parse(script.parsedDocument.contents);
-      const program = this.rewriteInlineScript(file.program, namespacedExports);
+      const program = this.rewriteInlineScript(file.program, scanResults);
 
       if (program === undefined) {
         continue;
@@ -523,7 +589,7 @@ export class DocumentConverter {
       const offsets = htmlDocument.sourceRangeToOffsets(sourceRange);
 
       const file = recast.parse(dom5.getTextContent(astNode));
-      const program = this.rewriteInlineScript(file.program, namespacedExports);
+      const program = this.rewriteInlineScript(file.program, scanResults);
 
       if (program === undefined) {
         continue;
@@ -553,7 +619,8 @@ export class DocumentConverter {
 
       const htmlDocumentUrl =
           this.urlHandler.getDocumentUrl(htmlImport.document);
-      const importedJsDocumentUrl = this.convertDocumentUrl(htmlDocumentUrl);
+      const importedJsDocumentUrl =
+          this.convertDocumentUrl(htmlDocumentUrl, scanResults);
       const importUrl =
           this.formatImportUrl(importedJsDocumentUrl, htmlImport.originalUrl);
       const scriptTag = parse5.parseFragment(`<script type="module"></script>`)
@@ -579,7 +646,7 @@ export class DocumentConverter {
           htmlDocument.sourceRangeForNode(scriptImport.astNode)!);
 
       const convertedUrl = this.convertDocumentUrl(
-          this.urlHandler.getDocumentUrl(scriptImport.document));
+          this.urlHandler.getDocumentUrl(scriptImport.document), scanResults);
       const formattedUrl =
           this.formatImportUrl(convertedUrl, scriptImport.originalUrl);
       dom5.setAttribute(scriptImport.astNode, 'src', formattedUrl);
@@ -625,7 +692,8 @@ export class DocumentConverter {
     return {
       originalUrl: this.originalUrl,
       convertedUrl: this.convertedUrl,
-      convertedFilePath: getHtmlDocumentConvertedFilePath(this.originalUrl),
+      convertedFilePath:
+          getHtmlDocumentConvertedFilePath(this.originalUrl, scanResults),
       output: contents
     };
   }
@@ -634,11 +702,12 @@ export class DocumentConverter {
    * Create a ConversionResult object to delete the file instead of converting
    * it.
    */
-  createDeleteResult(): ConversionResult {
+  createDeleteResult(scanResults: PackageScanResult): ConversionResult {
     return {
       originalUrl: this.originalUrl,
       convertedUrl: this.convertedUrl,
-      convertedFilePath: getJsModuleConvertedFilePath(this.originalUrl),
+      convertedFilePath:
+          getJsModuleConvertedFilePath(this.originalUrl, scanResults),
       deleteOriginal: true,
       output: undefined,
     };
@@ -672,7 +741,7 @@ export class DocumentConverter {
    * Should not be called on top-level JS Modules.
    */
   private rewriteInlineScript(
-      program: Program, namespacedExports: Map<string, JsExport>) {
+      program: Program, scanResults: PackageScanResult) {
     // Any code that sets the global settings object cannot be inlined (and
     // deferred) because the settings object must be created/configured
     // before other imports evaluate in following module scripts.
@@ -685,12 +754,13 @@ export class DocumentConverter {
     removeUnnecessaryEventListeners(program);
     removeWrappingIIFEs(program);
     const importedReferences =
-        this.collectNamespacedReferences(program, namespacedExports);
+        this.collectNamespacedReferences(program, scanResults.exports);
     const wasA11ySuiteAdded = addA11ySuiteIfUsed(
         program,
         this.formatImportUrl(this.urlHandler.createConvertedUrl(
             'wct-browser-legacy/a11ySuite.js')));
-    const wereImportsAdded = this.addJsImports(program, importedReferences);
+    const wereImportsAdded =
+        this.addJsImports(program, importedReferences, scanResults);
     // Don't convert the HTML.
     // Don't inline templates, they're fine where they are.
 
@@ -1074,10 +1144,46 @@ export class DocumentConverter {
   }
 
   /**
+   * Converts this HTML Document's path from old world to new.
+   */
+  private generateSelfDocumentUrl(): ConvertedDocumentUrl {
+    let selfUrl = this.originalUrl;
+
+    // Replace the file name with `usedFileName` from this file's
+    // FileConversionSettings object, if provided.
+    const newName = this.fileConversionSettings.usedFileName;
+    if (typeof newName === 'string') {
+      const parts = selfUrl.split('/');
+      parts[parts.length - 1] = newName;
+      selfUrl = parts.join('/') as OriginalDocumentUrl;
+    }
+
+    return this.convertUnknownDocumentUrl(selfUrl);
+  }
+
+  /**
+   * Converts an HTML Document's path from old world to new, reading from the
+   * scan results if possible.
+   */
+  private convertDocumentUrl(
+      htmlUrl: OriginalDocumentUrl,
+      scanResults: PackageScanResult): ConvertedDocumentUrl {
+    // Use the converted URL that each document assigned itself, if available.
+    if (scanResults) {
+      const result = scanResults.files.get(htmlUrl);
+      if (result && result.type !== 'delete-file') {
+        return result.convertedUrl;
+      }
+    }
+
+    return this.convertUnknownDocumentUrl(htmlUrl);
+  }
+
+  /**
    * Converts an HTML Document's path from old world to new. Use new NPM naming
    * as needed in the path, and change any .html extension to .js.
    */
-  private convertDocumentUrl(htmlUrl: OriginalDocumentUrl):
+  private convertUnknownDocumentUrl(htmlUrl: OriginalDocumentUrl):
       ConvertedDocumentUrl {
     // TODO(fks): This can be removed later if type-checking htmlUrl is enough
     if (!isOriginalDocumentUrlFormat(htmlUrl)) {
@@ -1085,6 +1191,7 @@ export class DocumentConverter {
           `convertDocumentUrl() expects an OriginalDocumentUrl string` +
           `from the analyzer, but got "${htmlUrl}"`);
     }
+
     // Use the layout-specific UrlHandler to convert the URL.
     let jsUrl: string = this.urlHandler.convertUrl(htmlUrl);
     // Temporary workaround for imports of some shadycss files that wrapped
@@ -1098,8 +1205,6 @@ export class DocumentConverter {
           'shadycss/custom-style-interface.html',
           'shadycss/entrypoints/custom-style-interface.js');
     }
-    // Convert any ".html" URLs to point to their new ".js" module equivilent
-    jsUrl = replaceHtmlExtensionIfFound(jsUrl);
     return jsUrl as ConvertedDocumentUrl;
   }
 
@@ -1113,7 +1218,7 @@ export class DocumentConverter {
     // TODO(fks): This can be removed later if type-checking htmlUrl is enough
     if (!isOriginalDocumentUrlFormat(oldUrl)) {
       throw new Error(
-          `convertDocumentUrl() expects an OriginalDocumentUrl string` +
+          `convertScriptUrl() expects an OriginalDocumentUrl string` +
           `from the analyzer, but got "${oldUrl}"`);
     }
     // Use the layout-specific UrlHandler to convert the URL.
@@ -1156,8 +1261,8 @@ export class DocumentConverter {
   private addJsImports(
       program: Program,
       importedReferences:
-          ReadonlyMap<ConvertedDocumentUrl, ReadonlySet<ImportReference>>):
-      boolean {
+          ReadonlyMap<ConvertedDocumentUrl, ReadonlySet<ImportReference>>,
+      scanResults: PackageScanResult): boolean {
     // Collect Identifier nodes within trees that will be completely replaced
     // with an import reference.
     const ignoredIdentifiers: Set<Identifier> = new Set();
@@ -1178,7 +1283,7 @@ export class DocumentConverter {
     const jsImportDeclarations = [];
     for (const htmlImport of this.getHtmlImports()) {
       const importedJsDocumentUrl = this.convertDocumentUrl(
-          this.urlHandler.getDocumentUrl(htmlImport.document));
+          this.urlHandler.getDocumentUrl(htmlImport.document), scanResults);
 
       const references = importedReferences.get(importedJsDocumentUrl);
       const namedExports =

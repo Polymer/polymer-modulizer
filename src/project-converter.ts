@@ -12,7 +12,7 @@
  * http://polymer.github.io/PATENTS.txt
  */
 
-import {Analysis, Document} from 'polymer-analyzer';
+import {Analysis, Document, ParsedHtmlDocument} from 'polymer-analyzer';
 
 import {ConversionSettings} from './conversion-settings';
 import {DocumentConverter} from './document-converter';
@@ -85,7 +85,7 @@ export class ProjectConverter {
    * Convert a document. The output format (JS Module or HTML Document) is
    * dictated by the results of the scanner.
    */
-  private convertDocument(document: Document) {
+  private convertDocument(document: Document<ParsedHtmlDocument>) {
     console.assert(
         document.kinds.has('html-document'),
         `convertDocument() must be called with an HTML document, but got ${
@@ -99,18 +99,17 @@ export class ProjectConverter {
     }
 
     const documentConverter = new DocumentConverter(
-        document, this.urlHandler, this.conversionSettings);
+        document, this.urlHandler, this.conversionSettings, scanResult);
     if (scanResult.type === 'js-module') {
-      documentConverter.convertJsModule(scanResults.exports)
-          .forEach((newModule) => {
-            this.results.set(newModule.originalUrl, newModule);
-          });
+      documentConverter.convertJsModule(scanResults).forEach((newModule) => {
+        this.results.set(newModule.originalUrl, newModule);
+      });
     } else if (scanResult.type === 'html-document') {
       const newModule =
-          documentConverter.convertTopLevelHtmlDocument(scanResults.exports);
+          documentConverter.convertTopLevelHtmlDocument(scanResults);
       this.results.set(newModule.originalUrl, newModule);
     } else if (scanResult.type === 'delete-file') {
-      const newModule = documentConverter.createDeleteResult();
+      const newModule = documentConverter.createDeleteResult(scanResults);
       this.results.set(newModule.originalUrl, newModule);
     }
   }
@@ -123,6 +122,10 @@ export class ProjectConverter {
   getResults(): Map<ConvertedDocumentFilePath, string|undefined> {
     const results = new Map<ConvertedDocumentFilePath, string|undefined>();
 
+    function removeCurrentDirPrefix(path: string): string {
+      return path.startsWith('./') ? path.slice(2) : path;
+    }
+
     for (const convertedModule of this.results.values()) {
       // TODO(fks): This is hacky, ProjectConverter isn't supposed to know about
       //  project layout / file location. Move into URLHandler, potentially make
@@ -131,12 +134,14 @@ export class ProjectConverter {
         continue;
       }
       if (convertedModule.deleteOriginal) {
-        results.set(
-            convertedModule.originalUrl as string as ConvertedDocumentFilePath,
-            undefined);
+        const path =
+            removeCurrentDirPrefix(convertedModule.originalUrl as string);
+        results.set(path as ConvertedDocumentFilePath, undefined);
       }
       if (convertedModule.output !== undefined) {
-        results.set(convertedModule.convertedFilePath, convertedModule.output);
+        const path =
+            removeCurrentDirPrefix(convertedModule.convertedFilePath as string);
+        results.set(path as ConvertedDocumentFilePath, convertedModule.output);
       }
     }
     return results;

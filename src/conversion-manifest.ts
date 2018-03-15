@@ -16,9 +16,9 @@
 import {JsModuleScanResult, ScanResult} from './document-converter';
 import {JsExport} from './js-module';
 import {PackageScanExports, PackageScanFiles} from './package-scanner';
-import {ConvertedDocumentUrl, OriginalDocumentUrl} from './urls/types';
+import {ConvertedDocumentFilePath, ConvertedDocumentUrl, OriginalDocumentUrl} from './urls/types';
 import {UrlHandler} from './urls/url-handler';
-import {getHtmlDocumentConvertedFilePath, getJsModuleConvertedFilePath} from './urls/util';
+import {replaceHtmlExtensionIfFound} from './urls/util';
 
 type FileExportJson = {
   [originalExportId: string]: string
@@ -104,14 +104,15 @@ function fileMappingToScanResult(
       type: 'html-document',
       originalUrl: originalUrl,
       convertedUrl: convertedUrl,
-      convertedFilePath: getHtmlDocumentConvertedFilePath(originalUrl),
+      convertedFilePath: originalUrl as string as ConvertedDocumentFilePath,
     };
   }
   return {
     type: 'js-module',
     originalUrl: originalUrl,
     convertedUrl: convertedUrl,
-    convertedFilePath: getJsModuleConvertedFilePath(originalUrl),
+    convertedFilePath: replaceHtmlExtensionIfFound(originalUrl) as
+        ConvertedDocumentFilePath,
     exportMigrationRecords:
         Object.entries(fileData.exports).map(([exportId, exportName]) => ({
                                                oldNamespacedName: exportId,

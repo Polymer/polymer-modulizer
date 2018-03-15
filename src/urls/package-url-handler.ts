@@ -41,10 +41,13 @@ export class PackageUrlHandler implements UrlHandler {
    */
   static isUrlInternalToPackage(url: ConvertedDocumentUrl|OriginalDocumentUrl|
                                 ConvertedDocumentFilePath) {
-    // OriginalDocumentUrl will always be format `bower_components/*`
-    // ConvertedDocument[Url|FilePath] will always be format `./node_modules/*`
+    // OriginalDocumentUrl will always be format `bower_components/*` or
+    // `./bower_components/*`
+    // ConvertedDocument[Url|FilePath] will always be format `node_modules/*` or
+    // `./node_modules/*`
     return !url.startsWith('bower_components/') &&
-        !url.startsWith('./node_modules/');
+        !url.startsWith('./bower_components/') &&
+        !url.startsWith('node_modules/') && !url.startsWith('./node_modules/');
   }
 
   constructor(
