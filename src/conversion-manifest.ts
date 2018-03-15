@@ -16,9 +16,8 @@
 import {JsModuleScanResult, ScanResult} from './document-converter';
 import {JsExport} from './js-module';
 import {PackageScanExports, PackageScanFiles} from './package-scanner';
-import {ConvertedDocumentUrl, OriginalDocumentUrl} from './urls/types';
+import {ConvertedDocumentFilePath, ConvertedDocumentUrl, OriginalDocumentUrl} from './urls/types';
 import {UrlHandler} from './urls/url-handler';
-import {getHtmlDocumentConvertedFilePath, getJsModuleConvertedFilePath} from './urls/util';
 
 type FileExportJson = {
   [originalExportId: string]: string
@@ -90,8 +89,9 @@ export function serializePackageScanResult(
 function fileMappingToScanResult(
     originalUrl: OriginalDocumentUrl,
     convertedUrl: ConvertedDocumentUrl|undefined,
+    convertedFilePath: ConvertedDocumentFilePath|undefined,
     fileData: PackageFileJson): ScanResult {
-  if (convertedUrl === undefined) {
+  if (convertedUrl === undefined || convertedFilePath === undefined) {
     return {
       type: 'delete-file',
       originalUrl: originalUrl,
@@ -104,14 +104,14 @@ function fileMappingToScanResult(
       type: 'html-document',
       originalUrl: originalUrl,
       convertedUrl: convertedUrl,
-      convertedFilePath: getHtmlDocumentConvertedFilePath(originalUrl),
+      convertedFilePath: convertedFilePath,
     };
   }
   return {
     type: 'js-module',
     originalUrl: originalUrl,
     convertedUrl: convertedUrl,
-    convertedFilePath: getJsModuleConvertedFilePath(originalUrl),
+    convertedFilePath: convertedFilePath,
     exportMigrationRecords:
         Object.entries(fileData.exports).map(([exportId, exportName]) => ({
                                                oldNamespacedName: exportId,
@@ -131,13 +131,21 @@ export function filesJsonObjectToMap(
            conversionManifest.files)) {
     const originalUrl = urlHandler.packageRelativeToOriginalUrl(
         originalPackageName, relativeFromUrl);
-    const convertedUrl = fileData === null ?
-        undefined :
-        urlHandler.packageRelativeToConvertedUrl(
-            convertedPackageName, fileData.convertedUrl);
+    let convertedUrl = undefined;
+    let convertedFilePath = undefined;
+
+    if (fileData !== null) {
+      convertedUrl = urlHandler.packageRelativeToConvertedUrl(
+          convertedPackageName, fileData.convertedUrl);
+      convertedFilePath =
+          urlHandler.packageRelativeConvertedUrlToConvertedDocumentFilePath(
+              originalPackageName, fileData.convertedUrl);
+    }
+
     filesMap.set(
         originalUrl,
-        fileMappingToScanResult(originalUrl, convertedUrl, fileData!));
+        fileMappingToScanResult(
+            originalUrl, convertedUrl, convertedFilePath, fileData!));
   }
   for (const scanResult of filesMap.values()) {
     if (scanResult.type !== 'js-module') {
