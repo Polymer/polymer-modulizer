@@ -14,7 +14,7 @@
 
 import {posix as path} from 'path';
 
-import {ConvertedDocumentFilePath, ConvertedDocumentUrl, OriginalDocumentUrl} from './types';
+import {ConvertedDocumentFilePath, ConvertedDocumentUrl} from './types';
 
 /**
  * Return true if url is formatted correctly as a OriginalDocumentUrl.
@@ -33,12 +33,20 @@ export function replaceHtmlExtensionIfFound(url: string): string {
 }
 
 /**
+ * Rewrite a url to replace a `.js` file extension with `.html`, if found.
+ */
+export function replaceJsExtensionIfFound(url: string): string {
+  return url.replace(/\.js$/, '.html');
+}
+
+/**
  * Create a ConvertedDocumentFilePath for the OriginalDocumentUrl of a document
  * being converted to a JS module.
  */
-export function getJsModuleConvertedFilePath(originalUrl: OriginalDocumentUrl):
-    ConvertedDocumentFilePath {
-  return replaceHtmlExtensionIfFound(originalUrl) as ConvertedDocumentFilePath;
+export function getJsModuleConvertedFilePath(
+    convertedUrl: ConvertedDocumentUrl): ConvertedDocumentFilePath {
+  return convertedUrl.substring('./'.length) as string as
+      ConvertedDocumentFilePath;
 }
 
 /**
@@ -47,8 +55,9 @@ export function getJsModuleConvertedFilePath(originalUrl: OriginalDocumentUrl):
  * since HTML documents should keep their current html file extension).
  */
 export function getHtmlDocumentConvertedFilePath(
-    originalUrl: OriginalDocumentUrl): ConvertedDocumentFilePath {
-  return originalUrl as string as ConvertedDocumentFilePath;
+    convertedUrl: ConvertedDocumentUrl): ConvertedDocumentFilePath {
+  return replaceJsExtensionIfFound(convertedUrl.substring('./'.length)) as
+      ConvertedDocumentFilePath;
 }
 
 /**

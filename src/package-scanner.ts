@@ -205,7 +205,7 @@ export class PackageScanner {
 
     const documentUrl = this.urlHandler.getDocumentUrl(document);
     const documentConverter = new DocumentConverter(
-        document, this.urlHandler, this.conversionSettings);
+        document, this.packageName, this.urlHandler, this.conversionSettings);
     let scanResult: JsModuleScanResult|HtmlDocumentScanResult|
         DeleteFileScanResult;
     try {

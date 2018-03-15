@@ -250,18 +250,24 @@ function getImportDeclarations(
 export class DocumentConverter {
   private readonly originalUrl: OriginalDocumentUrl;
   private readonly convertedUrl: ConvertedDocumentUrl;
+  private readonly convertedFilePath: ConvertedDocumentFilePath;
   private readonly urlHandler: UrlHandler;
   private readonly conversionSettings: ConversionSettings;
   private readonly document: Document;
 
   constructor(
-      document: Document, urlHandler: UrlHandler,
+      document: Document, originalPackageName: string, urlHandler: UrlHandler,
       conversionSettings: ConversionSettings) {
     this.conversionSettings = conversionSettings;
     this.urlHandler = urlHandler;
     this.document = document;
     this.originalUrl = urlHandler.getDocumentUrl(document);
     this.convertedUrl = this.convertDocumentUrl(this.originalUrl);
+    const relativeConvertedUrl =
+        this.urlHandler.convertedUrlToPackageRelative(this.convertedUrl);
+    this.convertedFilePath =
+        this.urlHandler.packageRelativeConvertedUrlToConvertedDocumentFilePath(
+            originalPackageName, relativeConvertedUrl);
   }
 
   /**
@@ -375,7 +381,7 @@ export class DocumentConverter {
       type: 'js-module',
       originalUrl: this.originalUrl,
       convertedUrl: this.convertedUrl,
-      convertedFilePath: getJsModuleConvertedFilePath(this.originalUrl),
+      convertedFilePath: this.convertedFilePath,
       exportMigrationRecords,
     };
   }
@@ -405,7 +411,7 @@ export class DocumentConverter {
         results.push({
           originalUrl: oldScriptUrl,
           convertedUrl: newScriptUrl,
-          convertedFilePath: getJsModuleConvertedFilePath(oldScriptUrl),
+          convertedFilePath: getJsModuleConvertedFilePath(newScriptUrl),
           deleteOriginal: true,
           output: undefined,
         });
@@ -432,7 +438,7 @@ export class DocumentConverter {
     results.push({
       originalUrl: this.originalUrl,
       convertedUrl: this.convertedUrl,
-      convertedFilePath: getJsModuleConvertedFilePath(this.originalUrl),
+      convertedFilePath: getJsModuleConvertedFilePath(this.convertedUrl),
       deleteOriginal: true,
       output: outputProgram.code + EOL
     });
@@ -449,7 +455,7 @@ export class DocumentConverter {
       type: 'html-document',
       convertedUrl: this.convertedUrl,
       originalUrl: this.originalUrl,
-      convertedFilePath: getHtmlDocumentConvertedFilePath(this.originalUrl),
+      convertedFilePath: getHtmlDocumentConvertedFilePath(this.convertedUrl),
     };
   }
 
@@ -625,7 +631,7 @@ export class DocumentConverter {
     return {
       originalUrl: this.originalUrl,
       convertedUrl: this.convertedUrl,
-      convertedFilePath: getHtmlDocumentConvertedFilePath(this.originalUrl),
+      convertedFilePath: getHtmlDocumentConvertedFilePath(this.convertedUrl),
       output: contents
     };
   }
@@ -638,7 +644,7 @@ export class DocumentConverter {
     return {
       originalUrl: this.originalUrl,
       convertedUrl: this.convertedUrl,
-      convertedFilePath: getJsModuleConvertedFilePath(this.originalUrl),
+      convertedFilePath: getJsModuleConvertedFilePath(this.convertedUrl),
       deleteOriginal: true,
       output: undefined,
     };
@@ -1097,6 +1103,13 @@ export class DocumentConverter {
       jsUrl = jsUrl.replace(
           'shadycss/custom-style-interface.html',
           'shadycss/entrypoints/custom-style-interface.js');
+    }
+    if (jsUrl === './polymer.html') {
+      jsUrl = jsUrl.replace('polymer.html', 'polymer-legacy.html');
+    }
+    if (jsUrl.endsWith('polymer/polymer.html')) {
+      jsUrl =
+          jsUrl.replace('polymer/polymer.html', 'polymer/polymer-legacy.html');
     }
     // Convert any ".html" URLs to point to their new ".js" module equivilent
     jsUrl = replaceHtmlExtensionIfFound(jsUrl);
