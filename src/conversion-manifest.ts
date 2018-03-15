@@ -16,7 +16,7 @@
 import {JsModuleScanResult, ScanResult} from './document-converter';
 import {JsExport} from './js-module';
 import {PackageScanExports, PackageScanFiles} from './package-scanner';
-import {ConvertedDocumentFilePath, ConvertedDocumentUrl, OriginalDocumentUrl} from './urls/types';
+import {OriginalDocumentUrl} from './urls/types';
 import {UrlHandler} from './urls/url-handler';
 
 type FileExportJson = {
@@ -87,11 +87,12 @@ export function serializePackageScanResult(
 }
 
 function fileMappingToScanResult(
+    originalPackageName: string,
+    convertedPackageName: string,
     originalUrl: OriginalDocumentUrl,
-    convertedUrl: ConvertedDocumentUrl|undefined,
-    convertedFilePath: ConvertedDocumentFilePath|undefined,
-    fileData: PackageFileJson): ScanResult {
-  if (convertedUrl === undefined || convertedFilePath === undefined) {
+    fileData: PackageFileJson|null,
+    urlHandler: UrlHandler): ScanResult {
+  if (fileData === null) {
     return {
       type: 'delete-file',
       originalUrl: originalUrl,
@@ -99,6 +100,11 @@ function fileMappingToScanResult(
       convertedFilePath: undefined,
     };
   }
+  const convertedUrl = urlHandler.packageRelativeToConvertedUrl(
+      convertedPackageName, fileData.convertedUrl);
+  const convertedFilePath =
+      urlHandler.packageRelativeConvertedUrlToConvertedDocumentFilePath(
+          originalPackageName, fileData.convertedUrl);
   if (convertedUrl.endsWith('.html')) {
     return {
       type: 'html-document',
@@ -131,21 +137,13 @@ export function filesJsonObjectToMap(
            conversionManifest.files)) {
     const originalUrl = urlHandler.packageRelativeToOriginalUrl(
         originalPackageName, relativeFromUrl);
-    let convertedUrl = undefined;
-    let convertedFilePath = undefined;
-
-    if (fileData !== null) {
-      convertedUrl = urlHandler.packageRelativeToConvertedUrl(
-          convertedPackageName, fileData.convertedUrl);
-      convertedFilePath =
-          urlHandler.packageRelativeConvertedUrlToConvertedDocumentFilePath(
-              originalPackageName, fileData.convertedUrl);
-    }
-
-    filesMap.set(
+    const scanResult = fileMappingToScanResult(
+        originalPackageName,
+        convertedPackageName,
         originalUrl,
-        fileMappingToScanResult(
-            originalUrl, convertedUrl, convertedFilePath, fileData!));
+        fileData,
+        urlHandler);
+    filesMap.set(originalUrl, scanResult);
   }
   for (const scanResult of filesMap.values()) {
     if (scanResult.type !== 'js-module') {
