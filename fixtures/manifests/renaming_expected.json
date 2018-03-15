@@ -1,0 +1,16 @@
+[
+  [
+    [
+      "some-package/file-before.html",
+      {
+        "type": "js-module",
+        "originalUrl": "some-package/file-before.html",
+        "convertedUrl": "./@some-owner/some-package/file-after.js",
+        "convertedFilePath": "some-package/file-after.js",
+        "exportMigrationRecords": []
+      }
+    ]
+  ],
+  [
+  ]
+]

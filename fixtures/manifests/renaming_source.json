@@ -1,0 +1,8 @@
+{
+  "files": {
+    "file-before.html": {
+      "convertedUrl": "file-after.js",
+      "exports": {}
+    }
+  }
+}
