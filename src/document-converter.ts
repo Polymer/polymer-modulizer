@@ -264,10 +264,10 @@ export class DocumentConverter {
     this.originalUrl = urlHandler.getDocumentUrl(document);
     this.convertedUrl = this.convertDocumentUrl(this.originalUrl);
     const relativeConvertedUrl =
-        this.urlHandler.convertedUrlToPackageRelative(this.convertedUrl);
-    this.convertedFilePath =
-        this.urlHandler.packageRelativeConvertedUrlToConvertedDocumentFilePath(
-            originalPackageName, relativeConvertedUrl);
+      this.urlHandler.convertedUrlToPackageRelative(this.convertedUrl);
+      this.convertedFilePath =
+      this.urlHandler.packageRelativeConvertedUrlToConvertedDocumentFilePath(
+      originalPackageName, relativeConvertedUrl);
   }
 
   /**
@@ -411,7 +411,7 @@ export class DocumentConverter {
         results.push({
           originalUrl: oldScriptUrl,
           convertedUrl: newScriptUrl,
-          convertedFilePath: getJsModuleConvertedFilePath(newScriptUrl),
+          convertedFilePath: replaceHtmlExtensionIfFound(oldScriptUrl as string) as ConvertedDocumentFilePath,
           deleteOriginal: true,
           output: undefined,
         });
@@ -438,7 +438,7 @@ export class DocumentConverter {
     results.push({
       originalUrl: this.originalUrl,
       convertedUrl: this.convertedUrl,
-      convertedFilePath: getJsModuleConvertedFilePath(this.convertedUrl),
+      convertedFilePath: getJsModuleConvertedFilePath(this.convertedFilePath),
       deleteOriginal: true,
       output: outputProgram.code + EOL
     });
@@ -455,7 +455,7 @@ export class DocumentConverter {
       type: 'html-document',
       convertedUrl: this.convertedUrl,
       originalUrl: this.originalUrl,
-      convertedFilePath: getHtmlDocumentConvertedFilePath(this.convertedUrl),
+      convertedFilePath: getHtmlDocumentConvertedFilePath(this.convertedFilePath),
     };
   }
 
@@ -631,7 +631,7 @@ export class DocumentConverter {
     return {
       originalUrl: this.originalUrl,
       convertedUrl: this.convertedUrl,
-      convertedFilePath: getHtmlDocumentConvertedFilePath(this.convertedUrl),
+      convertedFilePath: getHtmlDocumentConvertedFilePath(this.convertedFilePath),
       output: contents
     };
   }
@@ -644,7 +644,7 @@ export class DocumentConverter {
     return {
       originalUrl: this.originalUrl,
       convertedUrl: this.convertedUrl,
-      convertedFilePath: getJsModuleConvertedFilePath(this.convertedUrl),
+      convertedFilePath: getJsModuleConvertedFilePath(this.convertedFilePath),
       deleteOriginal: true,
       output: undefined,
     };

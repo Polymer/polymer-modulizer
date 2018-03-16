@@ -44,9 +44,8 @@ export function replaceJsExtensionIfFound(url: string): string {
  * being converted to a JS module.
  */
 export function getJsModuleConvertedFilePath(
-    convertedUrl: ConvertedDocumentUrl): ConvertedDocumentFilePath {
-  return convertedUrl.substring('./'.length) as string as
-      ConvertedDocumentFilePath;
+    convertedUrl: ConvertedDocumentFilePath): ConvertedDocumentFilePath {
+  return convertedUrl as string as ConvertedDocumentFilePath;
 }
 
 /**
@@ -55,9 +54,8 @@ export function getJsModuleConvertedFilePath(
  * since HTML documents should keep their current html file extension).
  */
 export function getHtmlDocumentConvertedFilePath(
-    convertedUrl: ConvertedDocumentUrl): ConvertedDocumentFilePath {
-  return replaceJsExtensionIfFound(convertedUrl.substring('./'.length)) as
-      ConvertedDocumentFilePath;
+    convertedUrl: ConvertedDocumentFilePath): ConvertedDocumentFilePath {
+  return replaceJsExtensionIfFound(convertedUrl) as ConvertedDocumentFilePath;
 }
 
 /**
