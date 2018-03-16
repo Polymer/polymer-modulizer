@@ -36,29 +36,6 @@ export interface ConversionSettings {
   readonly excludes: Set<string>;
 
   /**
-   * Files to include in JS conversion. By default this is all local files that
-   * are imported anywhere inside the package. It is up to the conversion setup
-   * to make sure this includes any entrypoints into the package (that would
-   * never be imported themselves).
-   *
-   * Any files marked for conversion but not included in this set will be
-   * converted in-place, remaining HTML. This is preferable for HTML entrypoints
-   * like tests, demos, etc.
-   *
-   * Example: In "paper-input", `includes` by default will include all local
-   * HTML files imported within the package (paper-input-behavior.html,
-   * paper-input-error.html, etc). The package conversion setup is responsible
-   * for adding the main package entrypoint (paper-input.html) as well. Other
-   * entrypoints (test/index.html, demo/index.html, etc) that are not a part of
-   * the module code should not be included in `includes` so that they remain
-   * HTML files after conversion is complete.
-   *
-   * TODO(fks) 11-13-2017: Simplify this relationship and what it means to be
-   * "marked for JS conversion" vs. "marked for HTML in-place conversion".
-   */
-  readonly includes: Set<string>;
-
-  /**
    * Namespace references (ie, Polymer.DomModule) to "exclude" in the conversion
    * by replacing the entire reference with `undefined`. This assumes that those
    * references were conditionally checked for before accessing, or used in some
@@ -176,8 +153,9 @@ function getNamespaceNames(analysis: Analysis) {
  * incomplete user-provided options.
  */
 export function createDefaultConversionSettings(
-    analyzer: Analyzer, analysis: Analysis, options: PartialConversionSettings):
-    ConversionSettings {
+    _analyzer: Analyzer,
+    analysis: Analysis,
+    options: PartialConversionSettings): ConversionSettings {
   // Configure "namespaces":
   const namespaces =
       new Set(getNamespaceNames(analysis).concat(options.namespaces || []));
@@ -185,20 +163,6 @@ export function createDefaultConversionSettings(
   // Configure "excludes":
   const excludes = new Set(
       [...(options.excludes || []), 'neon-animation/web-animations.html']);
-
-  // Configure "includes":
-  const importedFiles =
-      IterableX
-          .from(analysis.getFeatures({kind: 'import', externalPackages: false}))
-          .filter((imp) => !imp.kinds.has('html-script-back-reference'))
-          .map(
-              (imp) =>
-                  analyzer.urlResolver.relative(imp.url) as string | undefined)
-          .filter(
-              (url) => url !== undefined &&
-                  !url.startsWith('bower_components') &&
-                  !url.startsWith('node_modules'));
-  const includes = new Set(importedFiles as IterableX<string>);
 
   // Configure "referenceExcludes":
   const referenceExcludes = new Set(options.referenceExcludes || [
@@ -228,7 +192,6 @@ export function createDefaultConversionSettings(
   return {
     namespaces,
     excludes,
-    includes,
     referenceExcludes,
     referenceRewrites,
     npmImportStyle,

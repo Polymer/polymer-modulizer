@@ -93,11 +93,11 @@ suite('AnalysisConverter', () => {
       // Setup ConversionSettings, set "test.html" as default entrypoint.
       const conversionSettings =
           createDefaultConversionSettings(analyzer, analysis, partialSettings);
-      conversionSettings.includes.add('test.html');
-      if (partialOptions.includes) {
-        partialOptions.includes.forEach(
-            (str) => conversionSettings.includes.add(str));
-      }
+      // conversionSettings.includes.add('test.html');
+      // if (partialOptions.includes) {
+      //   partialOptions.includes.forEach(
+      //       (str) => conversionSettings.includes.add(str));
+      // }
       // Setup ProjectScanner, use PackageUrlHandler for easy setup.
       const urlHandler = new PackageUrlHandler(
           analyzer, bowerPackageName, npmPackageName, packageType, __dirname);

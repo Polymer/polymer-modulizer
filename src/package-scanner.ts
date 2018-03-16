@@ -45,6 +45,7 @@ export class PackageScanner {
   private readonly analysis: Analysis;
   private readonly urlHandler: UrlHandler;
   private readonly conversionSettings: ConversionSettings;
+  private readonly topLevelEntrypoints: Set<OriginalDocumentUrl> = new Set();
 
   /**
    * A set of all external dependencies (by name) actually detected as JS
@@ -66,11 +67,13 @@ export class PackageScanner {
 
   constructor(
       packageName: string, analysis: Analysis, urlHandler: UrlHandler,
-      conversionSettings: ConversionSettings) {
+      conversionSettings: ConversionSettings,
+      topLevelEntrypoints: Set<OriginalDocumentUrl>) {
     this.packageName = packageName;
     this.analysis = analysis;
     this.urlHandler = urlHandler;
     this.conversionSettings = conversionSettings;
+    this.topLevelEntrypoints = topLevelEntrypoints;
   }
 
   /**
@@ -209,8 +212,7 @@ export class PackageScanner {
     let scanResult: JsModuleScanResult|HtmlDocumentScanResult|
         DeleteFileScanResult;
     try {
-      scanResult =
-          (forceJs || this.conversionSettings.includes.has(documentUrl)) ?
+      scanResult = (forceJs || this.topLevelEntrypoints.has(documentUrl)) ?
           documentConverter.scanJsModule() :
           documentConverter.scanTopLevelHtmlDocument();
     } catch (e) {

@@ -105,7 +105,7 @@ function createDiffConflictOutput(diffResult: any): string {
   return errorOutputLines.concat(['']).join(EOL);
 }
 
-suite('Fixtures', () => {
+suite.only('Fixtures', () => {
   suite('Packages', function() {
     this.timeout(60000);
 
@@ -126,6 +126,8 @@ suite('Fixtures', () => {
 
         const output = await runFixture(
             fixtureSourceDir, fixtureResultDir, fixtureTestConfig);
+
+        // console.log(output.stdout);
 
         // 1. Check stderr output that no (unexpected) errors were emitted.
         assert.equal(output.stderr, (fixtureTestConfig.stderr || ''));

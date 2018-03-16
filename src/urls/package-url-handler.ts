@@ -86,7 +86,7 @@ export class PackageUrlHandler implements UrlHandler {
    * package.
    */
   getOriginalPackageNameForUrl(url: OriginalDocumentUrl): string {
-    if (url.startsWith('../')) {
+    if (url.startsWith('bower_components/')) {
       return url.split('/')[1];
     } else {
       return this.bowerPackageName;
@@ -223,14 +223,24 @@ export class PackageUrlHandler implements UrlHandler {
         url as string as OriginalDocumentUrl);
   }
 
-  packageRelativeToOriginalUrl(_originalPackageName: string, url: string):
+  packageRelativeToOriginalUrl(originalPackageName: string, url: string):
       OriginalDocumentUrl {
-    return url as OriginalDocumentUrl;
+    if (originalPackageName === this.bowerPackageName) {
+      return url as OriginalDocumentUrl;
+    } else {
+      return 'bower_components/' + originalPackageName + '/' + url as
+          OriginalDocumentUrl;
+    }
   }
 
-  packageRelativeToConvertedUrl(_convertedPackageName: string, url: string):
+  packageRelativeToConvertedUrl(convertedPackageName: string, url: string):
       ConvertedDocumentUrl {
-    return './' + url as ConvertedDocumentUrl;
+    if (convertedPackageName === this.npmPackageName) {
+      return './' + url as ConvertedDocumentUrl;
+    } else {
+      return './node_modules/' + convertedPackageName + '/' + url as
+          ConvertedDocumentUrl;
+    }
   }
 
   packageRelativeToConvertedDocumentFilePath(packageName: string, url: string):
