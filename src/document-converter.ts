@@ -1117,11 +1117,10 @@ export class DocumentConverter {
     }
     if (this.originalPackageName === 'polymer') {
       if (jsUrl === './polymer.html') {
-        jsUrl = jsUrl.replace('polymer.html', 'polymer-legacy.html');
-      }
-      if (jsUrl.endsWith('polymer/polymer.html')) {
+        jsUrl = './polymer-legacy.html';
+      } else if (jsUrl.endsWith('polymer/polymer.html')) {
         jsUrl = jsUrl.replace(
-            'polymer/polymer.html', 'polymer/polymer-legacy.html');
+            /polymer\/polymer\.html$/, 'polymer/polymer-legacy.html');
       }
     }
     // Convert any ".html" URLs to point to their new ".js" module equivilent
