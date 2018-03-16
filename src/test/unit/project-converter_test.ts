@@ -494,6 +494,39 @@ export const bar = 43;
         });
 
 
+        test(
+          'renames "Polymer.Element" property to "PolymerElement" export',
+          async () => {
+            setSources({
+              'test.html': `
+            <link rel="import" href="./polymer-element.html">
+            <script>
+              console.log(Polymer.Element);
+            </script>
+          `,
+              'polymer-element.html': `
+            <script>
+            const Element = (() => {})();
+            Polymer.Element = Element;
+          </script>
+          `,
+            });
+            const options = {
+              bowerPackageName: 'polymer',
+              npmPackageName: '@polymer/polymer',
+            };
+            assertSources(await convert(options), {
+              'test.js': `
+import { PolymerElement } from \'./polymer-element.js\';
+console.log(PolymerElement);
+`,
+              'polymer-element.js': `
+const Element = (() => {})();
+export { Element as PolymerElement };
+`,
+            });
+          });
+
     test('unwraps top-level IIFE', async () => {
       setSources({
         'test.html': `
