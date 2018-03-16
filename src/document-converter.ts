@@ -259,9 +259,11 @@ export class DocumentConverter {
   constructor(
       document: Document, originalPackageName: string, urlHandler: UrlHandler,
       conversionSettings: ConversionSettings) {
-    // The `originalPackageName` given by `PackageConverter` is always the name
-    // of the root package being converted, even if this `DocumentConverter` is
-    // converting a file in a dependency of the root package.
+    // The `originalPackageName` given by `PackageConverter` is sometimes
+    // incorrect because it is always the name of the root package being
+    // converted, even if this `DocumentConverter` is converting a file in a
+    // dependency of the root package. Instead, it should be the name of the
+    // package containing this document.
     this.originalPackageName = originalPackageName;
     this.conversionSettings = conversionSettings;
     this.urlHandler = urlHandler;
