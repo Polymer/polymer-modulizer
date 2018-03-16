@@ -248,6 +248,7 @@ function getImportDeclarations(
  * HTML -> HTML conversion.
  */
 export class DocumentConverter {
+  private readonly originalPackageName: string;
   private readonly originalUrl: OriginalDocumentUrl;
   private readonly convertedUrl: ConvertedDocumentUrl;
   private readonly convertedFilePath: ConvertedDocumentFilePath;
@@ -258,16 +259,20 @@ export class DocumentConverter {
   constructor(
       document: Document, originalPackageName: string, urlHandler: UrlHandler,
       conversionSettings: ConversionSettings) {
+    // The `originalPackageName` given by `PackageConverter` is always the name
+    // of the root package being converted, even if this `DocumentConverter` is
+    // converting a file in a dependency of the root package.
+    this.originalPackageName = originalPackageName;
     this.conversionSettings = conversionSettings;
     this.urlHandler = urlHandler;
     this.document = document;
     this.originalUrl = urlHandler.getDocumentUrl(document);
     this.convertedUrl = this.convertDocumentUrl(this.originalUrl);
     const relativeConvertedUrl =
-      this.urlHandler.convertedUrlToPackageRelative(this.convertedUrl);
-      this.convertedFilePath =
-      this.urlHandler.packageRelativeConvertedUrlToConvertedDocumentFilePath(
-      originalPackageName, relativeConvertedUrl);
+        this.urlHandler.convertedUrlToPackageRelative(this.convertedUrl);
+    this.convertedFilePath =
+        this.urlHandler.packageRelativeConvertedUrlToConvertedDocumentFilePath(
+            originalPackageName, relativeConvertedUrl);
   }
 
   /**
@@ -411,7 +416,9 @@ export class DocumentConverter {
         results.push({
           originalUrl: oldScriptUrl,
           convertedUrl: newScriptUrl,
-          convertedFilePath: replaceHtmlExtensionIfFound(oldScriptUrl as string) as ConvertedDocumentFilePath,
+          convertedFilePath:
+              replaceHtmlExtensionIfFound(oldScriptUrl as string) as
+              ConvertedDocumentFilePath,
           deleteOriginal: true,
           output: undefined,
         });
@@ -455,7 +462,8 @@ export class DocumentConverter {
       type: 'html-document',
       convertedUrl: this.convertedUrl,
       originalUrl: this.originalUrl,
-      convertedFilePath: getHtmlDocumentConvertedFilePath(this.convertedFilePath),
+      convertedFilePath:
+          getHtmlDocumentConvertedFilePath(this.convertedFilePath),
     };
   }
 
@@ -631,7 +639,8 @@ export class DocumentConverter {
     return {
       originalUrl: this.originalUrl,
       convertedUrl: this.convertedUrl,
-      convertedFilePath: getHtmlDocumentConvertedFilePath(this.convertedFilePath),
+      convertedFilePath:
+          getHtmlDocumentConvertedFilePath(this.convertedFilePath),
       output: contents
     };
   }
@@ -1104,12 +1113,14 @@ export class DocumentConverter {
           'shadycss/custom-style-interface.html',
           'shadycss/entrypoints/custom-style-interface.js');
     }
-    if (jsUrl === './polymer.html') {
-      jsUrl = jsUrl.replace('polymer.html', 'polymer-legacy.html');
-    }
-    if (jsUrl.endsWith('polymer/polymer.html')) {
-      jsUrl =
-          jsUrl.replace('polymer/polymer.html', 'polymer/polymer-legacy.html');
+    if (this.originalPackageName === 'polymer') {
+      if (jsUrl === './polymer.html') {
+        jsUrl = jsUrl.replace('polymer.html', 'polymer-legacy.html');
+      }
+      if (jsUrl.endsWith('polymer/polymer.html')) {
+        jsUrl = jsUrl.replace(
+            'polymer/polymer.html', 'polymer/polymer-legacy.html');
+      }
     }
     // Convert any ".html" URLs to point to their new ".js" module equivilent
     jsUrl = replaceHtmlExtensionIfFound(jsUrl);

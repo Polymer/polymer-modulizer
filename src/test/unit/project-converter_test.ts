@@ -452,6 +452,47 @@ export const Polymer = function(info) {
       });
     });
 
+    test(
+        'in a package "polymer", renames a root file "/polymer.html" to "polymer-legacy.js"',
+        async () => {
+          setSources({
+            'test.html': `
+          <link rel="import" href="./polymer.html">
+          <script>
+            console.log(window.Polymer());
+            console.log(Polymer());
+            console.log(Polymer.foo);
+            console.log(Polymer['bar']);
+          </script>
+        `,
+            'polymer.html': `
+          <script>
+            window.Polymer = function() {};
+            Polymer.foo = 42;
+            Polymer.bar = 43;
+          </script>
+        `,
+          });
+          const options = {
+            bowerPackageName: 'polymer',
+            npmPackageName: '@polymer/polymer',
+          };
+          assertSources(await convert(options), {
+            'test.js': `
+import { Polymer, foo } from \'./polymer-legacy.js\';
+console.log(Polymer());
+console.log(Polymer());
+console.log(foo);
+console.log(Polymer[\'bar\']);
+`,
+            'polymer-legacy.js': `
+export const Polymer = function() {};
+export const foo = 42;
+export const bar = 43;
+`,
+          });
+        });
+
 
     test('unwraps top-level IIFE', async () => {
       setSources({
