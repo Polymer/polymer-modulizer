@@ -481,11 +481,11 @@ export const Polymer = function(info) {
           };
           assertSources(await convert(options), {
             'test.js': `
-import { Polymer, foo } from \'./polymer-legacy.js\';
+import { Polymer, foo } from './polymer-legacy.js';
 console.log(Polymer());
 console.log(Polymer());
 console.log(foo);
-console.log(Polymer[\'bar\']);
+console.log(Polymer['bar']);
 `,
             'polymer-legacy.js': `
 export const Polymer = function() {};
@@ -520,11 +520,11 @@ export const bar = 43;
           };
           assertSources(await convert(options), {
             'test.js': `
-import { Polymer, foo } from \'./polymer-legacy.js\';
+import { Polymer, foo } from './polymer-legacy.js';
 console.log(Polymer());
 console.log(Polymer());
 console.log(foo);
-console.log(Polymer[\'bar\']);
+console.log(Polymer['bar']);
 `,
             'polymer-legacy.js': `
 export const Polymer = function() {};
@@ -576,22 +576,22 @@ export const bar = 43;
           };
           assertSources(await convert(options), {
             'test.js': `
-import \'./some-folder/file-1.js\';
-import \'./some-folder/file-2.js\';
+import './some-folder/file-1.js';
+import './some-folder/file-2.js';
 `,
             'some-folder/file-1.js': `
-import { Polymer, foo } from \'./polymer.js\';
+import { Polymer, foo } from './polymer.js';
 console.log(Polymer());
 console.log(Polymer());
 console.log(foo);
-console.log(Polymer[\'bar\']);
+console.log(Polymer['bar']);
 `,
             'some-folder/file-2.js': `
-import { Polymer, foo } from \'./polymer.js\';
+import { Polymer, foo } from './polymer.js';
 console.log(Polymer());
 console.log(Polymer());
 console.log(foo);
-console.log(Polymer[\'bar\']);
+console.log(Polymer['bar']);
 `,
             'some-folder/polymer.js': `
 export const Polymer = function() {};
@@ -625,7 +625,7 @@ export const bar = 43;
         };
         assertSources(await convert(options), {
           'test.js': `
-import { PolymerElement } from \'./polymer-element.js\';
+import { PolymerElement } from './polymer-element.js';
 console.log(PolymerElement);
 `,
           'polymer-element.js': `
