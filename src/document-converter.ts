@@ -1115,9 +1115,7 @@ export class DocumentConverter {
     }
     if (this.originalPackageName === 'polymer' && jsUrl === './polymer.html') {
       jsUrl = './polymer-legacy.html';
-    } else if (
-        this.originalPackageName !== 'polymer' &&
-        jsUrl.endsWith('polymer/polymer.html')) {
+    } else if (jsUrl.endsWith('polymer/polymer.html')) {
       jsUrl = jsUrl.replace(
           /polymer\/polymer\.html$/, 'polymer/polymer-legacy.html');
     }
