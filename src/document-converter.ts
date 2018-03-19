@@ -554,8 +554,8 @@ export class DocumentConverter {
       const htmlDocumentUrl =
           this.urlHandler.getDocumentUrl(htmlImport.document);
       const importedJsDocumentUrl = this.convertDocumentUrl(htmlDocumentUrl);
-      const importUrl =
-          this.formatImportUrl(importedJsDocumentUrl, htmlImport.originalUrl, true);
+      const importUrl = this.formatImportUrl(
+          importedJsDocumentUrl, htmlImport.originalUrl, true);
       const scriptTag = parse5.parseFragment(`<script type="module"></script>`)
                             .childNodes![0];
       dom5.setAttribute(scriptTag, 'src', importUrl);
@@ -1129,7 +1129,8 @@ export class DocumentConverter {
    * TODO(fks): Make this run on Windows/Non-Unix systems (#236)
    */
   private formatImportUrl(
-      toUrl: ConvertedDocumentUrl, originalHtmlImportUrl?: string, forcePath = false): string {
+      toUrl: ConvertedDocumentUrl, originalHtmlImportUrl?: string,
+      forcePath = false): string {
     // Return an absolute URL path if the original HTML import was absolute.
     // TODO(fks) 11-06-2017: Still return true absolute paths when using
     // bare/named imports?
