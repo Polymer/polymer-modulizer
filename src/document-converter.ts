@@ -1113,13 +1113,13 @@ export class DocumentConverter {
           'shadycss/custom-style-interface.html',
           'shadycss/entrypoints/custom-style-interface.js');
     }
-    if (this.originalPackageName === 'polymer') {
-      if (jsUrl === './polymer.html') {
-        jsUrl = './polymer-legacy.html';
-      } else if (jsUrl.endsWith('polymer/polymer.html')) {
-        jsUrl = jsUrl.replace(
-            /polymer\/polymer\.html$/, 'polymer/polymer-legacy.html');
-      }
+    if (this.originalPackageName === 'polymer' && jsUrl === './polymer.html') {
+      jsUrl = './polymer-legacy.html';
+    } else if (
+        this.originalPackageName !== 'polymer' &&
+        jsUrl.endsWith('polymer/polymer.html')) {
+      jsUrl = jsUrl.replace(
+          /polymer\/polymer\.html$/, 'polymer/polymer-legacy.html');
     }
     // Convert any ".html" URLs to point to their new ".js" module equivilent
     jsUrl = replaceHtmlExtensionIfFound(jsUrl);
