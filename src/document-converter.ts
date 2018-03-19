@@ -42,7 +42,7 @@ import {rewriteToplevelThis} from './passes/rewrite-toplevel-this';
 import {ConvertedDocumentFilePath, ConvertedDocumentUrl, OriginalDocumentUrl} from './urls/types';
 import {UrlHandler} from './urls/url-handler';
 import {isOriginalDocumentUrlFormat} from './urls/util';
-import {getHtmlDocumentConvertedFilePath, getJsModuleConvertedFilePath, getModuleId, replaceHtmlExtensionIfFound} from './urls/util';
+import {getHtmlDocumentConvertedFilePath, getJsModuleConvertedFilePath, getScriptConvertedFilePath, getModuleId, replaceHtmlExtensionIfFound} from './urls/util';
 
 /**
  * Keep a map of dangerous references to check for. Output the related warning
@@ -418,9 +418,7 @@ export class DocumentConverter {
         results.push({
           originalUrl: oldScriptUrl,
           convertedUrl: newScriptUrl,
-          convertedFilePath:
-              replaceHtmlExtensionIfFound(oldScriptUrl as string) as
-              ConvertedDocumentFilePath,
+          convertedFilePath: getScriptConvertedFilePath(oldScriptUrl),
           deleteOriginal: true,
           output: undefined,
         });

@@ -14,7 +14,7 @@
 
 import {posix as path} from 'path';
 
-import {ConvertedDocumentFilePath, ConvertedDocumentUrl} from './types';
+import {ConvertedDocumentFilePath, ConvertedDocumentUrl, OriginalDocumentUrl} from './types';
 
 /**
  * Return true if url is formatted correctly as a OriginalDocumentUrl.
@@ -56,6 +56,26 @@ export function getJsModuleConvertedFilePath(
 export function getHtmlDocumentConvertedFilePath(
     convertedUrl: ConvertedDocumentFilePath): ConvertedDocumentFilePath {
   return replaceJsExtensionIfFound(convertedUrl) as ConvertedDocumentFilePath;
+}
+
+/**
+ * Converts the OriginalDocumentUrl of a file which was a script prior to
+ * conversion to its corresponding ConvertedDocumentFilePath.
+ *
+ * This function's output is affected by any renaming that might have been
+ * applied to a file, as opposed to `getJsModuleConvertedFilePath` and
+ * `getHtmlDocumentConvertedFilePath`, which consume ConvertedDocumentFilePaths
+ * which have already had renaming applied (but which haven't had their
+ * extension changed, if needed).
+ *
+ * TODO: This implementation by casting is only safe because 'polymer.html' is
+ * the only file we are renaming currently and this function is only called
+ * by `DocumentConverter#convertJsModule` with URLs of files which were already
+ * scripts.
+ */
+export function getScriptConvertedFilePath(
+    originalUrl: OriginalDocumentUrl): ConvertedDocumentFilePath {
+  return originalUrl as string as ConvertedDocumentFilePath;
 }
 
 /**
