@@ -86,18 +86,11 @@ export class PackageUrlHandler implements UrlHandler {
    * package.
    */
   getOriginalPackageNameForUrl(url: OriginalDocumentUrl): string {
-    // "../package/path..." -> "package"
-    if (url.startsWith('../')) {
+    if (url.startsWith('bower_components/')) {
       return url.split('/')[1];
+    } else {
+      return this.bowerPackageName;
     }
-
-    // "bower_components/package/path..." -> "package"
-    const results = /^bower_components\/([^\/]+)\/.+$/.exec(url);
-    if (results !== null) {
-      return results[1];
-    }
-
-    return this.bowerPackageName;
   }
 
   /**
@@ -251,7 +244,7 @@ export class PackageUrlHandler implements UrlHandler {
     if (originalPackageName === this.bowerPackageName) {
       return url as ConvertedDocumentFilePath;
     } else {
-      return `./bower_components/${originalPackageName}/${url}` as ConvertedDocumentFilePath;
+      return `bower_components/${originalPackageName}/${url}` as ConvertedDocumentFilePath;
     }
   }
 }
