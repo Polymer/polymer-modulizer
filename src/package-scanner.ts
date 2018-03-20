@@ -246,8 +246,20 @@ export class PackageScanner {
    * seperately.
    */
   private scanDependencies(document: Document) {
+    const documentUrl = this.urlHandler.getDocumentUrl(document);
+    const packageName =
+        this.urlHandler.getOriginalPackageNameForUrl(documentUrl);
+
     for (const htmlImport of DocumentConverter.getAllHtmlImports(document)) {
-      this.scanDocument(htmlImport.document, true);
+      const importDocumentUrl = this.urlHandler.getDocumentUrl(<any>htmlImport);
+      const importPackageName =
+          this.urlHandler.getOriginalPackageNameForUrl(importDocumentUrl);
+
+      if (importPackageName === packageName) {
+        this.scanDocument(htmlImport.document, true);
+      } else {
+        this.externalDependencies.add(importPackageName);
+      }
     }
   }
 }
