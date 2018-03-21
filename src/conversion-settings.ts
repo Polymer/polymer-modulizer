@@ -15,7 +15,7 @@
 import * as estree from 'estree';
 import {Iterable as IterableX} from 'ix';
 import * as jsc from 'jscodeshift';
-import {Analysis, Analyzer} from 'polymer-analyzer';
+import {Analysis} from 'polymer-analyzer';
 
 import {OriginalDocumentUrl} from './urls/types';
 
@@ -164,7 +164,6 @@ function getNamespaceNames(analysis: Analysis) {
  * incomplete user-provided options.
  */
 export function createDefaultConversionSettings(
-    _analyzer: Analyzer,
     analysis: Analysis,
     options: PartialConversionSettings): ConversionSettings {
   // Configure "namespaces":

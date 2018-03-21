@@ -99,7 +99,7 @@ suite('AnalysisConverter', () => {
       const analysis = await analyzer.analyze(allTestUrls);
       // Setup ConversionSettings, set "test.html" as default entrypoint.
       const conversionSettings =
-          createDefaultConversionSettings(analyzer, analysis, partialSettings);
+          createDefaultConversionSettings(analysis, partialSettings);
       // conversionSettings.includes.add('test.html');
       // if (partialOptions.includes) {
       //   partialOptions.includes.forEach(
