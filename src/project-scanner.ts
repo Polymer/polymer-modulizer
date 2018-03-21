@@ -96,7 +96,7 @@ export class ProjectScanner {
   /**
    * Scan a document and any of its dependency packages for their new interface.
    */
-  async scanPackage(packageName: string) {
+  async scanPackage(packageName: string, forceScan = false) {
     if (this.scannedPackages.has(packageName)) {
       return;
     }
@@ -113,12 +113,12 @@ export class ProjectScanner {
         this.urlHandler,
         this.conversionSettings,
         new Set(topLevelEntrypoints));
-    await packageScanner.scanPackage();
+    await packageScanner.scanPackage(forceScan);
     // Add this scanner to our cache so that it won't get double scanned.
     this.scannedPackages.set(packageName, packageScanner);
     // Scan all dependencies of this package as well.
     for (const externalDependencyName of packageScanner.externalDependencies) {
-      await this.scanPackage(externalDependencyName);
+      await this.scanPackage(externalDependencyName, false);
     }
   }
 
