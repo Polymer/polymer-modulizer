@@ -114,6 +114,15 @@ export class PackageScanner {
    * Scan each document in a package manually.
    */
   scanPackageManually() {
+    // Scan top-level entrypoints first, to make sure thier dependencies are
+    // properly converted to JS modules as well.
+    for (const document of this.getPackageHtmlDocuments()) {
+      if (this.topLevelEntrypoints.has(
+              this.urlHandler.getDocumentUrl(document))) {
+        this.scanDocument(document);
+      }
+    }
+    // Scan all other documents, to be converted as top-level HTML files.
     for (const document of this.getPackageHtmlDocuments()) {
       this.scanDocument(document);
     }

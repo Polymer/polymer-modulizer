@@ -105,7 +105,7 @@ function createDiffConflictOutput(diffResult: any): string {
   return errorOutputLines.concat(['']).join(EOL);
 }
 
-suite.only('Fixtures', () => {
+suite('Fixtures', () => {
   suite('Packages', function() {
     this.timeout(60000);
 
