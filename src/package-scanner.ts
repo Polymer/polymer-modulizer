@@ -119,12 +119,12 @@ export class PackageScanner {
     for (const document of this.getPackageHtmlDocuments()) {
       if (this.topLevelEntrypoints.has(
               this.urlHandler.getDocumentUrl(document))) {
-        this.scanDocument(document);
+        this.scanDocument(document, 'js-module');
       }
     }
     // Scan all other documents, to be converted as top-level HTML files.
     for (const document of this.getPackageHtmlDocuments()) {
-      this.scanDocument(document);
+      this.scanDocument(document, 'html-document');
     }
   }
 
@@ -206,7 +206,8 @@ export class PackageScanner {
    * format (JS Module or HTML Document) is determined by whether the file is
    * included in conversionSettings.includes.
    */
-  private scanDocument(document: Document, forceJs = false) {
+  private scanDocument(
+      document: Document, scanAs: 'js-module'|'html-document') {
     console.assert(
         document.kinds.has('html-document'),
         `scanDocument() must be called with an HTML document, but got ${
@@ -215,13 +216,12 @@ export class PackageScanner {
       return;
     }
 
-    const documentUrl = this.urlHandler.getDocumentUrl(document);
     const documentConverter = new DocumentConverter(
         document, this.urlHandler, this.conversionSettings);
     let scanResult: JsModuleScanResult|HtmlDocumentScanResult|
         DeleteFileScanResult;
     try {
-      scanResult = (forceJs || this.topLevelEntrypoints.has(documentUrl)) ?
+      scanResult = scanAs === 'js-module' ?
           documentConverter.scanJsModule() :
           documentConverter.scanTopLevelHtmlDocument();
     } catch (e) {
@@ -267,7 +267,7 @@ export class PackageScanner {
           this.urlHandler.getOriginalPackageNameForUrl(importDocumentUrl);
 
       if (importPackageName === packageName) {
-        this.scanDocument(htmlImport.document, true);
+        this.scanDocument(htmlImport.document, 'js-module');
       } else {
         this.externalDependencies.add(importPackageName);
       }
