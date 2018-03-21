@@ -358,7 +358,12 @@ import '/node_modules/@polymer/app-route/app-route.js';
           assertSources(
               await convert({
                 npmPackageName: '@some-scope/some-package',
-                npmImportStyle: 'name'
+                npmImportStyle: 'name',
+                entrypoints: new Map([
+                  ['some-package', ['test.html' as OriginalDocumentUrl]],
+                  ['app-route', ['app-route.html' as OriginalDocumentUrl]],
+                  ['app-storage', ['app-storage.html' as OriginalDocumentUrl]],
+                ]),
               }),
               {
                 'test.js': `
@@ -1489,19 +1494,33 @@ export const Element = class Element {};
             'bower_components/shadycss/a.html': ``,
             'bower_components/shadycss/b.js': ``,
           });
-          assertSources(await convert({npmImportStyle: 'path'}), {
-            'test.js': `
+          assertSources(
+              await convert({
+                npmImportStyle: 'path',
+                entrypoints: new Map([
+                  ['some-package', ['test.html' as OriginalDocumentUrl]],
+                  [
+                    'shadycss',
+                    [
+                      'a.html' as OriginalDocumentUrl,
+                      'b.js' as OriginalDocumentUrl
+                    ]
+                  ],
+                ]),
+              }),
+              {
+                'test.js': `
 export const Element = class Element {};
 `,
 
-            'index.html': `
+                'index.html': `
 
                 <script type="module" src="./test.js"></script>
                 <script type="module" src="../@webcomponents/shadycss/a.js"></script>
                 <script src="../@webcomponents/shadycss/b.js"></script>
 
                 <div>Hello world!</div>`
-          });
+              });
         });
 
 
@@ -1522,19 +1541,33 @@ export const Element = class Element {};
             'bower_components/shadycss/a.html': ``,
             'bower_components/shadycss/b.js': ``,
           });
-          assertSources(await convert({npmImportStyle: 'name'}), {
-            'test.js': `
+          assertSources(
+              await convert({
+                npmImportStyle: 'name',
+                entrypoints: new Map([
+                  ['some-package', ['test.html' as OriginalDocumentUrl]],
+                  [
+                    'shadycss',
+                    [
+                      'a.html' as OriginalDocumentUrl,
+                      'b.js' as OriginalDocumentUrl
+                    ]
+                  ],
+                ]),
+              }),
+              {
+                'test.js': `
 export const Element = class Element {};
 `,
 
-            'index.html': `
+                'index.html': `
 
                 <script type="module" src="./test.js"></script>
                 <script type="module" src="../@webcomponents/shadycss/a.js"></script>
                 <script src="../@webcomponents/shadycss/b.js"></script>
 
                 <div>Hello world!</div>`
-          });
+              });
         });
 
     test('converts multiple scripts in one html file', async () => {
@@ -2432,6 +2465,7 @@ console.log("foo");
           assertSources(
               await convert({
                 entrypoints: new Map([
+                  ['some-package', ['test.html' as OriginalDocumentUrl]],
                   ['dep', ['dep.html' as OriginalDocumentUrl]],
                 ]),
               }),
