@@ -12,8 +12,10 @@
  * http://polymer.github.io/PATENTS.txt
  */
 
+import * as fse from 'fs-extra';
 import {Analysis} from 'polymer-analyzer';
 
+import {BowerConfig} from './bower-config';
 import {ConversionSettings} from './conversion-settings';
 import {ScanResult} from './document-converter';
 import {JsExport} from './js-module';
@@ -74,20 +76,46 @@ export class ProjectScanner {
   }
 
   /**
+   * Reads the entrypoints for a package from the `main` field in the package's
+   * 'bower.json' file.
+   */
+  private async readBowerJsonEntrypoints(packageName: string) {
+    const bowerJsonPath =
+        this.urlHandler.packageRelativeToOriginalUrl(packageName, 'bower.json');
+    const bowerJson = await fse.readJSON(bowerJsonPath) as Partial<BowerConfig>;
+    let bowerMainFiles = (bowerJson.main) || [];
+    if (!Array.isArray(bowerMainFiles)) {
+      bowerMainFiles = [bowerMainFiles];
+    }
+    return bowerMainFiles.map((relativeOriginalUrl) => {
+      return this.urlHandler.packageRelativeToOriginalUrl(
+          packageName, relativeOriginalUrl);
+    });
+  }
+
+  /**
    * Scan a document and any of its dependency packages for their new interface.
    */
-  async scanPackage(matchPackageName: string, forceScan = false) {
-    if (this.scannedPackages.has(matchPackageName)) {
+  async scanPackage(packageName: string, forceScan = false) {
+    if (this.scannedPackages.has(packageName)) {
       return;
     }
+
+    // If the package has custom entrypoints listed in the conversion settings,
+    // use those. Otherwise, read them from the package's 'bower.json'.
+    const topLevelEntrypoints =
+        this.conversionSettings.entrypoints.get(packageName) ||
+        await this.readBowerJsonEntrypoints(packageName);
+
     const packageScanner = new PackageScanner(
-        matchPackageName,
+        packageName,
         this.analysis,
         this.urlHandler,
-        this.conversionSettings);
+        this.conversionSettings,
+        new Set(topLevelEntrypoints));
     await packageScanner.scanPackage(forceScan);
     // Add this scanner to our cache so that it won't get double scanned.
-    this.scannedPackages.set(matchPackageName, packageScanner);
+    this.scannedPackages.set(packageName, packageScanner);
     // Scan all dependencies of this package as well.
     for (const externalDependencyName of packageScanner.externalDependencies) {
       await this.scanPackage(externalDependencyName, false);
