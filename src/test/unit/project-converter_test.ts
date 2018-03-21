@@ -78,12 +78,9 @@ suite('AnalysisConverter', () => {
         bowerPackageName = 'some-package',
         packageType = 'element',
         expectedWarnings = [],
-        entrypoints = new Map(),
+        entrypoints =
+            new Map([['some-package', ['test.html' as OriginalDocumentUrl]]]),
       } = partialOptions;
-
-      if (!entrypoints.has('some-package')) {
-        entrypoints.set('some-package', ['test.html']);
-      }
 
       const partialSettings: PartialConversionSettings = {
         namespaces: partialOptions.namespaces || ['Polymer'],
@@ -100,11 +97,6 @@ suite('AnalysisConverter', () => {
       // Setup ConversionSettings, set "test.html" as default entrypoint.
       const conversionSettings =
           createDefaultConversionSettings(analysis, partialSettings);
-      // conversionSettings.includes.add('test.html');
-      // if (partialOptions.includes) {
-      //   partialOptions.includes.forEach(
-      //       (str) => conversionSettings.includes.add(str));
-      // }
       // Setup ProjectScanner, use PackageUrlHandler for easy setup.
       const urlHandler = new PackageUrlHandler(
           analyzer, bowerPackageName, npmPackageName, packageType, __dirname);

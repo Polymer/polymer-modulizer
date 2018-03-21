@@ -127,8 +127,6 @@ suite('Fixtures', () => {
         const output = await runFixture(
             fixtureSourceDir, fixtureResultDir, fixtureTestConfig);
 
-        // console.log(output.stdout);
-
         // 1. Check stderr output that no (unexpected) errors were emitted.
         assert.equal(output.stderr, (fixtureTestConfig.stderr || ''));
         // 2. Compare the generated output to the expected conversion.
