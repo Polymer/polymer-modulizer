@@ -76,13 +76,10 @@ export class ProjectScanner {
   }
 
   /**
-   * Scan a document and any of its dependency packages for their new interface.
+   * Reads the entrypoints for a package from the `main` field in the package's
+   * 'bower.json' file.
    */
-  async scanPackage(packageName: string) {
-    if (this.scannedPackages.has(packageName)) {
-      return;
-    }
-
+  private async readBowerJsonEntrypoints(packageName: string) {
     const bowerJsonPath =
         this.urlHandler.packageRelativeToOriginalUrl(packageName, 'bower.json');
     const bowerJson = await fse.readJSON(bowerJsonPath) as Partial<BowerConfig>;
@@ -90,11 +87,27 @@ export class ProjectScanner {
     if (!Array.isArray(bowerMainFiles)) {
       bowerMainFiles = [bowerMainFiles];
     }
-    const topLevelEntrypoints: OriginalDocumentUrl[] =
-        bowerMainFiles.map((relativeOriginalUrl) => {
-          return this.urlHandler.packageRelativeToOriginalUrl(
-              packageName, relativeOriginalUrl);
-        });
+    return bowerMainFiles.map((relativeOriginalUrl) => {
+      return this.urlHandler.packageRelativeToOriginalUrl(
+          packageName, relativeOriginalUrl);
+    });
+  }
+
+  /**
+   * Scan a document and any of its dependency packages for their new interface.
+   */
+  async scanPackage(packageName: string) {
+    if (this.scannedPackages.has(packageName)) {
+      return;
+    }
+
+    // If the package has custom entrypoints listed in the conversion settings,
+    // use those. Otherwise, read them from the package's 'bower.json'.
+    const overriddenEntrypoints =
+        this.conversionSettings.entrypoints.get(packageName);
+    const topLevelEntrypoints = overriddenEntrypoints ?
+        overriddenEntrypoints :
+        await this.readBowerJsonEntrypoints(packageName);
     // console.log(packageName, bowerJsonPath, bowerMainFiles,
     // topLevelEntrypoints);
     const packageScanner = new PackageScanner(

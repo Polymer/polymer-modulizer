@@ -22,7 +22,7 @@ import {createDefaultConversionSettings, PartialConversionSettings} from '../../
 import {getMemberPath} from '../../document-util';
 import {ProjectConverter} from '../../project-converter';
 import {PackageUrlHandler} from '../../urls/package-url-handler';
-import {PackageType} from '../../urls/types';
+import {OriginalDocumentUrl, PackageType} from '../../urls/types';
 
 /*
 A few conventions in these tests:
@@ -67,7 +67,7 @@ suite('AnalysisConverter', () => {
       npmPackageName: string;
       packageType: PackageType;
       expectedWarnings: string[];
-      includes: string[];
+      entrypoints: Map<string, OriginalDocumentUrl[]>;
     }
 
     async function convert(
@@ -78,7 +78,13 @@ suite('AnalysisConverter', () => {
         bowerPackageName = 'some-package',
         packageType = 'element',
         expectedWarnings = [],
+        entrypoints = new Map(),
       } = partialOptions;
+
+      if (!entrypoints.has('some-package')) {
+        entrypoints.set('some-package', ['test.html']);
+      }
+
       const partialSettings: PartialConversionSettings = {
         namespaces: partialOptions.namespaces || ['Polymer'],
         excludes: partialOptions.excludes,
@@ -86,6 +92,7 @@ suite('AnalysisConverter', () => {
         addImportPath: partialOptions.addImportPath,
         flat: false,
         private: false,
+        entrypoints,
       };
       // Analyze all given files.
       const allTestUrls = [...urlLoader.urlContentsMap.keys()];
@@ -166,13 +173,21 @@ suite('AnalysisConverter', () => {
         `WARN: bower->npm mapping for "some-package" not found`,
         `WARN: bower->npm mapping for "dep" not found`,
       ];
-      assertSources(await convert({expectedWarnings}), {
-        'test.js': `
+      assertSources(
+          await convert({
+            expectedWarnings,
+            entrypoints: new Map([
+              ['some-package', ['test.html' as OriginalDocumentUrl]],
+              ['dep', ['dep.html' as OriginalDocumentUrl]]
+            ]),
+          }),
+          {
+            'test.js': `
 import './dep.js';
 import '../dep/dep.js';
 `,
-        'test.html': undefined
-      });
+            'test.html': undefined
+          });
     });
 
     test('converts dependency imports for an element', async () => {
@@ -189,17 +204,25 @@ import '../dep/dep.js';
         'bower_components/app-storage/app-storage.html': `<h1>Hi</h1>`,
         'bower_components/app-route/app-route.html': `<h1>Hi</h1>`,
       });
-      assertSources(await convert(), {
-        'test.js': `
+      assertSources(
+          await convert({
+            entrypoints: new Map([
+              ['some-package', ['test.html' as OriginalDocumentUrl]],
+              ['app-route', ['app-route.html' as OriginalDocumentUrl]],
+              ['app-storage', ['app-storage.html' as OriginalDocumentUrl]],
+            ]),
+          }),
+          {
+            'test.js': `
 import './nested/test.js';
 import '../@polymer/app-storage/app-storage.js';
 `,
-        'nested/test.js': `
+            'nested/test.js': `
 import '../../@polymer/app-route/app-route.js';
 `,
-        'test.html': undefined,
-        'nested/test.html': undefined,
-      });
+            'test.html': undefined,
+            'nested/test.html': undefined,
+          });
     });
 
     test(
@@ -219,7 +242,15 @@ import '../../@polymer/app-route/app-route.js';
             'bower_components/app-storage/app-storage.html': `<h1>Hi</h1>`,
           });
           assertSources(
-              await convert({npmPackageName: '@some-scope/some-package'}), {
+              await convert({
+                npmPackageName: '@some-scope/some-package',
+                entrypoints: new Map([
+                  ['some-package', ['test.html' as OriginalDocumentUrl]],
+                  ['app-route', ['app-route.html' as OriginalDocumentUrl]],
+                  ['app-storage', ['app-storage.html' as OriginalDocumentUrl]],
+                ]),
+              }),
+              {
                 'test.js': `
 import './nested/test.js';
 import '../../@polymer/app-storage/app-storage.js';
@@ -246,17 +277,26 @@ import '../../../@polymer/app-route/app-route.js';
         'bower_components/app-route/app-route.html': `<h1>Hi</h1>`,
         'bower_components/app-storage/app-storage.html': `<h1>Hi</h1>`,
       });
-      assertSources(await convert({packageType: 'application'}), {
-        'test.js': `
+      assertSources(
+          await convert({
+            packageType: 'application',
+            entrypoints: new Map([
+              ['some-package', ['test.html' as OriginalDocumentUrl]],
+              ['app-route', ['app-route.html' as OriginalDocumentUrl]],
+              ['app-storage', ['app-storage.html' as OriginalDocumentUrl]],
+            ]),
+          }),
+          {
+            'test.js': `
 import './nested/test.js';
 import './node_modules/@polymer/app-storage/app-storage.js';
 import '/node_modules/@polymer/app-route/app-route.js';
 `,
-        'nested/test.js': `
+            'nested/test.js': `
 import '../node_modules/@polymer/app-storage/app-storage.js';
 import '/node_modules/@polymer/app-route/app-route.js';
 `,
-      });
+          });
     });
 
     test(
@@ -277,17 +317,26 @@ import '/node_modules/@polymer/app-route/app-route.js';
             'bower_components/app-route/app-route.html': `<h1>Hi</h1>`,
             'bower_components/app-storage/app-storage.html': `<h1>Hi</h1>`,
           });
-          assertSources(await convert({packageType: 'application'}), {
-            'test.js': `
+          assertSources(
+              await convert({
+                packageType: 'application',
+                entrypoints: new Map([
+                  ['some-package', ['test.html' as OriginalDocumentUrl]],
+                  ['app-route', ['app-route.html' as OriginalDocumentUrl]],
+                  ['app-storage', ['app-storage.html' as OriginalDocumentUrl]],
+                ]),
+              }),
+              {
+                'test.js': `
 import './nested/test.js';
 import './node_modules/@polymer/app-storage/app-storage.js';
 import '/node_modules/@polymer/app-route/app-route.js';
 `,
-            'nested/test.js': `
+                'nested/test.js': `
 import '../node_modules/@polymer/app-storage/app-storage.js';
 import '/node_modules/@polymer/app-route/app-route.js';
 `,
-          });
+              });
         });
 
     test('converts imports to .js without scripts', async () => {
@@ -1673,14 +1722,25 @@ console.log(foo.document.currentScript.ownerDocument);
         'bower_components/shadycss/apply-shim.html': ``,
       });
 
-      assertSources(await convert(), {
-        'test.js': `
+      assertSources(
+          await convert({
+            entrypoints: new Map([
+              ['some-package', ['test.html' as OriginalDocumentUrl]],
+              [
+                'shadycss',
+                ['custom-style-interface.html' as OriginalDocumentUrl],
+                ['apply-shim.html' as OriginalDocumentUrl],
+              ],
+            ]),
+          }),
+          {
+            'test.js': `
 import '../@webcomponents/shadycss/entrypoints/custom-style-interface.js';
 import '../@webcomponents/shadycss/entrypoints/apply-shim.js';
 console.log(ShadyCSS.flush());
 `,
 
-        'index.html': `
+            'index.html': `
 
           <script type="module" src="../@webcomponents/shadycss/entrypoints/custom-style-interface.js"></script>
           <script type="module" src="../@webcomponents/shadycss/entrypoints/apply-shim.js"></script>
@@ -1690,7 +1750,7 @@ import '../@webcomponents/shadycss/entrypoints/apply-shim.js';
 console.log(ShadyCSS.flush());
 </script>
         `
-      });
+          });
     });
 
     testName = `handles inline scripts that write to global configuration ` +
@@ -1716,8 +1776,19 @@ console.log(ShadyCSS.flush());
         'bower_components/shadycss/apply-shim.html': ``,
       });
 
-      assertSources(await convert(), {
-        'index.html': `
+      assertSources(
+          await convert({
+            entrypoints: new Map([
+              ['some-package', ['test.html' as OriginalDocumentUrl]],
+              [
+                'shadycss',
+                ['custom-style-interface.html' as OriginalDocumentUrl],
+                ['apply-shim.html' as OriginalDocumentUrl],
+              ],
+            ]),
+          }),
+          {
+            'index.html': `
 
           <script>
             window.ShadyDOM = {force: true};
@@ -1735,7 +1806,7 @@ import '../@webcomponents/shadycss/entrypoints/apply-shim.js';
 console.log(ShadyDOM.flush());
 </script>
         `
-      });
+          });
     });
 
     testName =
@@ -1894,12 +1965,29 @@ setBaz(foo + 10 * (10 ** 10));
 
       assertSources(
           await convert({
-            includes: [
-              'test.html',
-              'test2.html',
-              'bower_components/app-storage/app-storage.html',
-              'bower_components/app-route/app-route.html',
-            ],
+            entrypoints: new Map([
+              [
+                'some-package',
+                [
+                  'test.html' as OriginalDocumentUrl,
+                  'test2.html' as OriginalDocumentUrl,
+                ]
+              ],
+              [
+                'app-storage',
+                [
+                  'bower_components/app-storage/app-storage.html' as
+                      OriginalDocumentUrl,
+                ]
+              ],
+              [
+                'app-route',
+                [
+                  'bower_components/app-route/app-route.html' as
+                      OriginalDocumentUrl,
+                ]
+              ],
+            ]),
             expectedWarnings: [
               'CONFLICT: JS Export Polymer.foo claimed by two packages: ./node_modules/@polymer/app-route/app-route.js & ./node_modules/@polymer/app-storage/app-storage.js',
               'CONFLICT: JS Export Polymer.foo claimed by two packages: ./node_modules/@polymer/app-route/app-route.js & ./node_modules/@polymer/app-storage/app-storage.js',
@@ -1929,18 +2017,33 @@ console.log(foo);
         `
       });
       let expectedWarnings = [`WARN: bower->npm mapping for "foo" not found`];
-      assertSources(await convert({expectedWarnings}), {
-        'index.html': `
+      assertSources(
+          await convert({
+            expectedWarnings,
+            entrypoints: new Map([
+              [
+                'some-package',
+                [/* index.html not included: it is not an HTML import */]
+              ],
+              ['foo', ['foo.js' as OriginalDocumentUrl]],
+            ]),
+          }),
+          {
+            'index.html': `
 
           <script src="../foo/foo.js"></script>
         `,
-      });
+          });
       // Warnings are memoized, duplicates are not expected
       expectedWarnings = [];
       assertSources(
           await convert({
             bowerPackageName: 'polymer',
             npmPackageName: '@polymer/polymer',
+            entrypoints: new Map([
+              ['polymer', []],
+              ['foo', ['foo.js' as OriginalDocumentUrl]],
+            ]),
             expectedWarnings
           }),
           {
@@ -1979,7 +2082,10 @@ console.log(foo);
       assertSources(
           await convert({
             bowerPackageName: 'polymer',
-            npmPackageName: '@polymer/polymer'
+            npmPackageName: '@polymer/polymer',
+            entrypoints: new Map([
+              ['polymer', ['test.html' as OriginalDocumentUrl]],
+            ]),
           }),
           {
             'test.js': `
@@ -2015,7 +2121,10 @@ Polymer({
       assertSources(
           await convert({
             bowerPackageName: 'polymer',
-            npmPackageName: '@polymer/polymer'
+            npmPackageName: '@polymer/polymer',
+            entrypoints: new Map([
+              ['polymer', ['test.html' as OriginalDocumentUrl]],
+            ]),
           }),
           {
             'test.js': `
@@ -2246,11 +2355,17 @@ console.log("foo");
             'bower_components/dep/dep.js': 'console.log("foo");'
           });
 
-          assertSources(await convert(), {
-            'test.js': `
+          assertSources(
+              await convert({
+                entrypoints: new Map([
+                  ['dep', ['dep.html' as OriginalDocumentUrl]],
+                ]),
+              }),
+              {
+                'test.js': `
 import '../dep/dep.js';
 `
-          });
+              });
         });
 
     testName = `don't treat all values on a namespace as namespaces themselves`;
@@ -2312,16 +2427,22 @@ export const foo = 10;
           </script>
         `,
       });
-      assertSources(await convert(), {
-        'a.js': `
+      assertSources(
+          await convert({
+            entrypoints: new Map([
+              ['some-package', ['a.html' as OriginalDocumentUrl]],
+            ]),
+          }),
+          {
+            'a.js': `
 import './b.js';
 export const foo = 5;
 `,
-        'b.js': `
+            'b.js': `
 import './a.js';
 export const bar = 20;
 `
-      });
+          });
     });
 
     testName = `Deal with cyclic references`;
@@ -2347,15 +2468,21 @@ export const bar = 20;
           </script>
       `
       });
-      assertSources(await convert(), {
-        'a.js': `
+      assertSources(
+          await convert({
+            entrypoints: new Map([
+              ['some-package', ['a.html' as OriginalDocumentUrl]],
+            ]),
+          }),
+          {
+            'a.js': `
 import { bar } from './b.js';
 
 export const foo = function() {
   return bar || 10;
 };
 `,
-        'b.js': `
+            'b.js': `
 import { foo } from './a.js';
 
 export const bar = (function() {
@@ -2365,7 +2492,7 @@ export const bar = (function() {
   return 5;
 })();
 `,
-      });
+          });
     });
 
     testName = `don't inline nonstandard dom-modules`;

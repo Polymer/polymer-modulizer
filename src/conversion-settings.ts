@@ -17,6 +17,8 @@ import {Iterable as IterableX} from 'ix';
 import * as jsc from 'jscodeshift';
 import {Analysis, Analyzer} from 'polymer-analyzer';
 
+import {OriginalDocumentUrl} from './urls/types';
+
 export type NpmImportStyle = 'name'|'path';
 
 /**
@@ -29,6 +31,13 @@ export interface ConversionSettings {
    * Namespace names used to detect exports.
    */
   readonly namespaces: Set<string>;
+
+  /**
+   * A map from original package names to entrypoints to be used when converting
+   * each listed package. Setting an entry in this map completely replaces the
+   * default entrypoints for that package.
+   */
+  readonly entrypoints: Map<string, OriginalDocumentUrl[]>;
 
   /**
    * Files to exclude from conversion (ie lib/utils/boot.html).
@@ -81,6 +90,8 @@ export interface PartialConversionSettings {
    * code with an `@namespace` declaration are automatically detected.
    */
   readonly namespaces?: Iterable<string>;
+
+  readonly entrypoints?: Map<string, OriginalDocumentUrl[]>;
 
   /**
    * Files to exclude from conversion (ie `lib/utils/boot.html`). Imports
@@ -160,6 +171,8 @@ export function createDefaultConversionSettings(
   const namespaces =
       new Set(getNamespaceNames(analysis).concat(options.namespaces || []));
 
+  const entrypoints = options.entrypoints || new Map();
+
   // Configure "excludes":
   const excludes = new Set(
       [...(options.excludes || []), 'neon-animation/web-animations.html']);
@@ -191,6 +204,7 @@ export function createDefaultConversionSettings(
   // Return configured settings.
   return {
     namespaces,
+    entrypoints,
     excludes,
     referenceExcludes,
     referenceRewrites,
