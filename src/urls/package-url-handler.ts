@@ -58,7 +58,11 @@ export class PackageUrlHandler implements UrlHandler {
   }
 
   getPackageDir(packageName: string): string {
-    return path.join(this.packageDir, packageName);
+    if (packageName === this.bowerPackageName) {
+      return this.packageDir;
+    } else {
+      return path.join(this.packageDir, 'bower_components', packageName);
+    }
   }
 
   /**
