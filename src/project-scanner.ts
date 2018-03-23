@@ -13,6 +13,7 @@
  */
 
 import * as fse from 'fs-extra';
+import * as path from 'path';
 import {Analysis} from 'polymer-analyzer';
 
 import {BowerConfig} from './bower-config';
@@ -81,12 +82,24 @@ export class ProjectScanner {
    */
   private async readBowerJsonEntrypoints(packageName: string) {
     const bowerJsonPath =
-        this.urlHandler.packageRelativeToOriginalUrl(packageName, 'bower.json');
-    const bowerJson = await fse.readJSON(bowerJsonPath) as Partial<BowerConfig>;
-    let bowerMainFiles = (bowerJson.main) || [];
-    if (!Array.isArray(bowerMainFiles)) {
-      bowerMainFiles = [bowerMainFiles];
+        path.join(this.urlHandler.getPackageDir(packageName), 'bower.json');
+
+    let bowerJson: Partial<BowerConfig>|undefined = undefined;
+    try {
+      bowerJson = await fse.readJSON(bowerJsonPath) as Partial<BowerConfig>;
+    } catch {
+      console.warn(
+          `Failed to read entrypoints of package '${packageName}' because ` +
+          `the package does not have a 'bower.json' file.`);
     }
+
+    let bowerMainFiles = bowerJson ? bowerJson.main : [];
+    if (typeof bowerMainFiles === 'string') {
+      bowerMainFiles = [bowerMainFiles];
+    } else if (bowerMainFiles === undefined) {
+      bowerMainFiles = [];
+    }
+
     return bowerMainFiles.map((relativeOriginalUrl) => {
       return this.urlHandler.packageRelativeToOriginalUrl(
           packageName, relativeOriginalUrl);
