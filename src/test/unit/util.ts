@@ -13,11 +13,14 @@
  */
 
 /**
- * Call to begin capturing all output. Call the returned function to
- * stop capturing output and get the contents as a string.
+ * Takes an AIIFE and captures its console.log (etc) output as a string.
  *
- * Captures output from console.log and friends. Does not capture plylog, which
- * doesn't seem to be very easy to intercept.
+ * More specifically, this function immediately begins capturing the output of
+ * console.log and friends. It then calls `captured`. When it resolves, this
+ * method stops capturing and returns the output as a string.
+ *
+ * Does not capture plylog, or direct writes to process.stdout and friends,
+ * which don't seem to be very easy to intercept.
  */
 export async function interceptOutput(captured: () => Promise<void>):
     Promise<string> {
