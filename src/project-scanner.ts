@@ -80,17 +80,17 @@ export class ProjectScanner {
    * Reads the entrypoints for a package from the `main` field in the package's
    * 'bower.json' file.
    */
-  private async readBowerJsonEntrypoints(packageName: string) {
-    const bowerJsonPath =
-        path.join(this.urlHandler.getPackageDir(packageName), 'bower.json');
+  private async readBowerJsonEntrypoints(bowerPackageName: string) {
+    const bowerJsonPath = path.join(
+        this.urlHandler.getPackageDir(bowerPackageName), 'bower.json');
 
     let bowerJson: Partial<BowerConfig>|undefined = undefined;
     try {
       bowerJson = await fse.readJSON(bowerJsonPath) as Partial<BowerConfig>;
     } catch {
       console.warn(
-          `Failed to read entrypoints of package '${packageName}' because ` +
-          `the package does not have a 'bower.json' file.`);
+          `Failed to read entrypoints of package '${bowerPackageName}' ` +
+          `because the package does not have a 'bower.json' file.`);
     }
 
     let bowerMainFiles = bowerJson ? bowerJson.main : [];
@@ -100,35 +100,34 @@ export class ProjectScanner {
       bowerMainFiles = [];
     }
 
-    return bowerMainFiles.map((relativeOriginalUrl) => {
-      return this.urlHandler.packageRelativeToOriginalUrl(
-          packageName, relativeOriginalUrl);
-    });
+    return bowerMainFiles.map(
+        (relativeOriginalUrl) => this.urlHandler.packageRelativeToOriginalUrl(
+            bowerPackageName, relativeOriginalUrl));
   }
 
   /**
    * Scan a document and any of its dependency packages for their new interface.
    */
-  async scanPackage(packageName: string, forceScan = false) {
-    if (this.scannedPackages.has(packageName)) {
+  async scanPackage(bowerPackageName: string, forceScan = false) {
+    if (this.scannedPackages.has(bowerPackageName)) {
       return;
     }
 
     // If the package has custom entrypoints listed in the conversion settings,
     // use those. Otherwise, read them from the package's 'bower.json'.
     const topLevelEntrypoints =
-        this.conversionSettings.packageEntrypoints.get(packageName) ||
-        await this.readBowerJsonEntrypoints(packageName);
+        this.conversionSettings.packageEntrypoints.get(bowerPackageName) ||
+        await this.readBowerJsonEntrypoints(bowerPackageName);
 
     const packageScanner = new PackageScanner(
-        packageName,
+        bowerPackageName,
         this.analysis,
         this.urlHandler,
         this.conversionSettings,
         new Set(topLevelEntrypoints));
     await packageScanner.scanPackage(forceScan);
     // Add this scanner to our cache so that it won't get double scanned.
-    this.scannedPackages.set(packageName, packageScanner);
+    this.scannedPackages.set(bowerPackageName, packageScanner);
     // Scan all dependencies of this package as well.
     for (const externalDependencyName of packageScanner.externalDependencies) {
       await this.scanPackage(externalDependencyName, false);
