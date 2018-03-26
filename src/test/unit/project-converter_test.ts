@@ -565,7 +565,7 @@ export const Polymer = function(info) {
           const options = {
             bowerPackageName: 'polymer',
             npmPackageName: '@polymer/polymer',
-            entrypoints: new Map([
+            packageEntrypoints: new Map([
               [
                 'polymer',
                 [
@@ -613,7 +613,7 @@ export const bar = 43;
           const options = {
             bowerPackageName: 'polymer',
             npmPackageName: '@polymer/polymer',
-            entrypoints: new Map([
+            packageEntrypoints: new Map([
               [
                 'polymer',
                 [
@@ -678,7 +678,7 @@ export const bar = 43;
           const options = {
             bowerPackageName: 'polymer',
             npmPackageName: '@polymer/polymer',
-            entrypoints: new Map([
+            packageEntrypoints: new Map([
               [
                 'polymer',
                 [
@@ -737,7 +737,7 @@ export const bar = 43;
         const options = {
           bowerPackageName: 'polymer',
           npmPackageName: '@polymer/polymer',
-          entrypoints: new Map([
+          packageEntrypoints: new Map([
             [
               'polymer',
               [
