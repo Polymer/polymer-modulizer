@@ -227,9 +227,9 @@ export const ElementMixin = dedupingMixin(base => {
         } else {
           template = template.cloneNode(true);
         }
-        this.prototype._template = template;
       }
 
+      this.prototype._template = template;
     }
 
     /**
@@ -525,6 +525,9 @@ export const ElementMixin = dedupingMixin(base => {
      * Example: `this.updateStyles({'--color': 'blue'})`
      *
      * These properties are retained unless a value of `null` is set.
+     *
+     * Note: This function does not support updating CSS mixins.
+     * You can not dynamically change the value of an `@apply`.
      *
      * @param {Object=} properties Bag of custom property key/values to
      *   apply to this element.
