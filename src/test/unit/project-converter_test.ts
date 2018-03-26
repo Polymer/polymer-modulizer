@@ -565,6 +565,15 @@ export const Polymer = function(info) {
           const options = {
             bowerPackageName: 'polymer',
             npmPackageName: '@polymer/polymer',
+            entrypoints: new Map([
+              [
+                'polymer',
+                [
+                  'test.html' as OriginalDocumentUrl,
+                  'polymer.html' as OriginalDocumentUrl,
+                ]
+              ],
+            ]),
           };
           assertSources(await convert(options), {
             'test.js': `
@@ -604,6 +613,15 @@ export const bar = 43;
           const options = {
             bowerPackageName: 'polymer',
             npmPackageName: '@polymer/polymer',
+            entrypoints: new Map([
+              [
+                'polymer',
+                [
+                  'test.html' as OriginalDocumentUrl,
+                  'polymer.html' as OriginalDocumentUrl,
+                ]
+              ],
+            ]),
           };
           assertSources(await convert(options), {
             'test.js': `
@@ -660,6 +678,16 @@ export const bar = 43;
           const options = {
             bowerPackageName: 'polymer',
             npmPackageName: '@polymer/polymer',
+            entrypoints: new Map([
+              [
+                'polymer',
+                [
+                  'test.html' as OriginalDocumentUrl,
+                  'some-folder/file-1.html' as OriginalDocumentUrl,
+                  'some-folder/file-2.html' as OriginalDocumentUrl,
+                ]
+              ],
+            ]),
           };
           assertSources(await convert(options), {
             'test.js': `
@@ -709,6 +737,15 @@ export const bar = 43;
         const options = {
           bowerPackageName: 'polymer',
           npmPackageName: '@polymer/polymer',
+          entrypoints: new Map([
+            [
+              'polymer',
+              [
+                'test.html' as OriginalDocumentUrl,
+                'polymer-element.html' as OriginalDocumentUrl,
+              ]
+            ],
+          ]),
         };
         assertSources(await convert(options), {
           'test.js': `
