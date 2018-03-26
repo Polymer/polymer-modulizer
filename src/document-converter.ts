@@ -26,8 +26,8 @@ import {Document, Import, isPositionInsideRange, ParsedHtmlDocument, Severity, W
 import * as recast from 'recast';
 
 import {ConversionSettings} from './conversion-settings';
-import {attachCommentsToFirstStatement, canDomModuleBeInlined, collectIdentifierNames, containsWriteToGlobalSettingsObject, createDomNodeInsertStatements, filterClone, findAvailableIdentifier, getCommentsBetween, getMemberPath, getNodePathInProgram, getPathOfAssignmentTo, getSetterName, insertStatementsIntoProgramBody, serializeNode, serializeNodeToTemplateLiteral} from './document-util';
-import {ConversionResult, JsExport, NamespaceMemberToExport} from './js-module';
+import {attachCommentsToFirstStatement, canDomModuleBeInlined, collectIdentifierNames, containsWriteToGlobalSettingsObject, createDomNodeInsertStatements, filterClone, findAvailableIdentifier, generateAliasRequests, generateMemberPathAliases, getCommentsBetween, getMemberPath, getNodePathInProgram, getPathOfAssignmentTo, getSetterName, insertStatementsIntoProgramBody, serializeNode, serializeNodeToTemplateLiteral} from './document-util';
+import {ConversionResult, ImportReference, JsExport, NamespaceMemberToExport} from './js-module';
 import {addA11ySuiteIfUsed} from './passes/add-a11y-suite-if-used';
 import {removeNamespaceInitializers} from './passes/remove-namespace-initializers';
 import {removeToplevelUseStrict} from './passes/remove-toplevel-use-strict';
@@ -114,16 +114,6 @@ function isLegacyJavaScriptTag(scriptNode: parse5.ASTNode) {
   return legacyJavascriptTypes.has(dom5.getAttribute(scriptNode, 'type'));
 }
 
-/**
- * Pairs a subtree of an AST (`path` as a `NodePath`) to be replaced with a
- * reference to a particular import binding represented by the JSExport
- * `target`.
- */
-type ImportReference = {
-  path: NodePath,
-  target: JsExport,
-};
-
 /** Represents a change to a portion of a file. */
 interface Edit {
   offsets: [number, number];
@@ -174,12 +164,15 @@ function getImportDeclarations(
     specifierUrl: string,
     namedImports: Iterable<JsExport>,
     importReferences: ReadonlySet<ImportReference> = new Set(),
-    usedIdentifiers: Set<string> = new Set()): estree.ImportDeclaration[] {
+    usedIdentifiers: Set<string> = new Set(),
+    aliasRequests: ReadonlyMap<JsExport, ReadonlyArray<string>>):
+    estree.ImportDeclaration[] {
   // A map from imports (as `JsExport`s) to their assigned specifier names.
   const assignedNames = new Map<JsExport, string>();
   // Find an unused identifier and mark it as used.
-  function assignAlias(import_: JsExport, requestedAlias: string) {
-    const alias = findAvailableIdentifier(requestedAlias, usedIdentifiers);
+  function assignAlias(
+      import_: JsExport, requestedAliases: ReadonlyArray<string>) {
+    const alias = findAvailableIdentifier(requestedAliases, usedIdentifiers);
     usedIdentifiers.add(alias);
     assignedNames.set(import_, alias);
     return alias;
@@ -190,7 +183,8 @@ function getImportDeclarations(
       namedImportsArray.filter((import_) => import_.name !== '*')
           .map((import_) => {
             const name = import_.name;
-            const alias = assignAlias(import_, import_.name);
+            const alias =
+                assignAlias(import_, aliasRequests.get(import_) || []);
 
             if (alias === name) {
               return jsc.importSpecifier(jsc.identifier(name));
@@ -212,7 +206,7 @@ function getImportDeclarations(
 
   const namespaceImport = namespaceImports[0];
   if (namespaceImport) {
-    const alias = assignAlias(namespaceImport, getModuleId(specifierUrl));
+    const alias = assignAlias(namespaceImport, [getModuleId(specifierUrl)]);
 
     importDeclarations.push(jsc.importDeclaration(
         [jsc.importNamespaceSpecifier(jsc.identifier(alias))],
@@ -966,11 +960,9 @@ export class DocumentConverter {
   }
 
   /**
-   * Rewrite namespaced references to the imported name. e.g. changes
-   * Polymer.Element -> $Element
+   * Finds namespaced references to the imported name.
    *
-   * Returns a map of from url to identifier of the references we should
-   * import.
+   * Returns a map of from url to the references we should import.
    */
   private collectNamespacedReferences(
       program: Program, namespacedExports: Map<string, JsExport>):
@@ -984,13 +976,14 @@ export class DocumentConverter {
      * Add the given JsExport and referencing NodePath to this.module's
      * `importedReferences` map.
      */
-    const addToImportedReferences = (target: JsExport, path: NodePath) => {
+    const addToImportedReferences = (ref: ImportReference) => {
+      const {target} = ref;
       let moduleImportedNames = importedReferences.get(target.url);
       if (moduleImportedNames === undefined) {
         moduleImportedNames = new Set<ImportReference>();
         importedReferences.set(target.url, moduleImportedNames);
       }
-      moduleImportedNames.add({target, path});
+      moduleImportedNames.add(ref);
     };
 
     astTypes.visit(program, {
@@ -1007,7 +1000,11 @@ export class DocumentConverter {
           return false;
         }
         // Store the imported reference
-        addToImportedReferences(exportOfMember, path);
+        addToImportedReferences({
+          target: exportOfMember,
+          path,
+          requestedIdentifiers: [memberName],
+        });
         return false;
       },
       visitMemberExpression(path: NodePath<estree.MemberExpression>) {
@@ -1025,13 +1022,22 @@ export class DocumentConverter {
             this.traverse(path);
             return;
           }
+          // This identifier (`IMPORT_REFERENCE_REPLACEMENT_FAILED`) is needed
+          // to create a valid call expression even though it will always be
+          // replaced later, during import aliasing, because it is used as the
+          // `path` of the `ImportReference` created below.
           const [callPath] = assignmentPath.replace(jsc.callExpression(
-              jsc.identifier(setterName), [assignmentPath.node.right]));
+              jsc.identifier('IMPORT_REFERENCE_REPLACEMENT_FAILED'),
+              [assignmentPath.node.right]));
           if (!callPath) {
             throw new Error(
                 'Failed to replace a namespace object property set with a setter function call.');
           }
-          addToImportedReferences(exportOfMember, callPath.get('callee')!);
+          addToImportedReferences({
+            target: exportOfMember,
+            path: callPath.get('callee')!,
+            requestedIdentifiers: generateMemberPathAliases(memberPath),
+          });
           return false;
         }
         const exportOfMember = namespacedExports.get(memberName);
@@ -1040,7 +1046,11 @@ export class DocumentConverter {
           return;
         }
         // Store the imported reference
-        addToImportedReferences(exportOfMember, path);
+        addToImportedReferences({
+          target: exportOfMember,
+          path,
+          requestedIdentifiers: generateMemberPathAliases(memberPath),
+        });
         return false;
       }
     });
@@ -1174,6 +1184,15 @@ export class DocumentConverter {
     }
     const usedIdentifiers = collectIdentifierNames(program, ignoredIdentifiers);
 
+    const allImportReferences = new Set();
+    for (const refs of importedReferences.values()) {
+      for (const ref of refs) {
+        allImportReferences.add(ref);
+      }
+    }
+    const aliasRequests: Map<JsExport, string[]> =
+        generateAliasRequests(allImportReferences, usedIdentifiers);
+
     const jsExplicitImports = new Set<string>();
     // Rewrite HTML Imports to JS imports
     const jsImportDeclarations = [];
@@ -1188,7 +1207,11 @@ export class DocumentConverter {
       const jsFormattedImportUrl =
           this.formatImportUrl(importedJsDocumentUrl, htmlImport.originalUrl);
       jsImportDeclarations.push(...getImportDeclarations(
-          jsFormattedImportUrl, namedExports, references, usedIdentifiers));
+          jsFormattedImportUrl,
+          namedExports,
+          references,
+          usedIdentifiers,
+          aliasRequests));
 
       jsExplicitImports.add(importedJsDocumentUrl);
     }
@@ -1203,7 +1226,11 @@ export class DocumentConverter {
           new Set(IterableX.from(references || []).map((ref) => ref.target));
       const jsFormattedImportUrl = this.formatImportUrl(jsImplicitImportUrl);
       jsImportDeclarations.push(...getImportDeclarations(
-          jsFormattedImportUrl, namedExports, references, usedIdentifiers));
+          jsFormattedImportUrl,
+          namedExports,
+          references,
+          usedIdentifiers,
+          aliasRequests));
     }
 
     // Prepend JS imports into the program body

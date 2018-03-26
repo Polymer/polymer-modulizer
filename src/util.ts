@@ -133,3 +133,25 @@ export async function deleteGlobsSafe(
   }
   await Promise.all([...toDelete].map((filepath) => fse.remove(filepath)));
 }
+
+export function joinCamelCase(arr: ReadonlyArray<string>) {
+  return arr
+      .map((str, i) => i === 0 ? str : str[0].toUpperCase() + str.slice(1))
+      .join('');
+}
+
+export function invertMultimap<K, V>(multimap: ReadonlyMap<K, Iterable<V>>):
+    Map<V, Set<K>> {
+  const inverse = new Map<V, Set<K>>();
+  for (const [key, values] of multimap) {
+    for (const value of values) {
+      const keysWithValue = inverse.get(value);
+      if (keysWithValue === undefined) {
+        inverse.set(value, new Set([key]));
+        continue;
+      }
+      keysWithValue.add(key);
+    }
+  }
+  return inverse;
+}
