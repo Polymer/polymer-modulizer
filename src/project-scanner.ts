@@ -117,7 +117,7 @@ export class ProjectScanner {
     // If the package has custom entrypoints listed in the conversion settings,
     // use those. Otherwise, read them from the package's 'bower.json'.
     const topLevelEntrypoints =
-        this.conversionSettings.entrypoints.get(packageName) ||
+        this.conversionSettings.packageEntrypoints.get(packageName) ||
         await this.readBowerJsonEntrypoints(packageName);
 
     const packageScanner = new PackageScanner(
