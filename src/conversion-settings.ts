@@ -37,7 +37,7 @@ export interface ConversionSettings {
    * each listed package. Setting an entry in this map completely replaces the
    * default entrypoints for that package.
    */
-  readonly entrypoints: Map<string, OriginalDocumentUrl[]>;
+  readonly packageEntrypoints: Map<string, OriginalDocumentUrl[]>;
 
   /**
    * Files to exclude from conversion (ie lib/utils/boot.html).
@@ -91,7 +91,7 @@ export interface PartialConversionSettings {
    */
   readonly namespaces?: Iterable<string>;
 
-  readonly entrypoints?: Map<string, OriginalDocumentUrl[]>;
+  readonly packageEntrypoints?: Map<string, OriginalDocumentUrl[]>;
 
   /**
    * Files to exclude from conversion (ie `lib/utils/boot.html`). Imports
@@ -170,7 +170,8 @@ export function createDefaultConversionSettings(
   const namespaces =
       new Set(getNamespaceNames(analysis).concat(options.namespaces || []));
 
-  const entrypoints = options.entrypoints || new Map();
+  // Configure "packageEntrypoints":
+  const packageEntrypoints = options.packageEntrypoints || new Map();
 
   // Configure "excludes":
   const excludes = new Set(
@@ -203,7 +204,7 @@ export function createDefaultConversionSettings(
   // Return configured settings.
   return {
     namespaces,
-    entrypoints,
+    packageEntrypoints,
     excludes,
     referenceExcludes,
     referenceRewrites,

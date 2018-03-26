@@ -74,7 +74,7 @@ suite('AnalysisConverter', () => {
       packageType: PackageType;
       npmImportStyle: NpmImportStyle;
       expectedWarnings: string[];
-      entrypoints: Map<string, OriginalDocumentUrl[]>;
+      packageEntrypoints: Map<string, OriginalDocumentUrl[]>;
     }
 
     async function convert(
@@ -85,7 +85,7 @@ suite('AnalysisConverter', () => {
         bowerPackageName = 'some-package',
         packageType = 'element',
         expectedWarnings = [],
-        entrypoints =
+        packageEntrypoints =
             new Map([['some-package', ['test.html' as OriginalDocumentUrl]]]),
       } = partialOptions;
 
@@ -97,7 +97,7 @@ suite('AnalysisConverter', () => {
         addImportPath: partialOptions.addImportPath,
         flat: false,
         private: false,
-        entrypoints,
+        packageEntrypoints,
       };
       // Analyze all given files.
       const allTestUrls = [...urlLoader.urlContentsMap.keys()];
@@ -175,7 +175,7 @@ suite('AnalysisConverter', () => {
       assertSources(
           await convert({
             expectedWarnings,
-            entrypoints: new Map([
+            packageEntrypoints: new Map([
               ['some-package', ['test.html' as OriginalDocumentUrl]],
               ['dep', ['dep.html' as OriginalDocumentUrl]]
             ]),
@@ -205,7 +205,7 @@ import '../dep/dep.js';
       });
       assertSources(
           await convert({
-            entrypoints: new Map([
+            packageEntrypoints: new Map([
               ['some-package', ['test.html' as OriginalDocumentUrl]],
               ['app-route', ['app-route.html' as OriginalDocumentUrl]],
               ['app-storage', ['app-storage.html' as OriginalDocumentUrl]],
@@ -243,7 +243,7 @@ import '../../@polymer/app-route/app-route.js';
           assertSources(
               await convert({
                 npmPackageName: '@some-scope/some-package',
-                entrypoints: new Map([
+                packageEntrypoints: new Map([
                   ['some-package', ['test.html' as OriginalDocumentUrl]],
                   ['app-route', ['app-route.html' as OriginalDocumentUrl]],
                   ['app-storage', ['app-storage.html' as OriginalDocumentUrl]],
@@ -279,7 +279,7 @@ import '../../../@polymer/app-route/app-route.js';
       assertSources(
           await convert({
             packageType: 'application',
-            entrypoints: new Map([
+            packageEntrypoints: new Map([
               ['some-package', ['test.html' as OriginalDocumentUrl]],
               ['app-route', ['app-route.html' as OriginalDocumentUrl]],
               ['app-storage', ['app-storage.html' as OriginalDocumentUrl]],
@@ -319,7 +319,7 @@ import '/node_modules/@polymer/app-route/app-route.js';
           assertSources(
               await convert({
                 packageType: 'application',
-                entrypoints: new Map([
+                packageEntrypoints: new Map([
                   ['some-package', ['test.html' as OriginalDocumentUrl]],
                   ['app-route', ['app-route.html' as OriginalDocumentUrl]],
                   ['app-storage', ['app-storage.html' as OriginalDocumentUrl]],
@@ -359,7 +359,7 @@ import '/node_modules/@polymer/app-route/app-route.js';
               await convert({
                 npmPackageName: '@some-scope/some-package',
                 npmImportStyle: 'name',
-                entrypoints: new Map([
+                packageEntrypoints: new Map([
                   ['some-package', ['test.html' as OriginalDocumentUrl]],
                   ['app-route', ['app-route.html' as OriginalDocumentUrl]],
                   ['app-storage', ['app-storage.html' as OriginalDocumentUrl]],
@@ -1717,7 +1717,7 @@ export const Element = class Element {};
           assertSources(
               await convert({
                 npmImportStyle: 'path',
-                entrypoints: new Map([
+                packageEntrypoints: new Map([
                   ['some-package', ['test.html' as OriginalDocumentUrl]],
                   [
                     'shadycss',
@@ -1764,7 +1764,7 @@ export const Element = class Element {};
           assertSources(
               await convert({
                 npmImportStyle: 'name',
-                entrypoints: new Map([
+                packageEntrypoints: new Map([
                   ['some-package', ['test.html' as OriginalDocumentUrl]],
                   [
                     'shadycss',
@@ -2051,7 +2051,7 @@ console.log(foo.document.currentScript.ownerDocument);
 
       assertSources(
           await convert({
-            entrypoints: new Map([
+            packageEntrypoints: new Map([
               ['some-package', ['test.html' as OriginalDocumentUrl]],
               [
                 'shadycss',
@@ -2105,7 +2105,7 @@ console.log(ShadyCSS.flush());
 
       assertSources(
           await convert({
-            entrypoints: new Map([
+            packageEntrypoints: new Map([
               ['some-package', ['test.html' as OriginalDocumentUrl]],
               [
                 'shadycss',
@@ -2292,7 +2292,7 @@ setBaz(foo + 10 * (10 ** 10));
 
       assertSources(
           await convert({
-            entrypoints: new Map([
+            packageEntrypoints: new Map([
               [
                 'some-package',
                 [
@@ -2347,7 +2347,7 @@ console.log(foo);
       assertSources(
           await convert({
             expectedWarnings,
-            entrypoints: new Map([
+            packageEntrypoints: new Map([
               [
                 'some-package',
                 [/* index.html not included: it is not an HTML import */]
@@ -2367,7 +2367,7 @@ console.log(foo);
           await convert({
             bowerPackageName: 'polymer',
             npmPackageName: '@polymer/polymer',
-            entrypoints: new Map([
+            packageEntrypoints: new Map([
               ['polymer', []],
               ['foo', ['foo.js' as OriginalDocumentUrl]],
             ]),
@@ -2410,7 +2410,7 @@ console.log(foo);
           await convert({
             bowerPackageName: 'polymer',
             npmPackageName: '@polymer/polymer',
-            entrypoints: new Map([
+            packageEntrypoints: new Map([
               ['polymer', ['test.html' as OriginalDocumentUrl]],
             ]),
           }),
@@ -2449,7 +2449,7 @@ Polymer({
           await convert({
             bowerPackageName: 'polymer',
             npmPackageName: '@polymer/polymer',
-            entrypoints: new Map([
+            packageEntrypoints: new Map([
               ['polymer', ['test.html' as OriginalDocumentUrl]],
             ]),
           }),
@@ -2684,7 +2684,7 @@ console.log("foo");
 
           assertSources(
               await convert({
-                entrypoints: new Map([
+                packageEntrypoints: new Map([
                   ['some-package', ['test.html' as OriginalDocumentUrl]],
                   ['dep', ['dep.html' as OriginalDocumentUrl]],
                 ]),
@@ -2757,7 +2757,7 @@ export const foo = 10;
       });
       assertSources(
           await convert({
-            entrypoints: new Map([
+            packageEntrypoints: new Map([
               ['some-package', ['a.html' as OriginalDocumentUrl]],
             ]),
           }),
@@ -2798,7 +2798,7 @@ export const bar = 20;
       });
       assertSources(
           await convert({
-            entrypoints: new Map([
+            packageEntrypoints: new Map([
               ['some-package', ['a.html' as OriginalDocumentUrl]],
             ]),
           }),
