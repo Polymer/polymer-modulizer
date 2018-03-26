@@ -18,5 +18,5 @@ import { html as html$0 } from './lib/utils/html-tag.js';
  *   attribute deserialization, and property change observation
  */
 const Element = ElementMixin(HTMLElement);
-export { Element };
+export { Element as PolymerElement };
 export { html$0 as html };
