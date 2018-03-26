@@ -138,6 +138,7 @@ export const LegacyElementMixin = dedupingMixin((base) => {
      *
      * @return {void}
      * @override
+     * @suppress {invalidCasts}
      */
     _initializeProperties() {
       let proto = Object.getPrototypeOf(this);
@@ -146,7 +147,7 @@ export const LegacyElementMixin = dedupingMixin((base) => {
         this._registered();
       }
       super._initializeProperties();
-      this.root = this;
+      this.root = /** @type {HTMLElement} */(this);
       this.created();
     }
 
