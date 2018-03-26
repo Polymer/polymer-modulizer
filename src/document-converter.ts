@@ -1113,12 +1113,18 @@ export class DocumentConverter {
           'shadycss/custom-style-interface.html',
           'shadycss/entrypoints/custom-style-interface.js');
     }
+
+    // This is a special case for renaming 'polymer.html' in Polymer to
+    // 'polymer-legacy.html'.
     if (this.originalPackageName === 'polymer' && jsUrl === './polymer.html') {
+      // We're converting 'polymer.html' itself:
       jsUrl = './polymer-legacy.html';
     } else if (jsUrl.endsWith('polymer/polymer.html')) {
+      // We're converting something that references 'polymer.html':
       jsUrl = jsUrl.replace(
           /polymer\/polymer\.html$/, 'polymer/polymer-legacy.html');
     }
+
     // Convert any ".html" URLs to point to their new ".js" module equivilent
     jsUrl = replaceHtmlExtensionIfFound(jsUrl);
     return jsUrl as ConvertedDocumentUrl;
