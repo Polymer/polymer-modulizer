@@ -121,9 +121,12 @@ class RewriteNamespaceExportsPass {
         correctedNamespaceName = 'Polymer';
         name = 'Polymer';
       }
-      nodePath.replace(jsc.exportNamedDeclaration(jsc.variableDeclaration(
-          this.mutableNames.has(correctedNamespaceName) ? 'let' : 'const',
-          [jsc.variableDeclarator(jsc.identifier(name), exportedExpression)])));
+      const variableKind =
+          this.mutableNames.has(correctedNamespaceName) ? 'let' : 'const';
+      const newExportNode = jsc.exportNamedDeclaration(jsc.variableDeclaration(
+          variableKind,
+          [jsc.variableDeclarator(jsc.identifier(name), exportedExpression)]));
+      replacePreservingComments(nodePath, newExportNode);
       this.exportMigrationRecords.push(
           {oldNamespacedName: correctedNamespaceName, es6ExportName: name});
     }
@@ -139,9 +142,15 @@ class RewriteNamespaceExportsPass {
     const fullyQualifiedName = memberPath.join('.');
     this.namespaceNames.add(fullyQualifiedName);
 
-    path.replace(jsc.exportNamedDeclaration(jsc.variableDeclaration(
-        this.mutableNames.has(fullyQualifiedName) ? 'let' : 'const',
-        [jsc.variableDeclarator(jsc.identifier(nameExportedAs), value)])));
+    // Note: in other place in this file where we decide between let and const
+    // exports, we check if the "this." name is mutable as well, but in this
+    // case it's very unlikely that a name assigned imperatively, like NS.foo =
+    // is otherwise accessed via "this."
+    replacePreservingComments(
+        path,
+        jsc.exportNamedDeclaration(jsc.variableDeclaration(
+            this.mutableNames.has(fullyQualifiedName) ? 'let' : 'const',
+            [jsc.variableDeclarator(jsc.identifier(nameExportedAs), value)])));
     this.exportMigrationRecords.push(
         {oldNamespacedName: fullyQualifiedName, es6ExportName: nameExportedAs});
   }
@@ -224,9 +233,11 @@ class RewriteNamespaceExportsPass {
       // move the export to the declaration
       const exportedName =
           fullyQualifiedNamePath[fullyQualifiedNamePath.length - 1];
-      assignment.replace(jsc.exportNamedDeclaration(
-          null,  // declaration
-          [jsc.exportSpecifier(identifier, jsc.identifier(exportedName))]));
+      replacePreservingComments(
+          assignment,
+          jsc.exportNamedDeclaration(
+              null,  // declaration
+              [jsc.exportSpecifier(identifier, jsc.identifier(exportedName))]));
       this.exportMigrationRecords.push(
           {es6ExportName: exportedName, oldNamespacedName: fullyQualifiedName});
     }
@@ -300,13 +311,15 @@ function getNamespaceExports(
     }
     const name = key.name;
     const fullName = `${namespaceName}.${name}`;
+    // The expression for an internal `this.` reference to a namespace member
+    const thisName = `this.${name}`;
+    const isMutable = mutableNames.has(fullName) || mutableNames.has(thisName);
     if (value.type === 'ObjectExpression' || value.type === 'ArrayExpression' ||
         value.type === 'Literal') {
       exportRecords.push({
         name,
         node: jsc.exportNamedDeclaration(jsc.variableDeclaration(
-            mutableNames.has(fullName) ? 'let' : 'const',
-            [jsc.variableDeclarator(key, value)]))
+            isMutable ? 'let' : 'const', [jsc.variableDeclarator(key, value)]))
       });
     } else if (value.type === 'FunctionExpression') {
       const func = value;
@@ -319,11 +332,12 @@ function getNamespaceExports(
             func.generator))
       });
     } else if (value.type === 'ArrowFunctionExpression') {
+      const isMutable =
+          mutableNames.has(fullName) || mutableNames.has(thisName);
       exportRecords.push({
         name,
         node: jsc.exportNamedDeclaration(jsc.variableDeclaration(
-            mutableNames.has(fullName) ? 'let' : 'const',
-            [jsc.variableDeclarator(key, value)]))
+            isMutable ? 'let' : 'const', [jsc.variableDeclarator(key, value)]))
       });
     } else if (value.type === 'Identifier') {
       exportRecords.push({
@@ -392,7 +406,12 @@ function getMutableNames(program: estree.Program): Set<string> {
     visitAssignmentExpression(path: NodePath<estree.AssignmentExpression>) {
       const memberName = getMemberName(path.node.left);
       if (memberName !== undefined) {
-        if (assignedOnce.has(memberName)) {
+        // Treating a this.* reference as mutable assumes that it's declared
+        // as a namespace object property elsewhere and this is always a
+        // mutation. Because we don't know the namespace were currently in,
+        // there's a danger of a false positive here. This really should be
+        // integrated with getNamespaceExports / getNamespaceDeclaration.
+        if (assignedOnce.has(memberName) || memberName.startsWith('this.')) {
           mutable.add(memberName);
         } else {
           assignedOnce.add(memberName);
@@ -412,4 +431,50 @@ function getMutableNames(program: estree.Program): Set<string> {
   });
 
   return mutable;
+}
+
+const jsdocToRemove = /@(namespace|memberof)/;
+function replacePreservingComments(
+    nodePath: NodePath, replacement: estree.Node) {
+  const comments = getComments(nodePath);
+  nodePath.replace(replacement);
+  const commentsToRemove = new Set<estree.Comment>();
+  for (const comment of comments) {
+    if (!jsdocToRemove.test(comment.value)) {
+      continue;
+    }
+    // Filter out namespace and memberof comments, which no longer make sense.
+    const lines = comment.value.split('\n');
+    comment.value =
+        lines.filter((l) => !jsdocToRemove.test(l))
+            .map((line, index) => {
+              if (index === 0) {
+                return line;
+              }
+              // Make a reasonable guess to how to indent the lines
+              // of a jsdoc comment, since now that we're modifying
+              // the comment value, recast won't help us anymore.
+              return line.replace(/^\s+\*/, ' *').replace(/^\s+$/, ' ');
+            })
+            .join('\n');
+    // If a comment now only has whitespace and * charactes, we should filter it
+    // out entirely.
+    if (!/[^\s\*]/.test(comment.value)) {
+      commentsToRemove.add(comment);
+    }
+  }
+  (nodePath.node as any).comments =
+      comments.filter((c) => !commentsToRemove.has(c));
+}
+
+function getComments(nodePath: NodePath) {
+  return getCommentsFromNode(nodePath.node);
+}
+function getCommentsFromNode(node: estree.Node&
+                             {comments?: estree.Comment[]}): estree.Comment[] {
+  const results = [];
+  if (node.comments) {
+    results.push(...node.comments);
+  }
+  return results;
 }
