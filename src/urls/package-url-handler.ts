@@ -258,7 +258,8 @@ export class PackageUrlHandler implements UrlHandler {
     if (originalPackageName === this.bowerPackageName) {
       return url as ConvertedDocumentFilePath;
     } else {
-      return `bower_components/${originalPackageName}/${url}` as ConvertedDocumentFilePath;
+      return `bower_components/${originalPackageName}/${url}` as
+          ConvertedDocumentFilePath;
     }
   }
 }

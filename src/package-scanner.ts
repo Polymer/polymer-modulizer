@@ -17,7 +17,9 @@ import {Analysis, Document} from 'polymer-analyzer';
 
 import {filesJsonObjectToMap, PackageScanResultJson, serializePackageScanResult} from './conversion-manifest';
 import {ConversionSettings} from './conversion-settings';
-import {DeleteFileScanResult, DocumentConverter, HtmlDocumentScanResult, JsModuleScanResult, ScanResult} from './document-converter';
+import {DocumentConverter} from './document-converter';
+import {ScanResult} from './document-scanner';
+import {DocumentScanner} from './document-scanner';
 import {JsExport} from './js-module';
 import {lookupDependencyMapping} from './package-manifest';
 import {OriginalDocumentUrl} from './urls/types';
@@ -223,14 +225,13 @@ export class PackageScanner {
       return;
     }
 
-    const documentConverter = new DocumentConverter(
+    const documentScanner = new DocumentScanner(
         document, this.packageName, this.urlHandler, this.conversionSettings);
-    let scanResult: JsModuleScanResult|HtmlDocumentScanResult|
-        DeleteFileScanResult;
+    let scanResult: ScanResult;
     try {
       scanResult = scanAs === 'js-module' ?
-          documentConverter.scanJsModule() :
-          documentConverter.scanTopLevelHtmlDocument();
+          documentScanner.scanJsModule() :
+          documentScanner.scanTopLevelHtmlDocument();
     } catch (e) {
       console.error(`Error in ${document.url}`, e);
       return;

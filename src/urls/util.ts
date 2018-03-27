@@ -73,8 +73,8 @@ export function getHtmlDocumentConvertedFilePath(
  * by `DocumentConverter#convertJsModule` with URLs of files which were already
  * scripts.
  */
-export function getScriptConvertedFilePath(
-    originalUrl: OriginalDocumentUrl): ConvertedDocumentFilePath {
+export function getScriptConvertedFilePath(originalUrl: OriginalDocumentUrl):
+    ConvertedDocumentFilePath {
   return originalUrl as string as ConvertedDocumentFilePath;
 }
 

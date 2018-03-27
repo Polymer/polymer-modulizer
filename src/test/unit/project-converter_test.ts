@@ -125,7 +125,7 @@ suite('AnalysisConverter', () => {
 
     function assertSources(
         results: Map<string, string|undefined>,
-        expected: {[path: string]: string | undefined}) {
+        expected: {[path: string]: string|undefined}) {
       for (const [expectedPath, expectedContents] of Object.entries(expected)) {
         assert.isTrue(
             results.has(expectedPath),
@@ -2145,8 +2145,10 @@ console.log(foo.document.currentScript.ownerDocument);
               ['some-package', ['test.html' as OriginalDocumentUrl]],
               [
                 'shadycss',
-                ['custom-style-interface.html' as OriginalDocumentUrl],
-                ['apply-shim.html' as OriginalDocumentUrl],
+                [
+                  'custom-style-interface.html' as OriginalDocumentUrl,
+                  'apply-shim.html' as OriginalDocumentUrl
+                ],
               ],
             ]),
           }),
@@ -2199,8 +2201,10 @@ console.log(ShadyCSS.flush());
               ['some-package', ['test.html' as OriginalDocumentUrl]],
               [
                 'shadycss',
-                ['custom-style-interface.html' as OriginalDocumentUrl],
-                ['apply-shim.html' as OriginalDocumentUrl],
+                [
+                  'custom-style-interface.html' as OriginalDocumentUrl,
+                  'apply-shim.html' as OriginalDocumentUrl
+                ],
               ],
             ]),
           }),
@@ -3167,6 +3171,52 @@ console.log('second script');
 /* Second comment */
 /* Final trailing comment */
 ;
+`,
+      });
+    });
+
+    testName = 'copy over behavior comments properly';
+    test(testName, async () => {
+      setSources({
+        'test.html': `
+          <script>
+            /**
+             * This is a long and important comment.
+             * It has much info.
+             * @memberof Polymer This line should be removed
+             * @polymerBehavior
+             */
+            Polymer.MyBehavior = {};
+
+            /**
+             * This comment is also important, but its
+             * whitespace is handled better, because it doesn't
+             * have any lines that need filtering out.
+             * @polymer
+             * @mixinFunction
+             */
+            Polymer.MyMixinFunction = function() {};
+          </script>
+        `
+      });
+
+      assertSources(await convert(), {
+        'test.js': `
+/**
+ * This is a long and important comment.
+ * It has much info.
+ * @polymerBehavior
+ */
+export const MyBehavior = {};
+
+/**
+ * This comment is also important, but its
+ * whitespace is handled better, because it doesn't
+ * have any lines that need filtering out.
+ * @polymer
+ * @mixinFunction
+ */
+export const MyMixinFunction = function() {};
 `,
       });
     });
