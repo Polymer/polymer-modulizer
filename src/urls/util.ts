@@ -68,10 +68,10 @@ export function getHtmlDocumentConvertedFilePath(
  * which have already had renaming applied (but which haven't had their
  * extension changed, if needed).
  *
- * TODO: This implementation by casting is only safe because 'polymer.html' is
- * the only file we are renaming currently and this function is only called
- * by `DocumentConverter#convertJsModule` with URLs of files which were already
- * scripts.
+ * TODO(bicknellr): This implementation by casting is only safe because
+ * 'polymer.html' is the only file we are renaming currently and this function
+ * is only called by `DocumentConverter#convertJsModule` with URLs of files
+ * which were already scripts.
  */
 export function getScriptConvertedFilePath(originalUrl: OriginalDocumentUrl):
     ConvertedDocumentFilePath {
