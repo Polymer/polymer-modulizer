@@ -116,7 +116,7 @@ export class DocumentScanner extends DocumentProcessor {
       if (f.kinds.has('html-script')) {
         const sciprtImport = f as Import;
         const oldScriptUrl =
-            this.urlHandler.getDocumentUrl(sciprtImport.document);
+            this.urlHandler.getDocumentUrl(sciprtImport.document!);
         const newScriptUrl = this.convertScriptUrl(oldScriptUrl);
         return newScriptUrl === this.convertedUrl;
       }

@@ -84,7 +84,7 @@ export abstract class DocumentProcessor {
   }
 
   private isInternalNonModuleImport(scriptImport: Import): boolean {
-    const oldScriptUrl = this.urlHandler.getDocumentUrl(scriptImport.document);
+    const oldScriptUrl = this.urlHandler.getDocumentUrl(scriptImport.document!);
     const newScriptUrl = this.convertScriptUrl(oldScriptUrl);
     const isModuleImport =
         dom5.getAttribute(scriptImport.astNode, 'type') === 'module';
@@ -109,7 +109,7 @@ export abstract class DocumentProcessor {
       let scriptDocument: Document;
       if (script.kinds.has('html-script') &&
           this.isInternalNonModuleImport(script as Import)) {
-        scriptDocument = (script as Import).document;
+        scriptDocument = (script as Import).document!;
         convertedHtmlScripts.add(script as Import);
       } else if (script.kinds.has('js-document')) {
         scriptDocument = script as Document;
@@ -173,7 +173,7 @@ export abstract class DocumentProcessor {
       ...body.childNodes!.filter((n: parse5.ASTNode) => n.tagName !== undefined)
     ];
 
-    const genericElements = filterClone(elements, (e) => {
+    const genericElements = filterClone(elements, (e: parse5.ASTNode) => {
       return !(
           generatedElementBlacklist.has(e.tagName) || claimedDomModules.has(e));
     });
@@ -209,7 +209,7 @@ export abstract class DocumentProcessor {
         continue;
       }
       claimedDomModules.add(domModule);
-      const template = dom5.query(domModule, (e) => e.tagName === 'template');
+      const template = dom5.query(domModule, (e: parse5.ASTNode) => e.tagName === 'template');
       if (template === null) {
         continue;
       }

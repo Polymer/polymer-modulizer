@@ -276,7 +276,7 @@ export class PackageScanner {
           this.urlHandler.getOriginalPackageNameForUrl(importDocumentUrl);
 
       if (importPackageName === packageName) {
-        this.scanDocument(htmlImport.document, 'js-module');
+        this.scanDocument(htmlImport.document!, 'js-module');
       } else {
         this.externalDependencies.add(importPackageName);
       }
