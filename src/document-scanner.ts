@@ -114,9 +114,15 @@ export class DocumentScanner extends DocumentProcessor {
     if (allFeatures.length === 1) {
       const f = allFeatures[0];
       if (f.kinds.has('html-script')) {
-        const sciprtImport = f as Import;
+        const scriptImport = f as Import;
+        if (scriptImport.document === undefined) {
+          throw new Error(`${this.originalPackageName} ${this.originalUrl}: ` +
+              `The script referenced by '${scriptImport.originalUrl}' could ` +
+              `not be loaded.`);
+        }
+
         const oldScriptUrl =
-            this.urlHandler.getDocumentUrl(sciprtImport.document);
+            this.urlHandler.getDocumentUrl(scriptImport.document);
         const newScriptUrl = this.convertScriptUrl(oldScriptUrl);
         return newScriptUrl === this.convertedUrl;
       }

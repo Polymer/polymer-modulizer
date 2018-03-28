@@ -16,7 +16,7 @@ import * as dom5 from 'dom5';
 import {Program} from 'estree';
 import * as jsc from 'jscodeshift';
 import * as parse5 from 'parse5';
-import {Document, Import, isPositionInsideRange, Severity, Warning} from 'polymer-analyzer';
+import {Document, Import, isPositionInsideRange, ParsedHtmlDocument, Severity, Warning} from 'polymer-analyzer';
 import * as recast from 'recast';
 
 import {ConversionSettings} from './conversion-settings';
@@ -84,6 +84,12 @@ export abstract class DocumentProcessor {
   }
 
   private isInternalNonModuleImport(scriptImport: Import): boolean {
+    if (scriptImport.document === undefined) {
+      throw new Error(`${this.originalPackageName} ${this.originalUrl}: The ` +
+          `script referenced by '${scriptImport.originalUrl}' could not be ` +
+          `loaded.`);
+    }
+
     const oldScriptUrl = this.urlHandler.getDocumentUrl(scriptImport.document);
     const newScriptUrl = this.convertScriptUrl(oldScriptUrl);
     const isModuleImport =
@@ -109,8 +115,14 @@ export abstract class DocumentProcessor {
       let scriptDocument: Document;
       if (script.kinds.has('html-script') &&
           this.isInternalNonModuleImport(script as Import)) {
-        scriptDocument = (script as Import).document;
-        convertedHtmlScripts.add(script as Import);
+        const scriptImport = script as Import;
+        if (scriptImport.document === undefined) {
+          throw new Error(`${this.originalPackageName} ${this.originalUrl}: ` +
+              `The script referenced by '${scriptImport.originalUrl}' could ` +
+              `not be loaded.`);
+        }
+        scriptDocument = scriptImport.document as Document<ParsedHtmlDocument>;
+        convertedHtmlScripts.add(scriptImport);
       } else if (script.kinds.has('js-document')) {
         scriptDocument = script as Document;
       } else {

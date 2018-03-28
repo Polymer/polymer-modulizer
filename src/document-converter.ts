@@ -217,6 +217,12 @@ export class DocumentConverter extends DocumentProcessor {
   private getHtmlImports() {
     return DocumentConverter.getAllHtmlImports(this.document)
         .filter((f: Import) => {
+          if (f.document === undefined) {
+            throw new Error(`${this.originalPackageName} ` +
+                `${this.originalUrl}: The HTML import referenced by ` +
+                `'${f.originalUrl}' could not be loaded.`);
+          }
+
           const documentUrl = this.urlHandler.getDocumentUrl(f.document);
           return !this.conversionSettings.excludes.has(documentUrl);
         });
@@ -235,6 +241,12 @@ export class DocumentConverter extends DocumentProcessor {
     // itself.
     for (const scriptImport of this.document.getFeatures(
              {kind: 'html-script'})) {
+      if (scriptImport.document === undefined) {
+        throw new Error(`${this.originalPackageName} ${this.originalUrl}: ` +
+            `The script referenced by '${scriptImport.originalUrl}' could ` +
+            `not be loaded.`);
+      }
+
       const oldScriptUrl =
           this.urlHandler.getDocumentUrl(scriptImport.document);
       const newScriptUrl = this.convertScriptUrl(oldScriptUrl);
@@ -378,6 +390,12 @@ export class DocumentConverter extends DocumentProcessor {
       }
       const offsets = htmlDocument.sourceRangeToOffsets(htmlImport.sourceRange);
 
+      if (htmlImport.document === undefined) {
+        throw new Error(`${this.originalPackageName} ${this.originalUrl}: ` +
+            `The HTML import referenced by '${htmlImport.originalUrl}' ` +
+            `could not be loaded.`);
+      }
+
       const htmlDocumentUrl =
           this.urlHandler.getDocumentUrl(htmlImport.document);
       const importedJsDocumentUrl = this.convertDocumentUrl(htmlDocumentUrl);
@@ -404,6 +422,12 @@ export class DocumentConverter extends DocumentProcessor {
       }
       const offsets = htmlDocument.sourceRangeToOffsets(
           htmlDocument.sourceRangeForNode(scriptImport.astNode)!);
+
+      if (scriptImport.document === undefined) {
+        throw new Error(`${this.originalPackageName} ${this.originalUrl}: ` +
+            `The script referenced by '${scriptImport.originalUrl}' could ` +
+            `not be loaded.`);
+      }
 
       const convertedUrl = this.convertDocumentUrl(
           this.urlHandler.getDocumentUrl(scriptImport.document));
@@ -763,6 +787,12 @@ export class DocumentConverter extends DocumentProcessor {
     // Rewrite HTML Imports to JS imports
     const jsImportDeclarations = [];
     for (const htmlImport of this.getHtmlImports()) {
+      if (htmlImport.document === undefined) {
+        throw new Error(`${this.originalPackageName} ${this.originalUrl}: ` +
+            `The HTML import referenced by '${htmlImport.originalUrl}' ` +
+            `could not be loaded.`);
+      }
+
       const importedJsDocumentUrl = this.convertDocumentUrl(
           this.urlHandler.getDocumentUrl(htmlImport.document));
 

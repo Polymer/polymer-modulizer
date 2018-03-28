@@ -276,6 +276,10 @@ export class PackageScanner {
           this.urlHandler.getOriginalPackageNameForUrl(importDocumentUrl);
 
       if (importPackageName === packageName) {
+        if (htmlImport.document === undefined) {
+          throw new Error(`${this.packageName}: The HTML import at ` +
+              `'${htmlImport.originalUrl}' could not be loaded.`);
+        }
         this.scanDocument(htmlImport.document, 'js-module');
       } else {
         this.externalDependencies.add(importPackageName);
