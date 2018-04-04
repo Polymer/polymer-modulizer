@@ -217,7 +217,7 @@ export class DocumentConverter extends DocumentProcessor {
   private getHtmlImports() {
     return DocumentConverter.getAllHtmlImports(this.document)
         .filter((f: Import) => {
-          const documentUrl = this.urlHandler.getDocumentUrl(f.document);
+          const documentUrl = this.urlHandler.getDocumentUrl(f.document!);
           return !this.conversionSettings.excludes.has(documentUrl);
         });
   }
@@ -236,7 +236,7 @@ export class DocumentConverter extends DocumentProcessor {
     for (const scriptImport of this.document.getFeatures(
              {kind: 'html-script'})) {
       const oldScriptUrl =
-          this.urlHandler.getDocumentUrl(scriptImport.document);
+          this.urlHandler.getDocumentUrl(scriptImport.document!);
       const newScriptUrl = this.convertScriptUrl(oldScriptUrl);
       if (this.convertedHtmlScripts.has(scriptImport)) {
         // NOTE: This deleted script file path *may* === this document's final
@@ -379,7 +379,7 @@ export class DocumentConverter extends DocumentProcessor {
       const offsets = htmlDocument.sourceRangeToOffsets(htmlImport.sourceRange);
 
       const htmlDocumentUrl =
-          this.urlHandler.getDocumentUrl(htmlImport.document);
+          this.urlHandler.getDocumentUrl(htmlImport.document!);
       const importedJsDocumentUrl = this.convertDocumentUrl(htmlDocumentUrl);
       const importUrl = this.formatImportUrl(
           importedJsDocumentUrl, htmlImport.originalUrl, true);
@@ -406,7 +406,7 @@ export class DocumentConverter extends DocumentProcessor {
           htmlDocument.sourceRangeForNode(scriptImport.astNode)!);
 
       const convertedUrl = this.convertDocumentUrl(
-          this.urlHandler.getDocumentUrl(scriptImport.document));
+          this.urlHandler.getDocumentUrl(scriptImport.document!));
       const formattedUrl =
           this.formatImportUrl(convertedUrl, scriptImport.originalUrl, true);
       dom5.setAttribute(scriptImport.astNode, 'src', formattedUrl);
@@ -764,7 +764,7 @@ export class DocumentConverter extends DocumentProcessor {
     const jsImportDeclarations = [];
     for (const htmlImport of this.getHtmlImports()) {
       const importedJsDocumentUrl = this.convertDocumentUrl(
-          this.urlHandler.getDocumentUrl(htmlImport.document));
+          this.urlHandler.getDocumentUrl(htmlImport.document!));
 
       const references = importedReferences.get(importedJsDocumentUrl);
       const namedExports =
