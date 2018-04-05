@@ -27,7 +27,7 @@ import * as recast from 'recast';
 
 import {DocumentProcessor} from './document-processor';
 import {collectIdentifierNames, containsWriteToGlobalSettingsObject, createDomNodeInsertStatements, findAvailableIdentifier, getMemberPath, getPathOfAssignmentTo, getSetterName, serializeNode} from './document-util';
-import {ImportWithDocument} from './import-with-document';
+import {ImportWithDocument, isImportWithDocument} from './import-with-document';
 import {ConversionResult, JsExport} from './js-module';
 import {addA11ySuiteIfUsed} from './passes/add-a11y-suite-if-used';
 import {removeToplevelUseStrict} from './passes/remove-toplevel-use-strict';
@@ -216,23 +216,24 @@ export class DocumentConverter extends DocumentProcessor {
    * Note: Imports that are not found are not returned by the analyzer.
    */
   private getHtmlImports(): Array<ImportWithDocument> {
-    const importsWithDocuments =
-        DocumentConverter.getAllHtmlImports(this.document)
-            .filter((htmlImport: Import) => {
-              if (htmlImport.document === undefined) {
-                console.warn(
-                    `${this.originalPackageName} ${this.originalUrl}: The ` +
-                    `document referenced using URL ` +
-                    `'${htmlImport.originalUrl}' could not be loaded and was ` +
-                    `ignored.`);
-                return false;
-              }
-              return true;
-            }) as Array<ImportWithDocument>;
-    return importsWithDocuments.filter((f: ImportWithDocument) => {
-      const documentUrl = this.urlHandler.getDocumentUrl(f.document);
-      return !this.conversionSettings.excludes.has(documentUrl);
-    });
+    const filteredImports = [];
+    for (const import_ of DocumentConverter.getAllHtmlImports(this.document)) {
+      if (!isImportWithDocument(import_)) {
+        console.warn(
+            `${this.originalPackageName} ${this.originalUrl}: The ` +
+            `document referenced using URL '${import_.originalUrl}' ` +
+            `could not be loaded and was ignored.`);
+        continue;
+      }
+
+      const documentUrl = this.urlHandler.getDocumentUrl(import_.document);
+      if (this.conversionSettings.excludes.has(documentUrl)) {
+        continue;
+      }
+
+      filteredImports.push(import_);
+    }
+    return filteredImports;
   }
 
   /**
@@ -248,7 +249,7 @@ export class DocumentConverter extends DocumentProcessor {
     // itself.
     for (const scriptImport of this.document.getFeatures(
              {kind: 'html-script'})) {
-      if (scriptImport.document === undefined) {
+      if (!isImportWithDocument(scriptImport)) {
         console.warn(
             `${this.originalPackageName} ${this.originalUrl}: ` +
             `The script referenced using URL '${scriptImport.originalUrl}' ` +
@@ -259,7 +260,7 @@ export class DocumentConverter extends DocumentProcessor {
       const oldScriptUrl =
           this.urlHandler.getDocumentUrl(scriptImport.document);
       const newScriptUrl = this.convertScriptUrl(oldScriptUrl);
-      if (this.convertedHtmlScripts.has(scriptImport as ImportWithDocument)) {
+      if (this.convertedHtmlScripts.has(scriptImport)) {
         // NOTE: This deleted script file path *may* === this document's final
         // converted file path. Because results are written in order, the
         // final result (this document) has the final say, and any previous
@@ -413,7 +414,7 @@ export class DocumentConverter extends DocumentProcessor {
 
     for (const scriptImport of this.document.getFeatures(
              {kind: 'html-script'})) {
-      if (scriptImport.document === undefined) {
+      if (!isImportWithDocument(scriptImport)) {
         console.warn(
             `${this.originalPackageName} ${this.originalUrl}: ` +
             `The script referenced using URL '${scriptImport.originalUrl}' ` +

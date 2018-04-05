@@ -21,7 +21,7 @@ import * as recast from 'recast';
 
 import {ConversionSettings} from './conversion-settings';
 import {attachCommentsToFirstStatement, canDomModuleBeInlined, createDomNodeInsertStatements, filterClone, getCommentsBetween, getNodePathInProgram, insertStatementsIntoProgramBody, serializeNodeToTemplateLiteral} from './document-util';
-import {ImportWithDocument} from './import-with-document';
+import {ImportWithDocument, isImportWithDocument} from './import-with-document';
 import {removeNamespaceInitializers} from './passes/remove-namespace-initializers';
 import {removeToplevelUseStrict} from './passes/remove-toplevel-use-strict';
 import {removeUnnecessaryEventListeners} from './passes/remove-unnecessary-waits';
@@ -110,7 +110,7 @@ export abstract class DocumentProcessor {
       let scriptDocument: Document;
       if (script.kinds.has('html-script')) {
         const scriptImport = script as Import;
-        if (scriptImport.document === undefined) {
+        if (!isImportWithDocument(scriptImport)) {
           console.warn(
               `${this.originalPackageName} ${this.originalUrl}: ` +
               `The script referenced using URL '${scriptImport.originalUrl}' ` +
@@ -118,13 +118,12 @@ export abstract class DocumentProcessor {
           continue;
         }
 
-        if (!this.isInternalNonModuleImport(
-                scriptImport as ImportWithDocument)) {
+        if (!this.isInternalNonModuleImport(scriptImport)) {
           continue;
         }
 
         scriptDocument = scriptImport.document as Document<ParsedHtmlDocument>;
-        convertedHtmlScripts.add(scriptImport as ImportWithDocument);
+        convertedHtmlScripts.add(scriptImport);
       } else if (script.kinds.has('js-document')) {
         scriptDocument = script as Document;
       } else {

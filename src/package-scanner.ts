@@ -13,14 +13,14 @@
  */
 
 import fetch from 'node-fetch';
-import {Analysis, Document, Import} from 'polymer-analyzer';
+import {Analysis, Document} from 'polymer-analyzer';
 
 import {filesJsonObjectToMap, PackageScanResultJson, serializePackageScanResult} from './conversion-manifest';
 import {ConversionSettings} from './conversion-settings';
 import {DocumentConverter} from './document-converter';
 import {ScanResult} from './document-scanner';
 import {DocumentScanner} from './document-scanner';
-import {ImportWithDocument} from './import-with-document';
+import {isImportWithDocument} from './import-with-document';
 import {JsExport} from './js-module';
 import {lookupDependencyMapping} from './package-manifest';
 import {OriginalDocumentUrl} from './urls/types';
@@ -271,21 +271,15 @@ export class PackageScanner {
     const packageName =
         this.urlHandler.getOriginalPackageNameForUrl(documentUrl);
 
-    const htmlImports = DocumentConverter.getAllHtmlImports(document);
-    const htmlImportsWithDocuments =
-        htmlImports.filter((htmlImport: Import) => {
-          const document = htmlImport.document;
-          const hasDocument = document !== undefined;
-          if (!hasDocument) {
-            console.warn(
-                `${packageName} ${documentUrl}: The document referenced ` +
-                `using URL '${htmlImport.originalUrl}' could not be loaded ` +
-                `and was ignored.`);
-          }
-          return hasDocument;
-        }) as Array<ImportWithDocument>;
+    for (const htmlImport of DocumentConverter.getAllHtmlImports(document)) {
+      if (!isImportWithDocument(htmlImport)) {
+        console.warn(
+            `${packageName} ${documentUrl}: The document referenced ` +
+            `using URL '${htmlImport.originalUrl}' could not be loaded ` +
+            `and was ignored.`);
+        continue;
+      }
 
-    for (const htmlImport of htmlImportsWithDocuments) {
       const importDocumentUrl = this.urlHandler.getDocumentUrl(<any>htmlImport);
       const importPackageName =
           this.urlHandler.getOriginalPackageNameForUrl(importDocumentUrl);

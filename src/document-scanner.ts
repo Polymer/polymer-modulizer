@@ -15,6 +15,7 @@
 import {Document, Import} from 'polymer-analyzer';
 
 import {DocumentProcessor} from './document-processor';
+import {isImportWithDocument} from './import-with-document';
 import {NamespaceMemberToExport} from './js-module';
 import {rewriteNamespacesAsExports} from './passes/rewrite-namespace-exports';
 import {ConvertedDocumentFilePath, ConvertedDocumentUrl, OriginalDocumentUrl} from './urls/types';
@@ -115,7 +116,7 @@ export class DocumentScanner extends DocumentProcessor {
       const f = allFeatures[0];
       if (f.kinds.has('html-script')) {
         const scriptImport = f as Import;
-        if (scriptImport.document === undefined) {
+        if (!isImportWithDocument(scriptImport)) {
           console.warn(
               `${this.originalPackageName} ${this.originalUrl}: ` +
               `The script referenced using URL '${scriptImport.originalUrl}' ` +
