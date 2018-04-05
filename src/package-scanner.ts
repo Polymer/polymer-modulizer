@@ -274,9 +274,9 @@ export class PackageScanner {
     for (const htmlImport of DocumentConverter.getAllHtmlImports(document)) {
       if (!isImportWithDocument(htmlImport)) {
         console.warn(
-            `${packageName} ${documentUrl}: The document referenced ` +
-            `using URL '${htmlImport.originalUrl}' could not be loaded ` +
-            `and was ignored.`);
+            `${packageName} ${documentUrl}: The document referenced using ` +
+            `URL '${htmlImport.originalUrl}' could not be loaded and was ` +
+            `ignored.`);
         continue;
       }
 

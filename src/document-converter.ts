@@ -220,9 +220,9 @@ export class DocumentConverter extends DocumentProcessor {
     for (const import_ of DocumentConverter.getAllHtmlImports(this.document)) {
       if (!isImportWithDocument(import_)) {
         console.warn(
-            `${this.originalPackageName} ${this.originalUrl}: The ` +
-            `document referenced using URL '${import_.originalUrl}' ` +
-            `could not be loaded and was ignored.`);
+            `${this.originalPackageName} ${this.originalUrl}: The document ` +
+            `referenced using URL '${import_.originalUrl}' could not be ` +
+            `loaded and was ignored.`);
         continue;
       }
 
@@ -251,9 +251,9 @@ export class DocumentConverter extends DocumentProcessor {
              {kind: 'html-script'})) {
       if (!isImportWithDocument(scriptImport)) {
         console.warn(
-            `${this.originalPackageName} ${this.originalUrl}: ` +
-            `The script referenced using URL '${scriptImport.originalUrl}' ` +
-            `could not be loaded and was ignored.`);
+            `${this.originalPackageName} ${this.originalUrl}: The script ` +
+            `referenced using URL '${scriptImport.originalUrl}' could not be ` +
+            `loaded and was ignored.`);
         continue;
       }
 
@@ -416,9 +416,9 @@ export class DocumentConverter extends DocumentProcessor {
              {kind: 'html-script'})) {
       if (!isImportWithDocument(scriptImport)) {
         console.warn(
-            `${this.originalPackageName} ${this.originalUrl}: ` +
-            `The script referenced using URL '${scriptImport.originalUrl}' ` +
-            `could not be loaded and was ignored.`);
+            `${this.originalPackageName} ${this.originalUrl}: The script ` +
+            `referenced using URL '${scriptImport.originalUrl}' could not be ` +
+            `loaded and was ignored.`);
         continue;
       }
 

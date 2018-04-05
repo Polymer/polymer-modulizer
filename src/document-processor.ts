@@ -112,9 +112,9 @@ export abstract class DocumentProcessor {
         const scriptImport = script as Import;
         if (!isImportWithDocument(scriptImport)) {
           console.warn(
-              `${this.originalPackageName} ${this.originalUrl}: ` +
-              `The script referenced using URL '${scriptImport.originalUrl}' ` +
-              `could not be loaded and was ignored.`);
+              `${this.originalPackageName} ${this.originalUrl}: The script ` +
+              `referenced using URL '${scriptImport.originalUrl}' could not ` +
+              `be loaded and was ignored.`);
           continue;
         }
 
