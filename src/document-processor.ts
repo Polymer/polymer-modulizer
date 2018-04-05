@@ -21,6 +21,7 @@ import * as recast from 'recast';
 
 import {ConversionSettings} from './conversion-settings';
 import {attachCommentsToFirstStatement, canDomModuleBeInlined, createDomNodeInsertStatements, filterClone, getCommentsBetween, getNodePathInProgram, insertStatementsIntoProgramBody, serializeNodeToTemplateLiteral} from './document-util';
+import {ImportWithDocument} from './import-with-document';
 import {removeNamespaceInitializers} from './passes/remove-namespace-initializers';
 import {removeToplevelUseStrict} from './passes/remove-toplevel-use-strict';
 import {removeUnnecessaryEventListeners} from './passes/remove-unnecessary-waits';
@@ -58,7 +59,7 @@ export abstract class DocumentProcessor {
   protected readonly conversionSettings: ConversionSettings;
   protected readonly document: Document;
   protected readonly program: Program;
-  protected readonly convertedHtmlScripts: ReadonlySet<Import>;
+  protected readonly convertedHtmlScripts: ReadonlySet<ImportWithDocument>;
 
   constructor(
       document: Document, originalPackageName: string, urlHandler: UrlHandler,
@@ -83,13 +84,7 @@ export abstract class DocumentProcessor {
          this.prepareJsModule());
   }
 
-  private isInternalNonModuleImport(scriptImport: Import): boolean {
-    if (scriptImport.document === undefined) {
-      throw new Error(`${this.originalPackageName} ${this.originalUrl}: The ` +
-          `script referenced by '${scriptImport.originalUrl}' could not be ` +
-          `loaded.`);
-    }
-
+  private isInternalNonModuleImport(scriptImport: ImportWithDocument): boolean {
     const oldScriptUrl = this.urlHandler.getDocumentUrl(scriptImport.document);
     const newScriptUrl = this.convertScriptUrl(oldScriptUrl);
     const isModuleImport =
@@ -108,21 +103,27 @@ export abstract class DocumentProcessor {
    */
   private prepareJsModule() {
     const combinedToplevelStatements = [];
-    const convertedHtmlScripts = new Set<Import>();
+    const convertedHtmlScripts = new Set<ImportWithDocument>();
     const claimedDomModules = new Set<parse5.ASTNode>();
     let prevScriptNode: parse5.ASTNode|undefined = undefined;
     for (const script of this.document.getFeatures()) {
       let scriptDocument: Document;
-      if (script.kinds.has('html-script') &&
-          this.isInternalNonModuleImport(script as Import)) {
+      if (script.kinds.has('html-script')) {
         const scriptImport = script as Import;
         if (scriptImport.document === undefined) {
-          throw new Error(`${this.originalPackageName} ${this.originalUrl}: ` +
-              `The script referenced by '${scriptImport.originalUrl}' could ` +
-              `not be loaded.`);
+          console.warn(`${this.originalPackageName} ${this.originalUrl}: ` +
+              `The script referenced using URL '${scriptImport.originalUrl}' ` +
+              `could not be loaded and was ignored.`);
+          continue;
         }
-        scriptDocument = scriptImport.document as Document<ParsedHtmlDocument>;
-        convertedHtmlScripts.add(scriptImport);
+
+        const scriptImportWithDocument = script as ImportWithDocument;
+        if (!this.isInternalNonModuleImport(scriptImportWithDocument)) {
+          continue;
+        }
+
+        scriptDocument = scriptImportWithDocument.document as Document<ParsedHtmlDocument>;
+        convertedHtmlScripts.add(scriptImportWithDocument);
       } else if (script.kinds.has('js-document')) {
         scriptDocument = script as Document;
       } else {

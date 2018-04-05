@@ -116,11 +116,11 @@ export class DocumentScanner extends DocumentProcessor {
       if (f.kinds.has('html-script')) {
         const scriptImport = f as Import;
         if (scriptImport.document === undefined) {
-          throw new Error(`${this.originalPackageName} ${this.originalUrl}: ` +
-              `The script referenced by '${scriptImport.originalUrl}' could ` +
-              `not be loaded.`);
+          console.warn(`${this.originalPackageName} ${this.originalUrl}: ` +
+              `The script referenced using URL '${scriptImport.originalUrl}' ` +
+              `could not be loaded and was ignored.`);
+          return false;
         }
-
         const oldScriptUrl =
             this.urlHandler.getDocumentUrl(scriptImport.document);
         const newScriptUrl = this.convertScriptUrl(oldScriptUrl);

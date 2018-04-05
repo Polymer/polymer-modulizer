@@ -40,6 +40,7 @@ import {rewriteReferencesToNamespaceMembers} from './passes/rewrite-references-t
 import {rewriteToplevelThis} from './passes/rewrite-toplevel-this';
 import {ConvertedDocumentUrl} from './urls/types';
 import {getHtmlDocumentConvertedFilePath, getJsModuleConvertedFilePath, getModuleId, getScriptConvertedFilePath} from './urls/util';
+import {ImportWithDocument} from './import-with-document';
 
 /**
  * Keep a map of dangerous references to check for. Output the related warning
@@ -214,18 +215,24 @@ export class DocumentConverter extends DocumentProcessor {
    *
    * Note: Imports that are not found are not returned by the analyzer.
    */
-  private getHtmlImports() {
-    return DocumentConverter.getAllHtmlImports(this.document)
-        .filter((f: Import) => {
-          if (f.document === undefined) {
-            throw new Error(`${this.originalPackageName} ` +
-                `${this.originalUrl}: The HTML import referenced by ` +
-                `'${f.originalUrl}' could not be loaded.`);
-          }
-
-          const documentUrl = this.urlHandler.getDocumentUrl(f.document);
-          return !this.conversionSettings.excludes.has(documentUrl);
-        });
+  private getHtmlImports(): Array<ImportWithDocument> {
+    const importsWithDocuments =
+        DocumentConverter.getAllHtmlImports(this.document)
+            .filter((htmlImport: Import) => {
+              if (htmlImport.document === undefined) {
+                console.warn(
+                    `${this.originalPackageName} ${this.originalUrl}: The ` +
+                    `document referenced using URL ` +
+                    `'${htmlImport.originalUrl}' could not be loaded and was ` +
+                    `ignored.`);
+                return false;
+              }
+              return true;
+            }) as Array<ImportWithDocument>;
+    return importsWithDocuments.filter((f: ImportWithDocument) => {
+      const documentUrl = this.urlHandler.getDocumentUrl(f.document);
+      return !this.conversionSettings.excludes.has(documentUrl);
+    });
   }
 
   /**
@@ -242,15 +249,17 @@ export class DocumentConverter extends DocumentProcessor {
     for (const scriptImport of this.document.getFeatures(
              {kind: 'html-script'})) {
       if (scriptImport.document === undefined) {
-        throw new Error(`${this.originalPackageName} ${this.originalUrl}: ` +
-            `The script referenced by '${scriptImport.originalUrl}' could ` +
-            `not be loaded.`);
+        console.warn(`${this.originalPackageName} ${this.originalUrl}: ` +
+            `The script referenced using URL '${scriptImport.originalUrl}' ` +
+            `not be loaded and was ignored.`);
+        continue;
       }
+      const scriptImportWithDocument = scriptImport as ImportWithDocument;
 
       const oldScriptUrl =
-          this.urlHandler.getDocumentUrl(scriptImport.document);
+          this.urlHandler.getDocumentUrl(scriptImportWithDocument.document);
       const newScriptUrl = this.convertScriptUrl(oldScriptUrl);
-      if (this.convertedHtmlScripts.has(scriptImport)) {
+      if (this.convertedHtmlScripts.has(scriptImportWithDocument)) {
         // NOTE: This deleted script file path *may* === this document's final
         // converted file path. Because results are written in order, the
         // final result (this document) has the final say, and any previous
@@ -390,12 +399,6 @@ export class DocumentConverter extends DocumentProcessor {
       }
       const offsets = htmlDocument.sourceRangeToOffsets(htmlImport.sourceRange);
 
-      if (htmlImport.document === undefined) {
-        throw new Error(`${this.originalPackageName} ${this.originalUrl}: ` +
-            `The HTML import referenced by '${htmlImport.originalUrl}' ` +
-            `could not be loaded.`);
-      }
-
       const htmlDocumentUrl =
           this.urlHandler.getDocumentUrl(htmlImport.document);
       const importedJsDocumentUrl = this.convertDocumentUrl(htmlDocumentUrl);
@@ -410,41 +413,43 @@ export class DocumentConverter extends DocumentProcessor {
 
     for (const scriptImport of this.document.getFeatures(
              {kind: 'html-script'})) {
-      // ignore fake script imports injected by various hacks in the
-      // analyzer
-      if (!scriptImport.sourceRange || !scriptImport.astNode) {
+      if (scriptImport.document === undefined) {
+        console.warn(`${this.originalPackageName} ${this.originalUrl}: ` +
+            `The script referenced using URL '${scriptImport.originalUrl}' ` +
+            `could not be loaded and was ignored.`);
         continue;
       }
-      if (!dom5.predicates.hasTagName('script')(scriptImport.astNode)) {
+      const scriptImportWithDocument = scriptImport as ImportWithDocument;
+
+      // ignore fake script imports injected by various hacks in the
+      // analyzer
+      if (!scriptImportWithDocument.sourceRange || !scriptImportWithDocument.astNode) {
+        continue;
+      }
+      if (!dom5.predicates.hasTagName('script')(scriptImportWithDocument.astNode)) {
         throw new Error(
             `Expected an 'html-script' kinded feature to ` +
             `have a script tag for an AST node.`);
       }
       const offsets = htmlDocument.sourceRangeToOffsets(
-          htmlDocument.sourceRangeForNode(scriptImport.astNode)!);
-
-      if (scriptImport.document === undefined) {
-        throw new Error(`${this.originalPackageName} ${this.originalUrl}: ` +
-            `The script referenced by '${scriptImport.originalUrl}' could ` +
-            `not be loaded.`);
-      }
+          htmlDocument.sourceRangeForNode(scriptImportWithDocument.astNode)!);
 
       const convertedUrl = this.convertDocumentUrl(
-          this.urlHandler.getDocumentUrl(scriptImport.document));
+          this.urlHandler.getDocumentUrl(scriptImportWithDocument.document));
       const formattedUrl =
-          this.formatImportUrl(convertedUrl, scriptImport.originalUrl, true);
-      dom5.setAttribute(scriptImport.astNode, 'src', formattedUrl);
+          this.formatImportUrl(convertedUrl, scriptImportWithDocument.originalUrl, true);
+      dom5.setAttribute(scriptImportWithDocument.astNode, 'src', formattedUrl);
 
       // Temporary: Check if imported script is a known module.
       // See `knownScriptModules` for more information.
       for (const importUrlEnding of knownScriptModules) {
-        if (scriptImport.url.endsWith(importUrlEnding)) {
-          dom5.setAttribute(scriptImport.astNode, 'type', 'module');
+        if (scriptImportWithDocument.url.endsWith(importUrlEnding)) {
+          dom5.setAttribute(scriptImportWithDocument.astNode, 'type', 'module');
         }
       }
 
       edits.push(
-          {offsets, replacementText: serializeNode(scriptImport.astNode)});
+          {offsets, replacementText: serializeNode(scriptImportWithDocument.astNode)});
     }
 
     // We need to ensure that custom styles are inserted into the document
@@ -787,12 +792,6 @@ export class DocumentConverter extends DocumentProcessor {
     // Rewrite HTML Imports to JS imports
     const jsImportDeclarations = [];
     for (const htmlImport of this.getHtmlImports()) {
-      if (htmlImport.document === undefined) {
-        throw new Error(`${this.originalPackageName} ${this.originalUrl}: ` +
-            `The HTML import referenced by '${htmlImport.originalUrl}' ` +
-            `could not be loaded.`);
-      }
-
       const importedJsDocumentUrl = this.convertDocumentUrl(
           this.urlHandler.getDocumentUrl(htmlImport.document));
 
