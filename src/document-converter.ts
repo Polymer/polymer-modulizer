@@ -252,7 +252,7 @@ export class DocumentConverter extends DocumentProcessor {
         console.warn(
             `${this.originalPackageName} ${this.originalUrl}: ` +
             `The script referenced using URL '${scriptImport.originalUrl}' ` +
-            `not be loaded and was ignored.`);
+            `could not be loaded and was ignored.`);
         continue;
       }
 

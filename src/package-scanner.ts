@@ -279,9 +279,8 @@ export class PackageScanner {
           if (!hasDocument) {
             console.warn(
                 `${packageName} ${documentUrl}: The document referenced ` +
-                `using URL '${
-                    htmlImport.originalUrl}' could not be loaded and ` +
-                `was ignored.`);
+                `using URL '${htmlImport.originalUrl}' could not be loaded ` +
+                `and was ignored.`);
           }
           return hasDocument;
         }) as Array<ImportWithDocument>;
