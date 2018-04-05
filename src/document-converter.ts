@@ -27,6 +27,7 @@ import * as recast from 'recast';
 
 import {DocumentProcessor} from './document-processor';
 import {collectIdentifierNames, containsWriteToGlobalSettingsObject, createDomNodeInsertStatements, findAvailableIdentifier, getMemberPath, getPathOfAssignmentTo, getSetterName, serializeNode} from './document-util';
+import {ImportWithDocument} from './import-with-document';
 import {ConversionResult, JsExport} from './js-module';
 import {addA11ySuiteIfUsed} from './passes/add-a11y-suite-if-used';
 import {removeToplevelUseStrict} from './passes/remove-toplevel-use-strict';
@@ -40,7 +41,6 @@ import {rewriteReferencesToNamespaceMembers} from './passes/rewrite-references-t
 import {rewriteToplevelThis} from './passes/rewrite-toplevel-this';
 import {ConvertedDocumentUrl} from './urls/types';
 import {getHtmlDocumentConvertedFilePath, getJsModuleConvertedFilePath, getModuleId, getScriptConvertedFilePath} from './urls/util';
-import {ImportWithDocument} from './import-with-document';
 
 /**
  * Keep a map of dangerous references to check for. Output the related warning
@@ -249,7 +249,8 @@ export class DocumentConverter extends DocumentProcessor {
     for (const scriptImport of this.document.getFeatures(
              {kind: 'html-script'})) {
       if (scriptImport.document === undefined) {
-        console.warn(`${this.originalPackageName} ${this.originalUrl}: ` +
+        console.warn(
+            `${this.originalPackageName} ${this.originalUrl}: ` +
             `The script referenced using URL '${scriptImport.originalUrl}' ` +
             `not be loaded and was ignored.`);
         continue;
@@ -413,7 +414,8 @@ export class DocumentConverter extends DocumentProcessor {
     for (const scriptImport of this.document.getFeatures(
              {kind: 'html-script'})) {
       if (scriptImport.document === undefined) {
-        console.warn(`${this.originalPackageName} ${this.originalUrl}: ` +
+        console.warn(
+            `${this.originalPackageName} ${this.originalUrl}: ` +
             `The script referenced using URL '${scriptImport.originalUrl}' ` +
             `could not be loaded and was ignored.`);
         continue;

@@ -272,16 +272,19 @@ export class PackageScanner {
         this.urlHandler.getOriginalPackageNameForUrl(documentUrl);
 
     const htmlImports = DocumentConverter.getAllHtmlImports(document);
-    const htmlImportsWithDocuments = htmlImports.filter((htmlImport: Import) => {
-      const document = htmlImport.document;
-      const hasDocument = document !== undefined;
-      if (!hasDocument) {
-        console.warn(`${packageName} ${documentUrl}: The document referenced ` +
-            `using URL '${htmlImport.originalUrl}' could not be loaded and ` +
-            `was ignored.`);
-      }
-      return hasDocument;
-    }) as Array<ImportWithDocument>;
+    const htmlImportsWithDocuments =
+        htmlImports.filter((htmlImport: Import) => {
+          const document = htmlImport.document;
+          const hasDocument = document !== undefined;
+          if (!hasDocument) {
+            console.warn(
+                `${packageName} ${documentUrl}: The document referenced ` +
+                `using URL '${
+                    htmlImport.originalUrl}' could not be loaded and ` +
+                `was ignored.`);
+          }
+          return hasDocument;
+        }) as Array<ImportWithDocument>;
 
     for (const htmlImport of htmlImportsWithDocuments) {
       const importDocumentUrl = this.urlHandler.getDocumentUrl(<any>htmlImport);
