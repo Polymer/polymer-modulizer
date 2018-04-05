@@ -16,7 +16,7 @@ import * as dom5 from 'dom5';
 import {Program} from 'estree';
 import * as jsc from 'jscodeshift';
 import * as parse5 from 'parse5';
-import {Document, Import, isPositionInsideRange, ParsedHtmlDocument, Severity, Warning} from 'polymer-analyzer';
+import {Document, Import, isPositionInsideRange, Severity, Warning} from 'polymer-analyzer';
 import * as recast from 'recast';
 
 import {ConversionSettings} from './conversion-settings';
@@ -122,7 +122,7 @@ export abstract class DocumentProcessor {
           continue;
         }
 
-        scriptDocument = scriptImport.document as Document<ParsedHtmlDocument>;
+        scriptDocument = scriptImport.document;
         convertedHtmlScripts.add(scriptImport);
       } else if (script.kinds.has('js-document')) {
         scriptDocument = script as Document;
