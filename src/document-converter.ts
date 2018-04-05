@@ -22,7 +22,7 @@ import * as jsc from 'jscodeshift';
 import {EOL} from 'os';
 import * as parse5 from 'parse5';
 import * as path from 'path';
-import {Document, Import, ParsedHtmlDocument} from 'polymer-analyzer';
+import {Document, Import, ParsedHtmlDocument, Severity, Warning} from 'polymer-analyzer';
 import * as recast from 'recast';
 
 import {DocumentProcessor} from './document-processor';
@@ -219,10 +219,14 @@ export class DocumentConverter extends DocumentProcessor {
     const filteredImports = [];
     for (const import_ of DocumentConverter.getAllHtmlImports(this.document)) {
       if (!isImportWithDocument(import_)) {
-        console.warn(
-            `${this.originalPackageName} ${this.originalUrl}: The document ` +
-            `referenced using URL '${import_.originalUrl}' could not be ` +
-            `loaded and was ignored.`);
+        console.warn(new Warning({
+          code: 'import-ignored',
+          message: `The import referenced by URL '${import_.originalUrl}' ` +
+              `could not be loaded and was ignored.`,
+          parsedDocument: this.document.parsedDocument,
+          severity: Severity.WARNING,
+          sourceRange: import_.sourceRange!,
+        }).toString());
         continue;
       }
 
@@ -250,10 +254,15 @@ export class DocumentConverter extends DocumentProcessor {
     for (const scriptImport of this.document.getFeatures(
              {kind: 'html-script'})) {
       if (!isImportWithDocument(scriptImport)) {
-        console.warn(
-            `${this.originalPackageName} ${this.originalUrl}: The script ` +
-            `referenced using URL '${scriptImport.originalUrl}' could not be ` +
-            `loaded and was ignored.`);
+        console.warn(new Warning({
+          code: 'import-ignored',
+          message: `The import referenced by URL ` +
+              `'${scriptImport.originalUrl}' could not be loaded and was ` +
+              `ignored.`,
+          parsedDocument: this.document.parsedDocument,
+          severity: Severity.WARNING,
+          sourceRange: scriptImport.sourceRange!,
+        }).toString());
         continue;
       }
 
@@ -415,10 +424,15 @@ export class DocumentConverter extends DocumentProcessor {
     for (const scriptImport of this.document.getFeatures(
              {kind: 'html-script'})) {
       if (!isImportWithDocument(scriptImport)) {
-        console.warn(
-            `${this.originalPackageName} ${this.originalUrl}: The script ` +
-            `referenced using URL '${scriptImport.originalUrl}' could not be ` +
-            `loaded and was ignored.`);
+        console.warn(new Warning({
+          code: 'import-ignored',
+          message: `The import referenced by URL ` +
+              `'${scriptImport.originalUrl}' could not be loaded and was ` +
+              `ignored.`,
+          parsedDocument: this.document.parsedDocument,
+          severity: Severity.WARNING,
+          sourceRange: scriptImport.sourceRange!,
+        }).toString());
         continue;
       }
 

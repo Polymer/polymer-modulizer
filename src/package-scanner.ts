@@ -13,7 +13,7 @@
  */
 
 import fetch from 'node-fetch';
-import {Analysis, Document} from 'polymer-analyzer';
+import {Analysis, Document, Severity, Warning} from 'polymer-analyzer';
 
 import {filesJsonObjectToMap, PackageScanResultJson, serializePackageScanResult} from './conversion-manifest';
 import {ConversionSettings} from './conversion-settings';
@@ -273,10 +273,14 @@ export class PackageScanner {
 
     for (const htmlImport of DocumentConverter.getAllHtmlImports(document)) {
       if (!isImportWithDocument(htmlImport)) {
-        console.warn(
-            `${packageName} ${documentUrl}: The document referenced using ` +
-            `URL '${htmlImport.originalUrl}' could not be loaded and was ` +
-            `ignored.`);
+        console.warn(new Warning({
+          code: 'import-ignored',
+          message: `The import referenced by URL '${htmlImport.originalUrl}' ` +
+              `could not be loaded and was ignored.`,
+          parsedDocument: document.parsedDocument,
+          severity: Severity.WARNING,
+          sourceRange: htmlImport.sourceRange!,
+        }).toString());
         continue;
       }
 

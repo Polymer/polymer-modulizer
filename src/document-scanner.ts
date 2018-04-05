@@ -12,7 +12,7 @@
  * http://polymer.github.io/PATENTS.txt
  */
 
-import {Document, Import} from 'polymer-analyzer';
+import {Document, Import, Severity, Warning} from 'polymer-analyzer';
 
 import {DocumentProcessor} from './document-processor';
 import {isImportWithDocument} from './import-with-document';
@@ -117,10 +117,15 @@ export class DocumentScanner extends DocumentProcessor {
       if (f.kinds.has('html-script')) {
         const scriptImport = f as Import;
         if (!isImportWithDocument(scriptImport)) {
-          console.warn(
-              `${this.originalPackageName} ${this.originalUrl}: The script ` +
-              `referenced using URL '${scriptImport.originalUrl}' could not ` +
-              `be loaded and was ignored.`);
+          console.warn(new Warning({
+            code: 'import-ignored',
+            message: `The import referenced by URL ` +
+                `'${scriptImport.originalUrl}' could not be loaded and was ` +
+                `ignored.`,
+            parsedDocument: this.document.parsedDocument,
+            severity: Severity.WARNING,
+            sourceRange: scriptImport.sourceRange!,
+          }).toString());
           return false;
         }
         const oldScriptUrl =
