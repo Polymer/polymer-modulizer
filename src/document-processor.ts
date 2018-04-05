@@ -117,13 +117,12 @@ export abstract class DocumentProcessor {
           continue;
         }
 
-        const scriptImportWithDocument = script as ImportWithDocument;
-        if (!this.isInternalNonModuleImport(scriptImportWithDocument)) {
+        if (!this.isInternalNonModuleImport(scriptImport as ImportWithDocument)) {
           continue;
         }
 
-        scriptDocument = scriptImportWithDocument.document as Document<ParsedHtmlDocument>;
-        convertedHtmlScripts.add(scriptImportWithDocument);
+        scriptDocument = scriptImport.document as Document<ParsedHtmlDocument>;
+        convertedHtmlScripts.add(scriptImport as ImportWithDocument);
       } else if (script.kinds.has('js-document')) {
         scriptDocument = script as Document;
       } else {

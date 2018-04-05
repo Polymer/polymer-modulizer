@@ -254,12 +254,11 @@ export class DocumentConverter extends DocumentProcessor {
             `not be loaded and was ignored.`);
         continue;
       }
-      const scriptImportWithDocument = scriptImport as ImportWithDocument;
 
       const oldScriptUrl =
-          this.urlHandler.getDocumentUrl(scriptImportWithDocument.document);
+          this.urlHandler.getDocumentUrl(scriptImport.document);
       const newScriptUrl = this.convertScriptUrl(oldScriptUrl);
-      if (this.convertedHtmlScripts.has(scriptImportWithDocument)) {
+      if (this.convertedHtmlScripts.has(scriptImport as ImportWithDocument)) {
         // NOTE: This deleted script file path *may* === this document's final
         // converted file path. Because results are written in order, the
         // final result (this document) has the final say, and any previous
@@ -419,37 +418,36 @@ export class DocumentConverter extends DocumentProcessor {
             `could not be loaded and was ignored.`);
         continue;
       }
-      const scriptImportWithDocument = scriptImport as ImportWithDocument;
 
       // ignore fake script imports injected by various hacks in the
       // analyzer
-      if (!scriptImportWithDocument.sourceRange || !scriptImportWithDocument.astNode) {
+      if (!scriptImport.sourceRange || !scriptImport.astNode) {
         continue;
       }
-      if (!dom5.predicates.hasTagName('script')(scriptImportWithDocument.astNode)) {
+      if (!dom5.predicates.hasTagName('script')(scriptImport.astNode)) {
         throw new Error(
             `Expected an 'html-script' kinded feature to ` +
             `have a script tag for an AST node.`);
       }
       const offsets = htmlDocument.sourceRangeToOffsets(
-          htmlDocument.sourceRangeForNode(scriptImportWithDocument.astNode)!);
+          htmlDocument.sourceRangeForNode(scriptImport.astNode)!);
 
       const convertedUrl = this.convertDocumentUrl(
-          this.urlHandler.getDocumentUrl(scriptImportWithDocument.document));
+          this.urlHandler.getDocumentUrl(scriptImport.document));
       const formattedUrl =
-          this.formatImportUrl(convertedUrl, scriptImportWithDocument.originalUrl, true);
-      dom5.setAttribute(scriptImportWithDocument.astNode, 'src', formattedUrl);
+          this.formatImportUrl(convertedUrl, scriptImport.originalUrl, true);
+      dom5.setAttribute(scriptImport.astNode, 'src', formattedUrl);
 
       // Temporary: Check if imported script is a known module.
       // See `knownScriptModules` for more information.
       for (const importUrlEnding of knownScriptModules) {
-        if (scriptImportWithDocument.url.endsWith(importUrlEnding)) {
-          dom5.setAttribute(scriptImportWithDocument.astNode, 'type', 'module');
+        if (scriptImport.url.endsWith(importUrlEnding)) {
+          dom5.setAttribute(scriptImport.astNode, 'type', 'module');
         }
       }
 
       edits.push(
-          {offsets, replacementText: serializeNode(scriptImportWithDocument.astNode)});
+          {offsets, replacementText: serializeNode(scriptImport.astNode)});
     }
 
     // We need to ensure that custom styles are inserted into the document
