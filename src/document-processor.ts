@@ -111,15 +111,16 @@ export abstract class DocumentProcessor {
       if (script.kinds.has('html-script')) {
         const scriptImport = script as Import;
         if (!isImportWithDocument(scriptImport)) {
-          console.warn(new Warning({
-            code: 'import-ignored',
-            message: `The import referenced by URL ` +
-                `'${scriptImport.originalUrl}' could not be loaded and was ` +
-                `ignored.`,
-            parsedDocument: this.document.parsedDocument,
-            severity: Severity.WARNING,
-            sourceRange: scriptImport.sourceRange!,
-          }).toString());
+          console.warn(
+              new Warning({
+                code: 'import-ignored',
+                message: `The import referenced by URL ` +
+                    `'${scriptImport.originalUrl}' could not be loaded and ` +
+                    `was ignored.`,
+                parsedDocument: this.document.parsedDocument,
+                severity: Severity.WARNING,
+                sourceRange: scriptImport.sourceRange!,
+              }).toString());
           continue;
         }
 
