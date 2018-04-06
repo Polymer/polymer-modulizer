@@ -114,9 +114,7 @@ export abstract class DocumentProcessor {
           console.warn(
               new Warning({
                 code: 'import-ignored',
-                message: `The import referenced by URL ` +
-                    `'${scriptImport.originalUrl}' could not be loaded and ` +
-                    `was ignored.`,
+                message: `Import could not be loaded and will be ignored.`,
                 parsedDocument: this.document.parsedDocument,
                 severity: Severity.WARNING,
                 sourceRange: scriptImport.sourceRange!,

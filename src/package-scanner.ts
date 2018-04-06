@@ -276,9 +276,7 @@ export class PackageScanner {
         console.warn(
             new Warning({
               code: 'import-ignored',
-              message: `The import referenced by URL ` +
-                  `'${htmlImport.originalUrl}' could not be loaded and was ` +
-                  `ignored.`,
+              message: `Import could not be loaded and will be ignored.`,
               parsedDocument: document.parsedDocument,
               severity: Severity.WARNING,
               sourceRange: htmlImport.sourceRange!,
