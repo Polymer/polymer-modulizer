@@ -976,7 +976,7 @@ export function arrowFn() {
     });
 
     let testName = 'references to namespace objects are rewritten to ' +
-        '`undefined` when they do not start member expressions';
+        '`void 0` when they do not start member expressions';
     test(testName, async () => {
       setSources({
         'test.html': `
