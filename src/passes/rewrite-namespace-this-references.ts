@@ -27,6 +27,9 @@ function rewriteSingleScopeThisReferences(
     visitThisExpression(path: NodePath<estree.ThisExpression>) {
       const parent = path.parent;
       if (parent && parent.node.type !== 'MemberExpression') {
+        // When a namespace object is itself referenced with `this` but isn't
+        // used to reference a member of the namespace, rewrite the `this` to
+        // `void 0`:
         path.replace(jsc.unaryExpression('void', jsc.literal(0)));
       } else {
         path.replace(jsc.identifier(namespaceReference));
