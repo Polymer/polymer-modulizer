@@ -25,7 +25,12 @@ function rewriteSingleScopeThisReferences(
     blockStatement: estree.BlockStatement, namespaceReference: string) {
   astTypes.visit(blockStatement, {
     visitThisExpression(path: NodePath<estree.ThisExpression>) {
-      path.replace(jsc.identifier(namespaceReference));
+      const parent = path.parent;
+      if (parent && parent.node.type !== 'MemberExpression') {
+        path.replace(jsc.unaryExpression('void', jsc.literal(0)));
+      } else {
+        path.replace(jsc.identifier(namespaceReference));
+      }
       return false;
     },
 

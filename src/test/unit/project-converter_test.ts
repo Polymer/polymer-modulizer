@@ -994,7 +994,7 @@ export function arrowFn() {
       assertSources(await convert({namespaces: ['NS']}), {
         'test.js': `
 export function f() {
-  console.log('f', undefined);
+  console.log('f', void 0);
   g();
 }
 
