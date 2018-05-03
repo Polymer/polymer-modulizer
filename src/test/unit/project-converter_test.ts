@@ -976,7 +976,7 @@ export function arrowFn() {
     });
 
     let testName = 'references to namespace objects are rewritten to ' +
-        '`void 0` when they do not start member expressions';
+        '`undefined` when they do not start member expressions';
     test(testName, async () => {
       setSources({
         'test.html': `
@@ -994,7 +994,7 @@ export function arrowFn() {
       assertSources(await convert({namespaces: ['NS']}), {
         'test.js': `
 export function f() {
-  console.log('f', void 0);
+  console.log('f', undefined);
   g();
 }
 
