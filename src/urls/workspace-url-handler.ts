@@ -133,7 +133,16 @@ export class WorkspaceUrlHandler implements UrlHandler {
    */
   getPathImportUrl(fromUrl: ConvertedDocumentUrl, toUrl: ConvertedDocumentUrl):
       string {
-    return getRelativeUrl(fromUrl, toUrl);
+    let importUrl = getRelativeUrl(fromUrl, toUrl);
+    if (!this.isImportInternal(fromUrl, toUrl)) {
+      const parts = importUrl.split('/');
+      parts[parts.lastIndexOf('..')] = 'node_modules';
+      if (parts[0] !== '.' && parts[0] !== '..') {
+        parts.unshift('.');
+      }
+      importUrl = parts.join('/');
+    }
+    return importUrl;
   }
 
   /**

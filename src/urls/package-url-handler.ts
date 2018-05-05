@@ -165,33 +165,7 @@ export class PackageUrlHandler implements UrlHandler {
    */
   getPathImportUrl(fromUrl: ConvertedDocumentUrl, toUrl: ConvertedDocumentUrl):
       string {
-    const isPackageNameScoped = this.npmPackageName.startsWith('@');
-    const isPackageTypeElement = this.packageType === 'element';
-    const isImportFromLocalFile =
-        PackageUrlHandler.isUrlInternalToPackage(fromUrl);
-    const isImportToExternalFile =
-        !PackageUrlHandler.isUrlInternalToPackage(toUrl);
-    let importUrl = getRelativeUrl(fromUrl, toUrl);
-
-    // If the import is from the current project:
-    if (isImportFromLocalFile && isPackageTypeElement) {
-      // Rewrite imports to point to dependencies as if they were siblings.
-      if (importUrl.startsWith('./node_modules/')) {
-        importUrl = '../' + importUrl.slice('./node_modules/'.length);
-      } else {
-        importUrl = importUrl.replace('node_modules', '..');
-      }
-      // Account for a npm package name scoping.
-      if (isPackageNameScoped && isImportToExternalFile) {
-        if (importUrl.startsWith('./')) {
-          importUrl = '../' + importUrl.slice('./'.length);
-        } else {
-          importUrl = '../' + importUrl;
-        }
-      }
-    }
-
-    return importUrl;
+    return getRelativeUrl(fromUrl, toUrl);
   }
 
   /**
