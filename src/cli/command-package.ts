@@ -29,8 +29,14 @@ export default async function run(options: CliOptions) {
 
   // Ok, we're updating a package in a directory not under our control.
   // We need to be sure it's safe.
-  const {stdout, stderr} = await exec(inDir, 'git', ['status', '-s']);
-  if (!options.force && (stdout || stderr)) {
+  let stdout, stderr;
+  try {
+      ({stdout, stderr} = await exec(inDir, 'git', ['status', '-s']));
+  } catch (e) {
+      ({stdout, stderr} = e);
+  }
+  const isRepo = !((stderr || '').indexOf('Not a git repository') !== -1);
+  if (!options.force && isRepo && (stdout || stderr)) {
     console.error(
         `Git repo is dirty. Check all changes in to source control and ` +
         `then try again.`);
