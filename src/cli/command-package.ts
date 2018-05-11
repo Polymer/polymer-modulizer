@@ -30,16 +30,17 @@ export default async function run(options: CliOptions) {
   // Ok, we're updating a package in a directory not under our control.
   // We need to be sure it's safe.
   let stdout, stderr;
+  let isRepo = true;
   try {
-      ({stdout, stderr} = await exec(inDir, 'git', ['status', '-s']));
+    ({stdout, stderr} = await exec(inDir, 'git', ['status', '-s']));
   } catch (e) {
     // Grab command execution results from exception info.
-      ({stdout, stderr} = e);
+    ({stdout, stderr} = e);
+    isRepo =
+        stderr === undefined || stderr.indexOf('Not a git repository') === -1;
   }
-  const isRepo = !((stderr || '').indexOf('Not a git repository') !== -1);
   if (!isRepo) {
-      console.warn(
-          `Not a git repo, proceeding.`);
+    console.warn(`Not a git repo, proceeding.`);
   }
   if (!options.force && isRepo && (stdout || stderr)) {
     console.error(
