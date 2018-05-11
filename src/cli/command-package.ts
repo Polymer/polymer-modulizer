@@ -33,6 +33,7 @@ export default async function run(options: CliOptions) {
   try {
       ({stdout, stderr} = await exec(inDir, 'git', ['status', '-s']));
   } catch (e) {
+    // Grab command execution results from exception info.
       ({stdout, stderr} = e);
   }
   const isRepo = !((stderr || '').indexOf('Not a git repository') !== -1);
