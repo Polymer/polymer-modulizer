@@ -36,6 +36,10 @@ export default async function run(options: CliOptions) {
       ({stdout, stderr} = e);
   }
   const isRepo = !((stderr || '').indexOf('Not a git repository') !== -1);
+  if (!isRepo) {
+      console.warn(
+          `Not a git repo, proceeding.`);
+  }
   if (!options.force && isRepo && (stdout || stderr)) {
     console.error(
         `Git repo is dirty. Check all changes in to source control and ` +
