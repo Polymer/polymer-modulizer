@@ -530,24 +530,17 @@ export function createDomNodeInsertStatements(
   };
   const templateValue = serializeNodeToTemplateLiteral(fragment as any, false);
 
-  const createElementDiv = jsc.variableDeclaration(
+  const createTemplateTag = jsc.variableDeclaration(
       'const',
       [jsc.variableDeclarator(
           jsc.identifier(varName),
-          jsc.callExpression(
+          jsc.taggedTemplateExpression(
               jsc.memberExpression(
-                  jsc.identifier('document'), jsc.identifier('createElement')),
-              [jsc.literal('template')]))]);
-  const setDocumentContainerStatement =
-      jsc.expressionStatement(jsc.assignmentExpression(
-          '=',
-          jsc.memberExpression(
-              jsc.identifier(varName), jsc.identifier('innerHTML')),
-          templateValue));
+                  jsc.identifier('Polymer'), jsc.identifier('html')),
+                  templateValue))]);
   if (activeInBody) {
     return [
-      createElementDiv,
-      setDocumentContainerStatement,
+      createTemplateTag,
       jsc.expressionStatement(jsc.callExpression(
           jsc.memberExpression(
               jsc.memberExpression(
@@ -557,14 +550,8 @@ export function createDomNodeInsertStatements(
               jsc.identifier(varName), jsc.identifier('content'))]))
     ];
   }
-  const setDisplayNoneStatement = jsc.expressionStatement(jsc.callExpression(
-      jsc.memberExpression(
-          jsc.identifier(varName), jsc.identifier('setAttribute')),
-      [jsc.literal('style'), jsc.literal('display: none;')]));
   return [
-    createElementDiv,
-    setDisplayNoneStatement,
-    setDocumentContainerStatement,
+    createTemplateTag,
     jsc.expressionStatement(jsc.callExpression(
         jsc.memberExpression(
             jsc.memberExpression(
