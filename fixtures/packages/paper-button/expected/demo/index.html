@@ -34,9 +34,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         See: https://github.com/Polymer/polymer-modulizer/issues/154
         -->
     <script type="module">
-const $_documentContainer = document.createElement('template');
+import { html } from '@polymer/polymer/lib/utils/html-tag.js';
 
-$_documentContainer.innerHTML = `<custom-style>
+const $_documentContainer = html`<custom-style>
     <style is="custom-style" include="demo-pages-shared-styles">
       .vertical-section-container {
         max-width: 500px;
@@ -53,9 +53,9 @@ document.body.appendChild($_documentContainer.content);
 </head>
 <body unresolved>
   <script type="module">
-const $_documentContainer = document.createElement('template');
+import { html } from '@polymer/polymer/lib/utils/html-tag.js';
 
-$_documentContainer.innerHTML = `<div class="vertical-section-container centered">
+const $_documentContainer = html`<div class="vertical-section-container centered">
     <h3>Buttons can be flat, raised, toggleable, or disabled</h3>
     <demo-snippet class="centered-demo">
       <template>

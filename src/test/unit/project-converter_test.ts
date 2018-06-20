@@ -1723,15 +1723,15 @@ Polymer({
       assertSources(await convert(), {
         'test.js': `
 import './foo.js';
-const $_documentContainer = document.createElement('template');
-$_documentContainer.setAttribute('style', 'display: none;');
-$_documentContainer.innerHTML = \`<custom-style><style>foo{}</style></custom-style>\`;
+import { html } from '@polymer/polymer/lib/utils/html-tag.js';
+
+const $_documentContainer = html\`<custom-style><style>foo{}</style></custom-style>\`;
 document.head.appendChild($_documentContainer.content);
 `,
         'foo.js': `
-const $_documentContainer = document.createElement('template');
-$_documentContainer.setAttribute('style', 'display: none;');
-$_documentContainer.innerHTML = \`<div>hello world!</div>\`;
+import { html } from '@polymer/polymer/lib/utils/html-tag.js';
+
+const $_documentContainer = html\`<div>hello world!</div>\`;
 document.head.appendChild($_documentContainer.content);
 `
       });
@@ -1959,9 +1959,9 @@ class BarElem extends Element {}
       assertSources(await convert(), {
         'test.js': `
 import { Element } from './polymer.js';
-const $_documentContainer = document.createElement('template');
-$_documentContainer.setAttribute('style', 'display: none;');
-$_documentContainer.innerHTML = \`<div>Top</div><div>Middle</div><div>Bottom</div>\`;
+import { html } from '@polymer/polymer/lib/utils/html-tag.js';
+
+const $_documentContainer = html\`<div>Top</div><div>Middle</div><div>Bottom</div>\`;
 document.head.appendChild($_documentContainer.content);
 class FooElem extends Element {}
 class BarElem extends Element {}
@@ -2000,9 +2000,9 @@ class BarElem extends Element {}
       assertSources(await convert(), {
         'test.js': `
 import { Element } from './polymer.js';
-const $_documentContainer = document.createElement('template');
-$_documentContainer.setAttribute('style', 'display: none;');
-$_documentContainer.innerHTML = \`<div>Random footer</div>\`;
+import { html } from '@polymer/polymer/lib/utils/html-tag.js';
+
+const $_documentContainer = html\`<div>Random footer</div>\`;
 document.head.appendChild($_documentContainer.content);
 customElements.define('foo-elem', class FooElem extends Element {
   static get template() {
@@ -2578,10 +2578,9 @@ Polymer({
           }),
           {
             'test.js': `
-const $_documentContainer = document.createElement('template');
-$_documentContainer.setAttribute('style', 'display: none;');
+import { html } from '@polymer/polymer/lib/utils/html-tag.js';
 
-$_documentContainer.innerHTML = \`<dom-module>
+const $_documentContainer = html\`<dom-module>
             <template>
               Scripts in here are cloned
               <script>foo&lt;/script>
@@ -2712,29 +2711,27 @@ console.log(foo$4);
         See: https://github.com/Polymer/polymer-modulizer/issues/154
         -->
     <script type="module">
-const $_documentContainer = document.createElement('template');
-$_documentContainer.setAttribute('style', 'display: none;');
+import { html } from '@polymer/polymer/lib/utils/html-tag.js';
 
-$_documentContainer.innerHTML = \`<style>
+const $_documentContainer = html\`<style>
             body { color: red; }
           </style>\`;
 
 document.head.appendChild($_documentContainer.content);
 </script>
           <script type="module">
-const $_documentContainer = document.createElement('template');
-$_documentContainer.setAttribute('style', 'display: none;');
+import { html } from '@polymer/polymer/lib/utils/html-tag.js';
 
-$_documentContainer.innerHTML = \`<style is="custom-style" include="foo-bar">
+const $_documentContainer = html\`<style is="custom-style" include="foo-bar">
             body { font-size: 10px; }
           </style>\`;
 
 document.head.appendChild($_documentContainer.content);
 </script>
           <script type="module">
-const $_documentContainer = document.createElement('template');
+import { html } from '@polymer/polymer/lib/utils/html-tag.js';
 
-$_documentContainer.innerHTML = \`<custom-style>
+const $_documentContainer = html\`<custom-style>
             <style is="custom-style">
               body { background-color: var(--happy, yellow); }
             </style>
@@ -2743,8 +2740,9 @@ $_documentContainer.innerHTML = \`<custom-style>
 document.body.appendChild($_documentContainer.content);
 </script>
           <script type="module">
-const $_documentContainer = document.createElement('template');
-$_documentContainer.innerHTML = \`<foo-elem></foo-elem>\`;
+import { html } from '@polymer/polymer/lib/utils/html-tag.js';
+
+const $_documentContainer = html\`<foo-elem></foo-elem>\`;
 document.body.appendChild($_documentContainer.content);
 </script>
         `
@@ -2970,10 +2968,9 @@ export const bar = (function() {
       });
       assertSources(await convert(), {
         'test.js': `
-const $_documentContainer = document.createElement('template');
-$_documentContainer.setAttribute('style', 'display: none;');
+import { html } from '@polymer/polymer/lib/utils/html-tag.js';
 
-$_documentContainer.innerHTML = \`<dom-module id="dom-module-attr" attr=""></dom-module><dom-module id="multiple-templates">
+const $_documentContainer = html\`<dom-module id="dom-module-attr" attr=""></dom-module><dom-module id="multiple-templates">
             <template></template>
             <template></template>
           </dom-module>\`;

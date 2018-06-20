@@ -85,10 +85,9 @@ import '../../@polymer/iron-flex-layout/iron-flex-layout.js';
 import { PaperButtonBehavior, PaperButtonBehaviorImpl } from '../../@polymer/paper-behaviors/paper-button-behavior.js';
 import '../../@polymer/paper-styles/element-styles/paper-material-styles.js';
 import { Polymer } from '../../@polymer/polymer/lib/legacy/polymer-fn.js';
-const $_documentContainer = document.createElement('template');
-$_documentContainer.setAttribute('style', 'display: none;');
+import { html } from '@polymer/polymer/lib/utils/html-tag.js';
 
-$_documentContainer.innerHTML = `<dom-module id="paper-button">
+const $_documentContainer = html`<dom-module id="paper-button">
   <template strip-whitespace="">
     <style include="paper-material-styles">
       /* Need to specify the same specificity as the styles imported from paper-material. */

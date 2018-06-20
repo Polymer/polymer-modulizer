@@ -27,9 +27,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         See: https://github.com/Polymer/polymer-modulizer/issues/154
         -->
     <script type="module">
-const $_documentContainer = document.createElement('template');
+import { html } from '@polymer/polymer/lib/utils/html-tag.js';
 
-$_documentContainer.innerHTML = `<custom-style>
+const $_documentContainer = html`<custom-style>
     <style is="custom-style" include="demo-pages-shared-styles"></style>
   </custom-style>`;
 
@@ -37,9 +37,9 @@ document.body.appendChild($_documentContainer.content);
 </script>
 
   <script type="module">
-const $_documentContainer = document.createElement('template');
+import { html } from '@polymer/polymer/lib/utils/html-tag.js';
 
-$_documentContainer.innerHTML = `<div class="vertical-section-container centered">
+const $_documentContainer = html`<div class="vertical-section-container centered">
     <h3>
       This demo is for a single &lt;iron-icon&gt;. If you're looking for the
       whole set of available icons, check out the

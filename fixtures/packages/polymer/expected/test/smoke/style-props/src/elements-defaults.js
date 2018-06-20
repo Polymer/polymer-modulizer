@@ -1,7 +1,6 @@
-const $_documentContainer = document.createElement('template');
-$_documentContainer.setAttribute('style', 'display: none;');
+import { html } from '../../../../lib/utils/html-tag.js';
 
-$_documentContainer.innerHTML = `<style is="custom-style">
+const $_documentContainer = html`<style is="custom-style">
   html {
     --x-s: {
       display: inline-block;
