@@ -1,8 +1,7 @@
 import './sub/style-import.js';
-const $_documentContainer = document.createElement('template');
-$_documentContainer.setAttribute('style', 'display: none;');
+import { html } from '../../lib/utils/html-tag.js';
 
-$_documentContainer.innerHTML = `<dom-module id="shared-style">
+const $_documentContainer = html`<dom-module id="shared-style">
   <template>
     <style>
       html {
