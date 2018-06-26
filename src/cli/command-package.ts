@@ -25,7 +25,7 @@ import {parseDependencyMappingInput} from './util';
 
 export default async function run(options: CliOptions) {
   const inDir = path.resolve(options.in || process.cwd());
-  const outDir = path.resolve(options.out);
+  const outDir = path.resolve(options.out || process.cwd());
 
   // Ok, we're updating a package in a directory not under our control.
   // We need to be sure it's safe.

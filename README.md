@@ -89,7 +89,7 @@ add the new ones in the current directory:
 
 ```sh
 bower cache clean && bower install
-modulizer --out .
+modulizer
 ```
 
 ### Workspace mode
@@ -182,4 +182,4 @@ cd ../polymer
 modulizer
 ```
 
-The converted files are now in the directory `js_out`
+The converted files are now in the current working directory

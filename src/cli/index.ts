@@ -58,7 +58,6 @@ const optionDefinitions: commandLineArgs.OptionDefinition[] = [
   {
     name: 'out',
     type: String,
-    defaultValue: 'modulizer_out',
     description: 'The directory to write converted files to.'
   },
   {name: 'in', type: String, description: 'The directory to convert.'},
