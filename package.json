@@ -11,6 +11,12 @@
   "bin": {
     "modulizer": "bin/modulizer.js"
   },
+  "files": [
+    "dependency-map.json",
+    "lib/",
+    "custom_typings/",
+    "bin/"
+  ],
   "scripts": {
     "build": "tsc",
     "build:fixtures": "npm run build && node lib/tools/update-fixtures",
