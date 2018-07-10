@@ -2,6 +2,7 @@
 
 [![Build Status](https://travis-ci.com/Polymer/polymer-modulizer.svg?token=x6MxFyUe7PYM8oPW9m6b&branch=master)](https://travis-ci.org/Polymer/polymer-modulizer)
 [![Windows Build Status](https://ci.appveyor.com/api/projects/status/koepsxxwhl6reof8/branch/master?svg=true)](https://ci.appveyor.com/project/FredKSchott/polymer-modulizer/branch/master)
+[![Published on npm](https://img.shields.io/npm/v/polymer-modulizer.svg)](https://www.npmjs.com/package/polymer-modulizer)
 
 Convert Polymer 2.x projects to Polymer 3.x.
 .
